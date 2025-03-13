@@ -1,3 +1,11 @@
+<script>
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		fetch('/api');
+	});
+</script>
+
 <div class="flex h-screen items-center justify-center">
 	<div class="flex flex-col justify-center rounded-lg border border-gray-300 px-6 py-12 lg:px-8">
 		<div class="sm:mx-auto sm:w-full sm:max-w-sm">
