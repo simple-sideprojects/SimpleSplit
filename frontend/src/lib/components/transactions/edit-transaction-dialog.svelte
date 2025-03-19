@@ -2,7 +2,7 @@
 	import { env } from '$env/dynamic/public';
 	import IconX from '~icons/tabler/x';
 
-	let { openDialog = $bindable() } = $props();
+	let { openDialog = $bindable(), transaction } = $props();
 
 	let dialog: HTMLDialogElement;
 	let description = $state('');
@@ -12,6 +12,10 @@
 	let error = $state<string | null>(null);
 
 	openDialog = () => {
+		description = transaction.description;
+		amount = (transaction.amount / 100).toString(); // Convert cents to euros
+		from = transaction.from;
+		to = transaction.to;
 		dialog.showModal();
 	};
 
@@ -51,8 +55,8 @@
 		}
 
 		try {
-			const response = await fetch(`${env.PUBLIC_BACKEND_URL}/api/transactions`, {
-				method: 'POST',
+			const response = await fetch(`${env.PUBLIC_BACKEND_URL}/api/transactions/${transaction.id}`, {
+				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json'
 				},
@@ -65,12 +69,12 @@
 			});
 
 			if (!response.ok) {
-				throw new Error('Failed to create transaction');
+				throw new Error('Failed to update transaction');
 			}
 
 			closeDialog();
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to create transaction';
+			error = e instanceof Error ? e.message : 'Failed to update transaction';
 		}
 	}
 </script>
@@ -82,7 +86,7 @@
 	onclose={closeDialog}
 >
 	<div class="flex items-center justify-between">
-		<h2 class="text-lg font-semibold">Add Transaction</h2>
+		<h2 class="text-lg font-semibold">Edit Transaction</h2>
 		<button
 			type="button"
 			class="rounded-lg p-1 text-gray-500 hover:bg-gray-100"
@@ -157,7 +161,7 @@
 				type="submit"
 				class="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
 			>
-				Add Transaction
+				Save Changes
 			</button>
 		</div>
 	</form>

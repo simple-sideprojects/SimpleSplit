@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { env } from '$env/dynamic/public';
-	import { Pagination, TransactionComponent } from '$lib';
+	import { EditTransactionDialog, Pagination, TransactionComponent } from '$lib';
 	import type { ITransaction } from '$lib/interfaces';
 
 	let { data } = $props();
@@ -11,6 +11,8 @@
 	let itemsPerPage = $state(25);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
+	let selectedTransaction = $state<ITransaction | null>(null);
+	let openEditDialog = $state<() => void>(() => {});
 
 	async function fetchTransactions(page: number, limit: number) {
 		isLoading = true;
@@ -38,7 +40,8 @@
 	}
 
 	async function handleEdit(transaction: ITransaction) {
-		console.log('Edit transaction:', transaction);
+		selectedTransaction = transaction;
+		openEditDialog();
 	}
 
 	async function handleDelete(transaction: ITransaction) {
@@ -122,3 +125,5 @@
 		</div>
 	{/if}
 </div>
+
+<EditTransactionDialog bind:openDialog={openEditDialog} transaction={selectedTransaction} />
