@@ -77,7 +77,7 @@
 
 <dialog
 	bind:this={dialog}
-	class="min-w-[400px] place-self-center rounded-lg border border-gray-100 bg-white p-6 shadow-lg backdrop:bg-black/25"
+	class="min-w-[95%] place-self-center rounded-lg border border-gray-100 bg-white p-6 shadow-lg backdrop:bg-black/25 sm:min-w-[400px]"
 	onclick={handleClickOutside}
 	onclose={closeDialog}
 >

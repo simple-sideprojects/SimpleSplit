@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { env } from '$env/dynamic/public';
-	import { AddTransactionButton } from '$lib';
+	import { AddTransactionButton, MobileNavigation } from '$lib';
 	import type { Group } from '$lib/interfaces';
 	import { onMount } from 'svelte';
 	import IconDashboard from '~icons/tabler/dashboard';
@@ -13,16 +14,21 @@
 	let { children } = $props();
 
 	let groups: Group[] = $state([]);
+	let mainElement: HTMLElement;
 
 	onMount(async () => {
 		const response = await fetch(`${env.PUBLIC_BACKEND_URL}/api/groups`);
 		groups = await response.json();
 	});
+
+	afterNavigate(() => {
+		mainElement?.scrollTo(0, 0);
+	});
 </script>
 
-<div class="flex min-h-screen">
+<div class="relative flex h-screen flex-col overflow-hidden sm:min-h-screen sm:flex-row">
 	<div
-		class="sticky top-0 flex h-screen w-64 flex-col justify-between border-e border-gray-100 bg-white"
+		class="sticky top-0 hidden h-screen w-64 flex-col justify-between border-e border-gray-100 bg-white sm:flex"
 	>
 		<div class="px-4 py-6">
 			<div class="flex items-center gap-2">
@@ -39,7 +45,7 @@
 					<a
 						href="/"
 						class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium {page.url
-							.pathname === '/dashboard'
+							.pathname === '/'
 							? 'bg-gray-100 text-gray-700'
 							: 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}"
 					>
@@ -109,9 +115,16 @@
 	</div>
 
 	<!-- Main Content -->
-	<div class="flex-1 p-8">
+	<main
+		class="relative min-h-[calc(100vh-4rem)] overflow-auto px-4 py-8 pb-20 sm:flex-1 sm:p-8 sm:pb-20"
+		bind:this={mainElement}
+	>
 		{@render children()}
-	</div>
-</div>
 
-<AddTransactionButton />
+		{#if page.url.pathname !== '/account'}
+			<AddTransactionButton />
+		{/if}
+	</main>
+
+	<MobileNavigation />
+</div>
