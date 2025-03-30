@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 from fastapi import APIRouter, HTTPException
 
@@ -8,9 +9,11 @@ router = APIRouter(
     prefix="/groups"
 )
 
+
 @router.get("/", tags=["groups"])
 async def read_groups():
     return [{"name": "Road Trip 2025"}, {"name": "Road Trip 2024"}]
+
 
 @router.post("/", tags=["groups"])
 async def create_group(group: CreateGroup, session: SessionDep) -> Group:
@@ -20,14 +23,28 @@ async def create_group(group: CreateGroup, session: SessionDep) -> Group:
     session.refresh(db_group)
     return db_group
 
+
 @router.put("/{group_id}", tags=["groups"])
 async def update_group(group_id: UUID, group: Group, session: SessionDep) -> Group:
     db_group = session.get(Group, group_id)
     if not db_group:
-        raise HTTPException(status_code=404, detail="Group with {group_id} ID not found")
+        raise HTTPException(
+            status_code=404, detail="Group with {group_id} ID not found")
     group_data = group.model_dump(exclude_unset=True)
     db_group.sqlmodel_update(group_data)
+    db_group.updated_at = datetime.now(timezone.utc)
     session.add(db_group)
     session.commit()
     session.refresh(db_group)
     return db_group
+
+
+@router.delete("/{group_id}", tags=["groups"])
+async def delete_group(group_id: UUID, group: Group, session: SessionDep):
+    db_group = session.get(Group, group_id)
+    if not db_group:
+        raise HTTPException(
+            status_code=404, detail="Group with {group_id} ID not found")
+    session.delete(db_group)
+    session.commit()
+    return {"ok": True}
