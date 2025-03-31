@@ -19,7 +19,6 @@ router = APIRouter(
 @router.get("/", tags=["groups"], response_model=list[Group])
 async def read_groups(session: SessionDep, token: Annotated[str, Depends(oauth2_scheme)], settings: Annotated[config.Settings, Depends(config.get_settings)]) -> list[Group]:
     user = await AuthService.get_current_user(session, token, settings)
-    print(user.id)
     statement = select(User).where(User.id == user.id)
     user = session.exec(statement).first()
     return user.groups
