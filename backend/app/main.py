@@ -1,22 +1,21 @@
-import os
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from app import config
+from app.routers import account
+from .routers import auth, groups, invites
+from .database.database import create_db_and_tables
 
-from .routers import groups, users
-from .database.database import create_db_and_tables, engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if os.getenv("PROD") != "true":
+    settings = config.get_settings()
+    if settings.PROD != True:
         create_db_and_tables()
     yield
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(users.router)
+app.include_router(account.router)
+app.include_router(auth.router)
 app.include_router(groups.router)
-
-
-@app.get("/")
-async def root():
-    return {"message": "Hello Bigger Applications!"}
+app.include_router(invites.router)

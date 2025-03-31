@@ -125,7 +125,7 @@
 		</div>
 
 		<form class="p-4" onsubmit={handleProfileUpdate}>
-			<div class="grid grid-cols-2 gap-8">
+			<div class="grid gap-8 sm:grid-cols-2">
 				<div>
 					<div class="mb-2 flex flex-col">
 						<label for="username" class="text-sm font-medium text-gray-900">Username</label>
