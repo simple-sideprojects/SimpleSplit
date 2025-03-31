@@ -1,3 +1,7 @@
 fastapi[standard]
 sqlmodel
 psycopg2-binary
+passlib[bcrypt]
+pyjwt
+python-dotenv
+pydantic-settings
