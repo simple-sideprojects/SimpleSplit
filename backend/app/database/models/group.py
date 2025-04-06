@@ -10,6 +10,8 @@ class Group(BaseModel, table=True):
         back_populates="groups",
         link_model=UsersGroups
     )
+    invites: list['GroupInvite'] = Relationship(  # type: ignore
+        back_populates="group")
 
 
 class CreateGroup(SQLModel):
