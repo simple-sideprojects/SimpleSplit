@@ -47,7 +47,8 @@ TypeScript Usage
 - Use functional components with TypeScript interfaces for props.
 - Enable strict mode in TypeScript for better type safety.
 
-
+Tanstack Query
+- https://heyapi.dev/openapi-ts/plugins/tanstack-query
 
 UI and Styling
 - Use Tailwind CSS for utility-first styling approach.

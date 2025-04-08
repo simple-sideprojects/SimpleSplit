@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { env } from '$env/dynamic/public';
+	import { onMount } from 'svelte';
 	import IconTrash from '~icons/tabler/trash';
 	import IconUserPlus from '~icons/tabler/user-plus';
 	import IconX from '~icons/tabler/x';
@@ -15,6 +16,12 @@
 	let showDeleteConfirm = $state(false);
 	let deleteConfirmation = $state('');
 	let isDeletingGroup = $state(false);
+
+	onMount(() => {
+		if (!data.group) {
+			goto('/');
+		}
+	});
 
 	async function handleAddMember(event: Event) {
 		event.preventDefault();
@@ -84,156 +91,132 @@
 			isRemovingMember = false;
 		}
 	}
-
-	async function handleDeleteGroup() {
-		if (deleteConfirmation !== data.group.name) {
-			error = 'Please type the group name correctly to confirm deletion';
-			return;
-		}
-
-		isDeletingGroup = true;
-		error = '';
-
-		try {
-			const response = await fetch(`${env.PUBLIC_BACKEND_URL}/api/groups/${data.group.id}`, {
-				method: 'DELETE'
-			});
-
-			if (!response.ok) {
-				throw new Error('Failed to delete group');
-			}
-
-			goto('/');
-		} catch (err) {
-			console.error(err);
-			error = 'Failed to delete group';
-			isDeletingGroup = false;
-		}
-	}
 </script>
 
-<div class="space-y-6">
-	<h1 class="text-xl font-bold">Group Settings</h1>
+{#if data.group}
+	<div class="space-y-6">
+		<h1 class="text-xl font-bold">Group Settings</h1>
 
-	<!-- Member Management -->
-	<div class="rounded-lg border border-gray-100 bg-white shadow-sm">
-		<div class="border-b border-gray-200 px-4 py-3">
-			<h2 class="text-base font-medium text-gray-900">Group Members</h2>
-			<p class="mt-0.5 text-sm text-gray-500">Manage who has access to this group.</p>
-		</div>
+		<!-- Member Management -->
+		<div class="rounded-lg border border-gray-100 bg-white shadow-sm">
+			<div class="border-b border-gray-200 px-4 py-3">
+				<h2 class="text-base font-medium text-gray-900">Group Members</h2>
+				<p class="mt-0.5 text-sm text-gray-500">Manage who has access to this group.</p>
+			</div>
 
-		<div class="p-4">
-			<!-- Add Member Form -->
-			<form class="mb-6" onsubmit={handleAddMember}>
-				<div class="flex gap-3">
-					<div class="flex-1">
-						<input
-							type="text"
-							placeholder="Enter username to add"
-							bind:value={newMemberUsername}
-							class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-						/>
-					</div>
-					<button
-						type="submit"
-						disabled={isAddingMember}
-						class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
-					>
-						<IconUserPlus class="size-4" />
-						{isAddingMember ? 'Adding...' : 'Add Member'}
-					</button>
-				</div>
-			</form>
-
-			{#if error}
-				<div class="mb-4 rounded-md bg-red-50 p-3">
-					<p class="text-sm text-red-700">{error}</p>
-				</div>
-			{/if}
-
-			<!-- Members List -->
-			<div class="space-y-2">
-				{#each data.group.members as member (member)}
-					<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
-						<span class="font-medium">{member}</span>
+			<div class="p-4">
+				<!-- Add Member Form -->
+				<form class="mb-6" onsubmit={handleAddMember}>
+					<div class="flex gap-3">
+						<div class="flex-1">
+							<input
+								type="text"
+								placeholder="Enter username to add"
+								bind:value={newMemberUsername}
+								class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
+							/>
+						</div>
 						<button
-							type="button"
-							class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100"
-							onclick={() => (memberToRemove = member)}
+							type="submit"
+							disabled={isAddingMember}
+							class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 						>
-							<IconTrash class="size-4" />
+							<IconUserPlus class="size-4" />
+							{isAddingMember ? 'Adding...' : 'Add Member'}
 						</button>
 					</div>
-				{/each}
+				</form>
+
+				{#if error}
+					<div class="mb-4 rounded-md bg-red-50 p-3">
+						<p class="text-sm text-red-700">{error}</p>
+					</div>
+				{/if}
+
+				<!-- Members List -->
+				<div class="space-y-2">
+					{#each data.group.users ?? [] as member (member.id)}
+						<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
+							<span class="font-medium">{member.username}</span>
+							<button
+								type="button"
+								class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100"
+								onclick={() => (memberToRemove = member.id)}
+							>
+								<IconTrash class="size-4" />
+							</button>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+
+		<!-- Delete Group -->
+		<div class="rounded-lg border border-gray-100 bg-white shadow-sm">
+			<div class="border-b border-gray-200 px-4 py-3">
+				<h2 class="text-base font-medium text-gray-900">Delete Group</h2>
+				<p class="mt-0.5 text-sm text-gray-500">
+					Once you delete a group, there is no going back. Please be certain.
+				</p>
+			</div>
+
+			<div class="p-4">
+				{#if !showDeleteConfirm}
+					<div class="flex justify-end">
+						<button
+							type="button"
+							onclick={() => (showDeleteConfirm = true)}
+							class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
+						>
+							<IconTrash class="size-4" />
+							Delete Group
+						</button>
+					</div>
+				{:else}
+					<form action="?/deleteGroup" method="POST">
+						<div class="mb-2 flex flex-col">
+							<label for="confirm" class="text-sm font-medium text-gray-900">Confirm Deletion</label
+							>
+							<span class="mt-0.5 text-xs text-gray-500"
+								>Please type "{data.group.name}" to confirm</span
+							>
+						</div>
+						<input
+							type="text"
+							name="confirm"
+							id="confirm"
+							bind:value={deleteConfirmation}
+							required
+							class="cursor-po w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:text-sm"
+							placeholder="Enter group name to confirm"
+						/>
+
+						<div class="mt-4 flex justify-end gap-3">
+							<button
+								type="button"
+								onclick={() => {
+									showDeleteConfirm = false;
+									deleteConfirmation = '';
+								}}
+								class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
+							>
+								Cancel
+							</button>
+							<button
+								type="submit"
+								disabled={isDeletingGroup || deleteConfirmation !== data.group.name}
+								class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+							>
+								<IconTrash class="size-4" />
+								{isDeletingGroup ? 'Deleting...' : 'Confirm Delete'}
+							</button>
+						</div>
+					</form>
+				{/if}
 			</div>
 		</div>
 	</div>
-
-	<!-- Delete Group -->
-	<div class="rounded-lg border border-gray-100 bg-white shadow-sm">
-		<div class="border-b border-gray-200 px-4 py-3">
-			<h2 class="text-base font-medium text-gray-900">Delete Group</h2>
-			<p class="mt-0.5 text-sm text-gray-500">
-				Once you delete a group, there is no going back. Please be certain.
-			</p>
-		</div>
-
-		<div class="p-4">
-			{#if !showDeleteConfirm}
-				<div class="flex justify-end">
-					<button
-						type="button"
-						onclick={() => (showDeleteConfirm = true)}
-						class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
-					>
-						<IconTrash class="size-4" />
-						Delete Group
-					</button>
-				</div>
-			{:else}
-				<div>
-					<div class="mb-2 flex flex-col">
-						<label for="confirm" class="text-sm font-medium text-gray-900">Confirm Deletion</label>
-						<span class="mt-0.5 text-xs text-gray-500"
-							>Please type "{data.group.name}" to confirm</span
-						>
-					</div>
-					<input
-						type="text"
-						name="confirm"
-						id="confirm"
-						bind:value={deleteConfirmation}
-						required
-						class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:text-sm"
-						placeholder="Enter group name to confirm"
-					/>
-				</div>
-
-				<div class="mt-4 flex justify-end gap-3">
-					<button
-						type="button"
-						onclick={() => {
-							showDeleteConfirm = false;
-							deleteConfirmation = '';
-						}}
-						class="rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
-					>
-						Cancel
-					</button>
-					<button
-						type="button"
-						disabled={isDeletingGroup || deleteConfirmation !== data.group.name}
-						class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
-						onclick={handleDeleteGroup}
-					>
-						<IconTrash class="size-4" />
-						{isDeletingGroup ? 'Deleting...' : 'Confirm Delete'}
-					</button>
-				</div>
-			{/if}
-		</div>
-	</div>
-</div>
+{/if}
 
 <!-- Remove Member Confirmation Dialog -->
 {#if memberToRemove}

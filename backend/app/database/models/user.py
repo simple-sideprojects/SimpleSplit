@@ -1,5 +1,5 @@
 from uuid import UUID
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 from pydantic import EmailStr
 
 from app.database.models.base import BaseModel
@@ -20,13 +20,13 @@ class User(BaseModel, table=True):
     )
 
 
-class UserCreate(PydanticBaseModel):
+class UserCreate(SQLModel):
     email: EmailStr
     password: str
     username: str
 
 
-class UserResponse(PydanticBaseModel):
+class UserResponse(SQLModel):
     id: UUID
     email: EmailStr
     username: str

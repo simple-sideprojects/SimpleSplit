@@ -1,5 +1,17 @@
+<script lang="ts">
+	import { superForm } from 'sveltekit-superforms/client';
+
+	const { data } = $props();
+
+	const { form, errors, enhance, submit, message } = superForm(data.form, {
+		resetForm: false
+	});
+</script>
+
 <div class="flex h-screen items-center justify-center">
-	<div class="flex flex-col justify-center rounded-lg border border-gray-300 px-6 py-12 lg:px-8">
+	<div
+		class="flex w-full flex-col justify-center rounded-lg p-12 sm:w-md sm:border sm:border-gray-300 sm:px-6 lg:px-8"
+	>
 		<div class="sm:mx-auto sm:w-full sm:max-w-sm">
 			<img class="mx-auto h-10 w-auto" src="/simple-sideprojects.webp" alt="Simple Split" />
 			<h2 class="mt-8 text-center text-2xl/9 font-bold tracking-tight text-gray-900">
@@ -8,7 +20,17 @@
 		</div>
 
 		<div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-			<form class="space-y-6" action="#" method="POST">
+			<form class="space-y-6" method="POST" use:enhance>
+				{#if $message}
+					<div class="rounded-md bg-red-50 p-4">
+						<div class="flex">
+							<div class="text-sm text-red-700">
+								{$message}
+							</div>
+						</div>
+					</div>
+				{/if}
+
 				<div>
 					<label for="email" class="block text-sm/6 font-medium text-gray-900">Email Address</label>
 					<div class="mt-2">
@@ -18,8 +40,15 @@
 							id="email"
 							autocomplete="email"
 							required
-							class="w-full rounded border border-gray-300 px-3 py-1.5 text-base text-gray-900 placeholder:text-gray-400 sm:text-sm/6"
+							bind:value={$form.email}
+							class="w-full rounded border px-3 py-1.5 text-base text-gray-900 placeholder:text-gray-400 sm:text-sm/6 {$errors.email
+								? 'border-red-500'
+								: 'border-gray-300'}"
+							aria-invalid={$errors.email ? 'true' : 'false'}
 						/>
+						{#if $errors.email}
+							<p class="mt-1 text-sm text-red-600">This is not a valid email address</p>
+						{/if}
 					</div>
 				</div>
 
@@ -39,8 +68,15 @@
 							id="password"
 							autocomplete="current-password"
 							required
-							class="w-full rounded border border-gray-300 px-3 py-1.5 text-base text-gray-900 placeholder:text-gray-400 sm:text-sm/6"
+							bind:value={$form.password}
+							class="w-full rounded border px-3 py-1.5 text-base text-gray-900 placeholder:text-gray-400 sm:text-sm/6 {$errors.password
+								? 'border-red-500'
+								: 'border-gray-300'}"
+							aria-invalid={$errors.password ? 'true' : 'false'}
 						/>
+						{#if $errors.password}
+							<p class="mt-1 text-sm text-red-600">This is not a valid password</p>
+						{/if}
 					</div>
 				</div>
 
@@ -48,8 +84,9 @@
 					<button
 						type="submit"
 						class="flex w-full justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-						>Sign in</button
 					>
+						Sign in
+					</button>
 				</div>
 			</form>
 			<p class="mt-10 text-center text-sm/6 text-gray-500">

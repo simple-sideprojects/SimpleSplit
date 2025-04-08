@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
-	import { env } from '$env/dynamic/public';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
-	import type { Group } from '$lib/interfaces';
+	import type { Group } from '$lib/client';
 	import { onMount } from 'svelte';
 	import IconDashboard from '~icons/tabler/dashboard';
 	import IconPlus from '~icons/tabler/plus';
@@ -11,14 +10,17 @@
 	import IconUser from '~icons/tabler/user';
 	import IconUsers from '~icons/tabler/users';
 
-	let { children } = $props();
+	let { data, children } = $props();
 
 	let groups: Group[] = $state([]);
 	let mainElement: HTMLElement;
 
 	onMount(async () => {
-		const response = await fetch(`${env.PUBLIC_BACKEND_URL}/api/groups`);
-		groups = await response.json();
+		if (!data.groups) {
+			return;
+		}
+
+		groups = data.groups;
 	});
 
 	afterNavigate(() => {
@@ -101,8 +103,10 @@
 
 					<div>
 						<p class="text-xs">
-							<strong class="block font-medium">Max Mustermann</strong>
-							<span>max@mustermann.de</span>
+							<strong class="block font-medium">
+								{data.user.username ? data.user.username : data.user.email}
+							</strong>
+							<span>{data.user.email}</span>
 						</p>
 					</div>
 				</div>
