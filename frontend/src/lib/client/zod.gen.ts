@@ -122,6 +122,8 @@ export const zReadGroupGroupsGroupIdGetResponse = zGroupWithUsersResponse;
 
 export const zUpdateGroupGroupsGroupIdPutResponse = zGroup;
 
+export const zDeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteResponse = zGroupWithUsersResponse;
+
 export const zGetMyInvitesInvitesMyInvitesGetResponse = z.array(zGroupInviteResponse);
 
 export const zGenerateInviteLinkInvitesGroupIdGeneratePostResponse = zInvitationTokenResponse;

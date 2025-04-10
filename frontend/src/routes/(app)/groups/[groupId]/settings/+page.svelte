@@ -1,21 +1,43 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
-	import { env } from '$env/dynamic/public';
 	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import { superForm } from 'sveltekit-superforms/client';
+	import IconCopy from '~icons/tabler/copy';
 	import IconTrash from '~icons/tabler/trash';
 	import IconUserPlus from '~icons/tabler/user-plus';
 	import IconX from '~icons/tabler/x';
 
 	let { data } = $props();
 
-	let newMemberUsername = $state('');
-	let error = $state('');
-	let isAddingMember = $state(false);
+	const {
+		form: inviteMemberForm,
+		enhance: enhanceInvite,
+		submitting: inviteSubmitting
+	} = superForm(data.inviteMemberForm, {
+		resetForm: true,
+		onResult: ({ result }) => {
+			if (result.type === 'success') {
+				// Update local data with the changes from the server
+				if (result.data?.group) {
+					data.group = result.data.group;
+				}
+
+				// Show success toast
+				if ($inviteMemberForm.email) {
+					toast.success(`Invitation sent to ${$inviteMemberForm.email}`);
+				}
+			}
+		}
+	});
+
 	let memberToRemove = $state<string | null>(null);
-	let isRemovingMember = $state(false);
 	let showDeleteConfirm = $state(false);
 	let deleteConfirmation = $state('');
 	let isDeletingGroup = $state(false);
+	let isRemovingMember = $state(false);
+	let isCancelingInvite = $state(false);
 
 	onMount(() => {
 		if (!data.group) {
@@ -23,73 +45,15 @@
 		}
 	});
 
-	async function handleAddMember(event: Event) {
-		event.preventDefault();
-
-		if (!newMemberUsername.trim()) {
-			error = 'Please enter a username';
-			return;
-		}
-
-		isAddingMember = true;
-		error = '';
-
-		try {
-			const response = await fetch(
-				`${env.PUBLIC_BACKEND_URL}/api/groups/${data.group.id}/members`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({ username: newMemberUsername })
-				}
-			);
-
-			if (!response.ok) {
-				const statusText = response.statusText;
-				throw new Error(statusText || 'Failed to add member');
+	function copyToClipboard(text: string) {
+		navigator.clipboard.writeText(text).then(
+			() => {
+				toast.success('Link copied to clipboard');
+			},
+			() => {
+				toast.error('Failed to copy link');
 			}
-
-			const updatedGroup = await response.json();
-			data.group = updatedGroup;
-			newMemberUsername = '';
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to add member';
-		} finally {
-			isAddingMember = false;
-		}
-	}
-
-	async function handleRemoveMember(username: string | null) {
-		if (!username) {
-			return;
-		}
-
-		isRemovingMember = true;
-		error = '';
-
-		try {
-			const response = await fetch(
-				`${env.PUBLIC_BACKEND_URL}/api/groups/${data.group.id}/members/${username}`,
-				{
-					method: 'DELETE'
-				}
-			);
-
-			if (!response.ok) {
-				throw new Error('Failed to remove member');
-			}
-
-			const updatedGroup = await response.json();
-			data.group = updatedGroup;
-			memberToRemove = null;
-		} catch (err) {
-			console.error(err);
-			error = 'Failed to remove member';
-		} finally {
-			isRemovingMember = false;
-		}
+		);
 	}
 </script>
 
@@ -106,41 +70,46 @@
 
 			<div class="p-4">
 				<!-- Add Member Form -->
-				<form class="mb-6" onsubmit={handleAddMember}>
+				<form action="?/inviteMember" method="POST" use:enhanceInvite>
 					<div class="flex gap-3">
 						<div class="flex-1">
 							<input
-								type="text"
-								placeholder="Enter username to add"
-								bind:value={newMemberUsername}
+								type="email"
+								name="email"
+								bind:value={$inviteMemberForm.email}
+								placeholder="Enter email to invite"
 								class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
 							/>
 						</div>
 						<button
 							type="submit"
-							disabled={isAddingMember}
-							class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+							disabled={$inviteSubmitting}
+							class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 						>
 							<IconUserPlus class="size-4" />
-							{isAddingMember ? 'Adding...' : 'Add Member'}
+							{$inviteSubmitting ? 'Inviting...' : 'Invite Member'}
 						</button>
 					</div>
 				</form>
 
-				{#if error}
-					<div class="mb-4 rounded-md bg-red-50 p-3">
-						<p class="text-sm text-red-700">{error}</p>
+				{#if data?.inviteMemberForm?.errors.email}
+					<div class="mt-2 rounded-md bg-red-50 p-3">
+						<p class="text-sm text-red-700">{data.inviteMemberForm.errors.email}</p>
 					</div>
 				{/if}
 
-				<!-- Members List -->
+				<!-- Active Members List -->
+				<h3 class="mt-4 mb-2 text-sm font-medium text-gray-700">Active Members</h3>
 				<div class="space-y-2">
 					{#each data.group.users ?? [] as member (member.id)}
 						<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
-							<span class="font-medium">{member.username}</span>
+							<span class="text-sm">
+								{member.username}
+								<span class="text-gray-500">({member.email})</span>
+							</span>
 							<button
 								type="button"
-								class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100"
+								class="cursor-pointer rounded-lg p-1.5 text-gray-500 hover:bg-gray-100"
 								onclick={() => (memberToRemove = member.id)}
 							>
 								<IconTrash class="size-4" />
@@ -148,6 +117,62 @@
 						</div>
 					{/each}
 				</div>
+
+				<!-- Pending Invitations -->
+				{#if data.group.invites && data.group.invites.length > 0}
+					<h3 class="mt-4 mb-2 text-sm font-medium text-gray-700">Pending Invitations</h3>
+					<div class="space-y-2">
+						{#each data.group.invites as invite (invite.id)}
+							<div
+								class="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3"
+							>
+								<div class="flex items-center text-sm text-gray-600">
+									{#if invite.email}
+										{invite.email}
+									{:else}
+										<button
+											class="mr-1.5 cursor-pointer text-gray-500 hover:text-gray-700"
+											onclick={() =>
+												copyToClipboard(
+													`${document.location.origin}/groups/invite/${invite.token}`
+												)}
+										>
+											<IconCopy class="size-4" />
+										</button>
+										<span class="truncate"
+											>{document.location.origin}/groups/invite/{invite.token}</span
+										>
+									{/if}
+								</div>
+								<form
+									action="?/cancelInvite"
+									method="POST"
+									use:enhance={({ formData }) => {
+										isCancelingInvite = true;
+
+										return async ({ update, result }) => {
+											await update();
+											isCancelingInvite = false;
+
+											if (result.type === 'success') {
+												toast.success('Invitation canceled');
+											}
+										};
+									}}
+								>
+									<input type="hidden" name="inviteId" value={invite.id} />
+									<button
+										type="submit"
+										disabled={isCancelingInvite}
+										class="cursor-pointer rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 disabled:opacity-50"
+									>
+										<IconX class="size-4" />
+									</button>
+								</form>
+							</div>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		</div>
 
@@ -173,7 +198,16 @@
 						</button>
 					</div>
 				{:else}
-					<form action="?/deleteGroup" method="POST">
+					<form
+						action="?/deleteGroup"
+						method="POST"
+						use:enhance={() => {
+							isDeletingGroup = true;
+							return async () => {
+								toast.success('Group deleted successfully');
+							};
+						}}
+					>
 						<div class="mb-2 flex flex-col">
 							<label for="confirm" class="text-sm font-medium text-gray-900">Confirm Deletion</label
 							>
@@ -187,7 +221,7 @@
 							id="confirm"
 							bind:value={deleteConfirmation}
 							required
-							class="cursor-po w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:text-sm"
+							class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:text-sm"
 							placeholder="Enter group name to confirm"
 						/>
 
@@ -234,7 +268,7 @@
 				<div class="absolute top-0 right-0 hidden pt-4 pr-4 sm:block">
 					<button
 						type="button"
-						class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
+						class="cursor-pointer rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
 						onclick={() => (memberToRemove = null)}
 					>
 						<span class="sr-only">Close</span>
@@ -247,29 +281,48 @@
 						<h3 class="text-lg leading-6 font-medium text-gray-900">Remove Member</h3>
 						<div class="mt-2">
 							<p class="text-sm text-gray-500">
-								Are you sure you want to remove {memberToRemove} from this group? This action cannot
-								be undone.
+								Are you sure you want to remove this member from the group? This action cannot be
+								undone.
 							</p>
 						</div>
 					</div>
 				</div>
 
 				<div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-					<button
-						type="button"
-						class="inline-flex w-full justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
-						onclick={() => handleRemoveMember(memberToRemove)}
-						disabled={isRemovingMember}
+					<form
+						action="?/removeMember"
+						method="POST"
+						use:enhance={() => {
+							isRemovingMember = true;
+							return async ({ update, result }) => {
+								await update();
+								isRemovingMember = false;
+								memberToRemove = null;
+
+								if (result.type === 'success') {
+									toast.success('Member removed successfully');
+								}
+							};
+						}}
 					>
-						{isRemovingMember ? 'Removing...' : 'Remove'}
-					</button>
-					<button
-						type="button"
-						class="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
-						onclick={() => (memberToRemove = null)}
-					>
-						Cancel
-					</button>
+						<input type="hidden" name="userId" value={memberToRemove} />
+						<div class="sm:flex sm:flex-row-reverse">
+							<button
+								type="submit"
+								disabled={isRemovingMember}
+								class="inline-flex w-full cursor-pointer justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50 sm:ml-3 sm:w-auto sm:text-sm"
+							>
+								{isRemovingMember ? 'Removing...' : 'Remove'}
+							</button>
+							<button
+								type="button"
+								class="mt-3 inline-flex w-full cursor-pointer justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+								onclick={() => (memberToRemove = null)}
+							>
+								Cancel
+							</button>
+						</div>
+					</form>
 				</div>
 			</div>
 		</div>

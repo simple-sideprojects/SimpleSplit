@@ -14,6 +14,9 @@ importers:
       '@inlang/paraglide-sveltekit':
         specifier: ^0.15.5
         version: 0.15.5(@sveltejs/kit@2.19.0(@sveltejs/vite-plugin-svelte@5.0.3(svelte@5.22.6)(vite@6.2.1(@types/node@22.13.10)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)))(svelte@5.22.6)(vite@6.2.1(@types/node@22.13.10)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)))
+      svelte-sonner:
+        specifier: ^0.3.28
+        version: 0.3.28(svelte@5.22.6)
     devDependencies:
       '@eslint/compat':
         specifier: ^1.2.5
@@ -2625,6 +2628,11 @@ packages:
     peerDependenciesMeta:
       svelte:
         optional: true
+
+  svelte-sonner@0.3.28:
+    resolution: {integrity: sha512-K3AmlySeFifF/cKgsYNv5uXqMVNln0NBAacOYgmkQStLa/UoU0LhfAACU6Gr+YYC8bOCHdVmFNoKuDbMEsppJg==}
+    peerDependencies:
+      svelte: ^3.0.0 || ^4.0.0 || ^5.0.0-next.1
 
   svelte@5.22.6:
     resolution: {integrity: sha512-dxHyh3USJyayafSt5I5QD7KuoCM5ZGdIOtLQiKHEro7tymdh0jMcNkiSBVHW+LOA2jEqZEHhyfwN6/pCjx0Fug==}
@@ -5602,6 +5610,10 @@ snapshots:
       postcss-scss: 4.0.9(postcss@8.5.3)
       postcss-selector-parser: 7.1.0
     optionalDependencies:
+      svelte: 5.22.6
+
+  svelte-sonner@0.3.28(svelte@5.22.6):
+    dependencies:
       svelte: 5.22.6
 
   svelte@5.22.6:

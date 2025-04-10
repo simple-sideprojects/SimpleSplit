@@ -55,7 +55,8 @@
 	},
 	"dependencies": {
 		"@hey-api/client-fetch": "^0.10.0",
-		"@inlang/paraglide-sveltekit": "^0.15.5"
+		"@inlang/paraglide-sveltekit": "^0.15.5",
+		"svelte-sonner": "^0.3.28"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

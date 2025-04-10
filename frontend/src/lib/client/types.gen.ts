@@ -266,6 +266,34 @@ export type UpdateGroupGroupsGroupIdPutResponses = {
 
 export type UpdateGroupGroupsGroupIdPutResponse = UpdateGroupGroupsGroupIdPutResponses[keyof UpdateGroupGroupsGroupIdPutResponses];
 
+export type DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteData = {
+    body?: never;
+    path: {
+        group_id: string;
+        user_id: string;
+    };
+    query?: never;
+    url: '/groups/{group_id}/users/{user_id}';
+};
+
+export type DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteError = DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteErrors[keyof DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteErrors];
+
+export type DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: GroupWithUsersResponse;
+};
+
+export type DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteResponse = DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteResponses[keyof DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteResponses];
+
 export type GetMyInvitesInvitesMyInvitesGetData = {
     body?: never;
     path?: never;

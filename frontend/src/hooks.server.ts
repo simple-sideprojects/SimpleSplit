@@ -26,13 +26,5 @@ export const handle = sequence(handleParaglide, handleAuth);
 if (dev) {
 	const { server } = await import('./mocks/server');
 
-	server.listen({
-		onUnhandledRequest(request, print) {
-			if (!request.url.includes('mocked')) {
-				return;
-			}
-
-			print.warning();
-		}
-	});
+	server.listen();
 }

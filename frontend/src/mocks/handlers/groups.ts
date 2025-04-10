@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/public';
 import { http, HttpResponse } from 'msw';
+import { bypassOrMock } from '../helpers/bypass-request';
 
 const groups = [
 	{
@@ -43,38 +44,64 @@ groupsBalanceMap.set('3', [
 	{ username: 'Thomas Weber', balance: -1000 } // -10.00
 ]);
 
-export const groupsMock = http.get(`${env.PUBLIC_BACKEND_URL}/api/groups`, () => {
-	return HttpResponse.json(groups);
+export const groupsMock = http.get(`${env.PUBLIC_BACKEND_URL}/groups`, async ({ request }) => {
+	return bypassOrMock(request, HttpResponse.json(groups));
 });
 
 export const groupByIdMock = http.get(
-	`${env.PUBLIC_BACKEND_URL}/api/groups/:groupId`,
-	({ params }) => {
-		return HttpResponse.json(groups.find((group) => group.id === Number(params.groupId)));
+	`${env.PUBLIC_BACKEND_URL}/groups/:groupId`,
+	async ({ params, request }) => {
+		return bypassOrMock(
+			request,
+			HttpResponse.json(groups.find((group) => group.id === Number(params.groupId)))
+		);
 	}
 );
 
 export const createGroupMock = http.post(
 	`${env.PUBLIC_BACKEND_URL}/api/groups`,
 	async ({ request }) => {
-		return HttpResponse.json({
-			id: 4,
-			name: request.formData.name,
-			members: ['Max Mustermann'],
-			created_at: new Date().toISOString()
-		});
+		return bypassOrMock(
+			request,
+			HttpResponse.json({
+				id: 4,
+				name: request.formData.name,
+				members: ['Max Mustermann'],
+				created_at: new Date().toISOString()
+			})
+		);
+	}
+);
+
+export const updateGroupMock = http.put(
+	`${env.PUBLIC_BACKEND_URL}/groups/:groupId`,
+	async ({ params, request }) => {
+		return bypassOrMock(
+			request,
+			HttpResponse.json(groups.find((group) => group.id === Number(params.groupId)))
+		);
+	}
+);
+
+export const deleteGroupMock = http.delete(
+	`${env.PUBLIC_BACKEND_URL}/groups/:groupId`,
+	async ({ params, request }) => {
+		return bypassOrMock(
+			request,
+			HttpResponse.json(groups.find((group) => group.id === Number(params.groupId)))
+		);
 	}
 );
 
 export const balanceByGroupMock = http.get(
-	`${env.PUBLIC_BACKEND_URL}/api/groups/:groupId/balance`,
-	({ params }) => {
-		return HttpResponse.json(groupsBalanceMap.get(params.groupId));
+	`${env.PUBLIC_BACKEND_URL}/groups/:groupId/balance`,
+	async ({ request }) => {
+		return bypassOrMock(request, HttpResponse.json(groupsBalanceMap.get('1')));
 	}
 );
 
 export const addGroupMemberMock = http.post(
-	`${env.PUBLIC_BACKEND_URL}/api/groups/:groupId/members`,
+	`${env.PUBLIC_BACKEND_URL}/groups/:groupId/members`,
 	async ({ params, request }) => {
 		const group = groups.find((g) => g.id === Number(params.groupId));
 		if (!group) {
@@ -95,7 +122,7 @@ export const addGroupMemberMock = http.post(
 );
 
 export const removeGroupMemberMock = http.delete(
-	`${env.PUBLIC_BACKEND_URL}/api/groups/:groupId/members/:username`,
+	`${env.PUBLIC_BACKEND_URL}/groups/:groupId/members/:username`,
 	({ params }) => {
 		const group = groups.find((g) => g.id === Number(params.groupId));
 		if (!group) {
@@ -124,7 +151,7 @@ export const removeGroupMemberMock = http.delete(
 );
 
 export const recentByGroupMock = http.get(
-	`${env.PUBLIC_BACKEND_URL}/api/groups/:groupId/recent`,
+	`${env.PUBLIC_BACKEND_URL}/groups/:groupId/recent`,
 	() => {
 		return HttpResponse.json([
 			{

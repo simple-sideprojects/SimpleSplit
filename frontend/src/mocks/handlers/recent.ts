@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/public';
 import { http, HttpResponse } from 'msw';
 
-export const recentMock = http.get(`${env.PUBLIC_BACKEND_URL}/api/recent`, () => {
+export const recentMock = http.get(`${env.PUBLIC_BACKEND_URL}/recent`, () => {
 	return HttpResponse.json([
 		{
 			id: 1,

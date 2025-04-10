@@ -83,3 +83,22 @@ async def delete_group(
     session.delete(db_group)
     session.commit()
     return {"message": "Group deleted successfully"}
+
+
+@router.delete("/{group_id}/users/{user_id}", tags=["groups"], response_model=GroupWithUsersResponse)
+async def delete_user_from_group(
+    group_id: UUID,
+    user_id: UUID,
+    session: SessionDep,
+    db_group: Annotated[Group, Depends(is_user_in_group)]
+) -> Group:
+    user = next((u for u in db_group.users if u.id == user_id), None)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_group.users.remove(user)
+    session.add(db_group)
+    session.commit()
+    session.refresh(db_group)
+
+    return db_group

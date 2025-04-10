@@ -1,3 +1,4 @@
+import { getAccountMock } from './handlers/account';
 import { balanceMock } from './handlers/balance';
 import {
 	addGroupMemberMock,
@@ -31,5 +32,6 @@ export const handlers = [
 	getTransactionsMock,
 	getTotalTransactionsMock,
 	updateTransactionMock,
-	deleteTransactionMock
+	deleteTransactionMock,
+	getAccountMock
 ];
