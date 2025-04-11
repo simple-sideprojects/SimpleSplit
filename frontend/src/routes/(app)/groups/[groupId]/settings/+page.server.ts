@@ -1,6 +1,7 @@
 import {
 	deleteGroupGroupsGroupIdDelete,
 	deleteUserFromGroupGroupsGroupIdUsersUserIdDelete,
+	generateInviteLinkInvitesGroupIdGeneratePost,
 	inviteByEmailInvitesGroupIdEmailPost,
 	readGroupGroupsGroupIdGet,
 	rejectInviteInvitesRejectTokenDelete,
@@ -10,6 +11,7 @@ import { zGroupInviteCreate, zUpdateGroup } from '$lib/client/zod.gen';
 import { fail, redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
+import { z } from 'zod';
 
 export async function load({ params }) {
 	const { data: group } = await readGroupGroupsGroupIdGet({
@@ -57,13 +59,17 @@ export const actions = {
 		throw redirect(303, '/');
 	},
 	inviteMember: async ({ request, params }) => {
-		const form = await superValidate(request, zod(zGroupInviteCreate));
+		const inviteMemberForm = await superValidate(
+			request,
+			zod(
+				z.object({
+					email: z.string().email()
+				})
+			)
+		);
 
-		if (!form.valid) {
-			return fail(400, {
-				form,
-				error: 'Email is required'
-			});
+		if (!inviteMemberForm.valid) {
+			return setError(inviteMemberForm, 'email', 'A valid email is required');
 		}
 
 		await inviteByEmailInvitesGroupIdEmailPost({
@@ -71,10 +77,10 @@ export const actions = {
 				group_id: params.groupId
 			},
 			body: {
-				email: form.data.email
+				email: inviteMemberForm.data.email
 			}
 		}).catch(() => {
-			return setError(form, 'email', 'Failed to invite member');
+			return setError(inviteMemberForm, 'email', 'Failed to invite member');
 		});
 
 		// Fetch updated group data with the new invitation
@@ -84,50 +90,60 @@ export const actions = {
 			}
 		});
 
-		// Reset form for next use
-		const newForm = await superValidate(zod(zGroupInviteCreate));
-
 		return {
-			inviteMemberForm: newForm,
-			group: updatedGroup,
-			success: true
+			inviteMemberForm,
+			group: updatedGroup
 		};
 	},
-	cancelInvite: async ({ request, params }) => {
-		const data = await request.formData();
-		const inviteId = data.get('inviteId')?.toString();
-
-		if (!inviteId) {
-			return fail(400, {
-				error: 'Invite ID is required'
-			});
-		}
-
-		// Find the invite token using the inviteId
-		const { data: group } = await readGroupGroupsGroupIdGet({
+	generateInviteLink: async ({ params }) => {
+		const { data: inviteData } = await generateInviteLinkInvitesGroupIdGeneratePost({
 			path: {
 				group_id: params.groupId
 			}
 		});
 
-		const invite = group?.invites?.find((inv) => inv.id === inviteId);
+		if (!inviteData) {
+			return fail(500, {
+				error: 'Failed to generate invite link'
+			});
+		}
 
-		if (!invite) {
-			return fail(404, {
-				error: 'Invite not found'
+		// Fetch updated group data with the new invitation
+		const { data: updatedGroup } = await readGroupGroupsGroupIdGet({
+			path: {
+				group_id: params.groupId
+			}
+		});
+
+		return {
+			group: updatedGroup,
+			invite: inviteData
+		};
+	},
+	cancelInvite: async ({ request, params }) => {
+		const data = await request.formData();
+		const inviteToken = data.get('inviteToken')?.toString();
+
+		if (!inviteToken) {
+			return fail(400, {
+				error: 'Invite token is required'
 			});
 		}
 
 		// Reject the invite using the token
-		await rejectInviteInvitesRejectTokenDelete({
+		const { data: rejectionResponse } = await rejectInviteInvitesRejectTokenDelete({
 			path: {
-				token: invite.token
+				token: inviteToken
 			}
-		}).catch(() => {
+		});
+
+		console.log(rejectionResponse);
+
+		if (!rejectionResponse) {
 			return fail(500, {
 				error: 'Failed to cancel invitation'
 			});
-		});
+		}
 
 		// Fetch updated group data
 		const { data: updatedGroup } = await readGroupGroupsGroupIdGet({
@@ -137,8 +153,7 @@ export const actions = {
 		});
 
 		return {
-			group: updatedGroup,
-			success: true
+			group: updatedGroup
 		};
 	},
 	removeMember: async ({ request, params }) => {

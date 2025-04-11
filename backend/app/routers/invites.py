@@ -213,14 +213,18 @@ async def reject_invite(
             detail="Invalid invitation"
         )
 
-    if invite.email and invite.email != user.email:
+    email_matches_user = invite.email and invite.email == user.email
+    invite_belongs_to_user_in_group = invite.group_id in [
+        group.id for group in user.groups
+    ]
+
+    if not email_matches_user and not invite_belongs_to_user_in_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This invitation is for a different user"
+            detail="Invalid invitation"
         )
 
-    if invite.email:
-        session.delete(invite)
-        session.commit()
+    session.delete(invite)
+    session.commit()
 
     return {"message": "Invitation rejected successfully"}

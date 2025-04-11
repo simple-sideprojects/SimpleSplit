@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { superForm } from 'sveltekit-superforms/client';
 	import IconCopy from '~icons/tabler/copy';
+	import IconLink from '~icons/tabler/link';
 	import IconTrash from '~icons/tabler/trash';
 	import IconUserPlus from '~icons/tabler/user-plus';
 	import IconX from '~icons/tabler/x';
@@ -14,7 +16,8 @@
 	const {
 		form: inviteMemberForm,
 		enhance: enhanceInvite,
-		submitting: inviteSubmitting
+		submitting: inviteSubmitting,
+		errors: inviteMemberErrors
 	} = superForm(data.inviteMemberForm, {
 		resetForm: true,
 		onResult: ({ result }) => {
@@ -70,8 +73,8 @@
 
 			<div class="p-4">
 				<!-- Add Member Form -->
-				<form action="?/inviteMember" method="POST" use:enhanceInvite>
-					<div class="flex gap-3">
+				<div class="flex gap-3">
+					<form action="?/inviteMember" method="POST" class="flex flex-1 gap-3" use:enhanceInvite>
 						<div class="flex-1">
 							<input
 								type="email"
@@ -89,12 +92,38 @@
 							<IconUserPlus class="size-4" />
 							{$inviteSubmitting ? 'Inviting...' : 'Invite Member'}
 						</button>
-					</div>
-				</form>
+					</form>
 
-				{#if data?.inviteMemberForm?.errors.email}
+					<form
+						action="?/generateInviteLink"
+						method="POST"
+						use:enhance={() => {
+							return async ({ result, update }) => {
+								if (result.type === 'success' && browser && result.data?.invite) {
+									const invite = result.data.invite as { token: string };
+									const link = `${document.location.origin}/groups/invite/${invite.token}`;
+									copyToClipboard(link);
+									toast.success('Invite link copied to clipboard');
+									await update();
+								}
+							};
+						}}
+					>
+						<button
+							type="submit"
+							class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+						>
+							<IconLink class="size-4" />
+							Create Link
+						</button>
+					</form>
+				</div>
+
+				{#if $inviteMemberErrors.email}
 					<div class="mt-2 rounded-md bg-red-50 p-3">
-						<p class="text-sm text-red-700">{data.inviteMemberForm.errors.email}</p>
+						<p class="text-sm text-red-700">
+							{$inviteMemberErrors.email[$inviteMemberErrors.email.length - 1]}
+						</p>
 					</div>
 				{/if}
 
@@ -129,7 +158,7 @@
 								<div class="flex items-center text-sm text-gray-600">
 									{#if invite.email}
 										{invite.email}
-									{:else}
+									{:else if browser}
 										<button
 											class="mr-1.5 cursor-pointer text-gray-500 hover:text-gray-700"
 											onclick={() =>
@@ -147,7 +176,7 @@
 								<form
 									action="?/cancelInvite"
 									method="POST"
-									use:enhance={({ formData }) => {
+									use:enhance={() => {
 										isCancelingInvite = true;
 
 										return async ({ update, result }) => {
@@ -160,7 +189,7 @@
 										};
 									}}
 								>
-									<input type="hidden" name="inviteId" value={invite.id} />
+									<input type="hidden" name="inviteToken" value={invite.token} />
 									<button
 										type="submit"
 										disabled={isCancelingInvite}
