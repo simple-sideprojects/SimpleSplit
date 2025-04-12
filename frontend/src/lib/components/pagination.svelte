@@ -42,7 +42,7 @@
 	<div class="flex items-center gap-2">
 		<button
 			type="button"
-			class="inline-flex items-center rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+			class="inline-flex cursor-pointer items-center rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 			disabled={currentPage === 1}
 			onclick={() => onPageChange(currentPage - 1)}
 		>
@@ -56,7 +56,7 @@
 				{:else}
 					<button
 						type="button"
-						class="rounded-lg border border-gray-200 px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-50 {page ===
+						class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-50 {page ===
 						currentPage
 							? 'border-blue-600 bg-blue-50 text-blue-600'
 							: ''}"
@@ -71,7 +71,7 @@
 
 		<button
 			type="button"
-			class="inline-flex items-center rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+			class="inline-flex cursor-pointer items-center rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 			disabled={currentPage === totalPages}
 			onclick={() => onPageChange(currentPage + 1)}
 		>
