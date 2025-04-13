@@ -1,6 +1,8 @@
 from typing import Optional, TYPE_CHECKING
-from sqlmodel import Field, Relationship, SQLModel
+from typing import List
+from sqlmodel import Field, Relationship, Relationship, SQLModel
 from app.database.models.base import BaseModel
+from app.database.models.transaction import Transaction
 from app.database.models.users_groups import UsersGroups
 from uuid import UUID
 
@@ -13,6 +15,7 @@ if TYPE_CHECKING:
 class Group(BaseModel, table=True):
     __tablename__ = "groups"
     name: str = Field(index=True)
+    transactions: List["Transaction"] = Relationship(back_populates="group")
     users: list['User'] = Relationship(  # type: ignore
         back_populates="groups",
         link_model=UsersGroups
