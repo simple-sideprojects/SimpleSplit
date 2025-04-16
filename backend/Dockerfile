@@ -6,8 +6,13 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY app/ .
+COPY app app
+COPY alembic alembic
+COPY alembic.ini .
+COPY entrypoint.sh .
+
+RUN chmod +x ./entrypoint.sh
 
 ENV PROD=true
 
-CMD ["fastapi", "run"]
+ENTRYPOINT ["./entrypoint.sh"]

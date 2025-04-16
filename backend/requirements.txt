@@ -5,3 +5,9 @@ passlib[bcrypt]
 pyjwt
 python-dotenv
 pydantic-settings
+pydantic[email]
+
+fastapi-sqlalchemy
+pydantic
+alembic
+uvicorn
