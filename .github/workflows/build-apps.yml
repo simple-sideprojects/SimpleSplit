@@ -66,3 +66,96 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+  # Source: https://github.com/tauri-apps/tauri-action/issues/525
+  build-android:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Android Environment
+        run: |
+          echo "ANDROID_HOME=${ANDROID_SDK_ROOT}" >> $GITHUB_ENV
+          echo "NDK_HOME=${ANDROID_SDK_ROOT}/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> $GITHUB_PATH
+
+      - name: Install Android NDK
+        run: |
+          sdkmanager --install "ndk;25.2.9519653"
+          sdkmanager --install "build-tools;34.0.0"
+          sdkmanager --install "platforms;android-34"
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Initialize Tauri for Android
+        run: |
+          pnpm add -D @tauri-apps/cli
+          pnpm tauri android init
+
+      - name: Build Tauri Android App
+        run: pnpm tauri android build
+
+      #- name: Extract android signing key from env
+      #  run: |
+      #      echo "${{ secrets.ANDROID_RELEASE_KEYSTORE }}" > src-tauri/gen/android/release.jks.base64
+      #      base64 -d src-tauri/gen/android/release.jks.base64 > src-tauri/gen/android/release.decrypted.jks
+
+      #- name: Sign APK
+      #  run: |
+      #      ${{ env.ANDROID_HOME }}/build-tools/34.0.0/apksigner sign --ks src-tauri/gen/android/release.decrypted.jks \
+      #        --ks-key-alias ${{ secrets.ANDROID_RELEASE_KEY }} \
+      #        --ks-pass pass:${{ secrets.ANDROID_RELEASE_PASSWORD }} \
+      #        --key-pass pass:${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }} \
+      #        --out src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk \
+      #        src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+
+      #- name: Get Node project version
+      #  id: package-version
+      #  uses: martinbeentjes/npm-get-version-action@v1.3.1
+
+      #- name: Rename APK file
+      #  run: |
+      #      mv ./src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk ./src-tauri/gen/android/app/build/outputs/apk/universal/release/myappliation-${{ steps.package-version.outputs.current-version}}.apk
+
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: ./src-tauri/gen/android/app/build/outputs/apk/release/*.apk
+
+      - name: Upload APK to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./src-tauri/gen/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          asset_name: SimpleSplit-${{ github.ref_name }}-android.apk
+          tag: ${{ github.ref }}
+          overwrite: true
