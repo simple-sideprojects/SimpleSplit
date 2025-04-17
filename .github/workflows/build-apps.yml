@@ -4,6 +4,10 @@ on:
   release:
     types: [created]
 
+defaults:
+  run:
+    working-directory: ./frontend
+
 # This workflow will trigger on each release to create or update a GitHub release, build your app, and upload the artifacts to the release.
 
 jobs:
