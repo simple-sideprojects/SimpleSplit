@@ -58,6 +58,7 @@
 	"dependencies": {
 		"@hey-api/client-fetch": "^0.10.0",
 		"@inlang/paraglide-sveltekit": "^0.15.5",
+		"@tauri-apps/plugin-cli": "~2",
 		"svelte-sonner": "^0.3.28"
 	},
 	"pnpm": {
