@@ -13,7 +13,7 @@ DATABASE_URL=postgresql+psycopg2://postgres:postgres@postgres:5432/postgres
 ### Migration
 
 Create upgrade:  
-`alembic revision --autogenerate -m "First migration"`
+`alembic revision --autogenerate -m "First migration"`
 
 Upgrade:  
 `alembic upgrade head`
