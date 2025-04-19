@@ -5,6 +5,11 @@ on:
     types: [created]
   workflow_dispatch:
     # Ermöglicht manuelle Ausführung
+    inputs:
+      tag:
+        description: 'Tag für Docker Images (z.B. latest, dev, test)'
+        required: true
+        default: 'dev'
 
 env:
   REGISTRY: ghcr.io
@@ -39,10 +44,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ github.ref_type == 'tag' && github.ref_name == github.event.repository.default_branch }}
-            type=raw,value=${{ github.event.release.tag_name }}
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' && github.ref_type == 'tag' && github.ref_name == github.event.repository.default_branch }}
+            type=raw,value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' }}
+            type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Build and push Docker image
         id: push
@@ -50,7 +56,7 @@ jobs:
         with:
           context: ./frontend
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags || format('{0}/{1}:{2}', env.REGISTRY, env.FRONTEND_IMAGE_NAME, inputs.tag || 'dev') }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max 
@@ -89,10 +95,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ github.ref_type == 'tag' && github.ref_name == github.event.repository.default_branch }}
-            type=raw,value=${{ github.event.release.tag_name }}
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' && github.ref_type == 'tag' && github.ref_name == github.event.repository.default_branch }}
+            type=raw,value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' }}
+            type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Build and push Docker image
         id: push
@@ -100,7 +107,7 @@ jobs:
         with:
           context: ./backend
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags || format('{0}/{1}:{2}', env.REGISTRY, env.BACKEND_IMAGE_NAME, inputs.tag || 'dev') }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
