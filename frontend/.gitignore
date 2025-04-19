@@ -24,3 +24,7 @@ vite.config.ts.timestamp-*
 
 # Paraglide
 src/lib/paraglide
+
+# Tauri
+src-tauri/target
+src-tauri/gen/schemas
