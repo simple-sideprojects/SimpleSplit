@@ -22,7 +22,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write # Benötigt für die Attestierung
+      attestations:write
 
     steps:
       - name: Checkout repository
@@ -73,7 +73,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write # Benötigt für die Attestierung
+      attestations:write
 
     steps:
       - name: Checkout repository
