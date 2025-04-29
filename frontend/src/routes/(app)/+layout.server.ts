@@ -8,11 +8,11 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
 
 	if (!userResponse.data) {
 		cookies.delete('auth_token', { path: '/' });
-		throw redirect(401, '/auth/login');
+		return redirect(302, '/auth/login');
 	}
 
 	return {
 		user: userResponse.data,
-		groups: groupsResponse.data
+		groups: groupsResponse.data ?? []
 	};
 };

@@ -10,7 +10,7 @@ from typing import Optional
 class GroupInvite(BaseModel, table=True):
     __tablename__ = "group_invites"
     email: Optional[str] = Field(default=None, nullable=True, index=True)
-    group_id: UUID = Field(foreign_key="groups.id")
+    group_id: UUID = Field(foreign_key="groups.id", ondelete="CASCADE")
     token: str = Field(index=True, unique=True)
     group: Group = Relationship(back_populates="invites")
 

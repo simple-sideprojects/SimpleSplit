@@ -24,9 +24,6 @@
 					class="block rounded-lg border border-gray-200 p-4 hover:border-blue-500 hover:shadow-sm"
 				>
 					<h2 class="text-lg font-semibold text-gray-900">{group.name}</h2>
-					<p class="mt-1 text-sm text-gray-500">
-						{group.members.length} members
-					</p>
 				</a>
 			{/each}
 		</div>

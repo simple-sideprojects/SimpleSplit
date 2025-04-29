@@ -13,6 +13,11 @@ export type CreateGroup = {
     name: string;
 };
 
+export type EmailConfirmationRequest = {
+    frontend_url: string;
+    token: number;
+};
+
 export type Group = {
     id?: string;
     created_at?: string;
@@ -62,6 +67,10 @@ export type UserCreate = {
     username: string;
 };
 
+export type UserInfoUpdate = {
+    username: string;
+};
+
 export type UserResponse = {
     id: string;
     email: string;
@@ -70,11 +79,34 @@ export type UserResponse = {
     updated_at: string;
 };
 
+export type UserUpdatePassword = {
+    old_password: string;
+    new_password: string;
+};
+
 export type ValidationError = {
     loc: Array<string | number>;
     msg: string;
     type: string;
 };
+
+export type DeleteUserAccountDeleteData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/';
+};
+
+export type DeleteUserAccountDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type DeleteUserAccountDeleteResponse = DeleteUserAccountDeleteResponses[keyof DeleteUserAccountDeleteResponses];
 
 export type ReadUsersMeAccountGetData = {
     body?: never;
@@ -91,6 +123,60 @@ export type ReadUsersMeAccountGetResponses = {
 };
 
 export type ReadUsersMeAccountGetResponse = ReadUsersMeAccountGetResponses[keyof ReadUsersMeAccountGetResponses];
+
+export type UpdateUserInfoAccountPutData = {
+    body: UserInfoUpdate;
+    path?: never;
+    query?: never;
+    url: '/account/';
+};
+
+export type UpdateUserInfoAccountPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateUserInfoAccountPutError = UpdateUserInfoAccountPutErrors[keyof UpdateUserInfoAccountPutErrors];
+
+export type UpdateUserInfoAccountPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type UpdateUserInfoAccountPutResponse = UpdateUserInfoAccountPutResponses[keyof UpdateUserInfoAccountPutResponses];
+
+export type UpdatePasswordAccountPasswordPutData = {
+    body: UserUpdatePassword;
+    path?: never;
+    query?: never;
+    url: '/account/password';
+};
+
+export type UpdatePasswordAccountPasswordPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdatePasswordAccountPasswordPutError = UpdatePasswordAccountPasswordPutErrors[keyof UpdatePasswordAccountPasswordPutErrors];
+
+export type UpdatePasswordAccountPasswordPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type UpdatePasswordAccountPasswordPutResponse = UpdatePasswordAccountPasswordPutResponses[keyof UpdatePasswordAccountPasswordPutResponses];
 
 export type RegisterAuthRegisterPostData = {
     body: UserCreate;
@@ -141,6 +227,31 @@ export type LoginAuthLoginPostResponses = {
 };
 
 export type LoginAuthLoginPostResponse = LoginAuthLoginPostResponses[keyof LoginAuthLoginPostResponses];
+
+export type ConfirmEmailAuthConfirmEmailPostData = {
+    body: EmailConfirmationRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/confirm-email';
+};
+
+export type ConfirmEmailAuthConfirmEmailPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ConfirmEmailAuthConfirmEmailPostError = ConfirmEmailAuthConfirmEmailPostErrors[keyof ConfirmEmailAuthConfirmEmailPostErrors];
+
+export type ConfirmEmailAuthConfirmEmailPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: Token;
+};
+
+export type ConfirmEmailAuthConfirmEmailPostResponse = ConfirmEmailAuthConfirmEmailPostResponses[keyof ConfirmEmailAuthConfirmEmailPostResponses];
 
 export type ReadGroupsGroupsGetData = {
     body?: never;

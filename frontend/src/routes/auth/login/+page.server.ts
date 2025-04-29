@@ -24,29 +24,26 @@ export const actions: Actions = {
 		}
 
 		try {
-			// Use form.data directly as it's already validated
 			const loginResponse = await loginAuthLoginPost({
 				body: {
-					username: form.data.email, // Map email to username
+					username: form.data.email,
 					password: form.data.password
 				},
 				throwOnError: true
 			});
 
-			// Store token in a secure HTTP-only cookie
 			cookies.set('auth_token', loginResponse.data.access_token, {
 				path: '/',
 				httpOnly: true,
 				secure: process.env.NODE_ENV === 'production',
-				maxAge: 60 * 60 * 24 * 7, // 1 week
+				maxAge: 60 * 60 * 24 * 7,
 				sameSite: 'strict'
 			});
 		} catch (error) {
-			// Handle API errors (assuming non-validation errors are API/login errors)
 			console.error('Login error:', error);
-			// Use message to return a form-level error message
+
 			return message(form, 'Invalid email or password', {
-				status: 401 // Unauthorized status
+				status: 401
 			});
 		}
 

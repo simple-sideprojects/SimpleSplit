@@ -1,0 +1,21 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Data Fetching and Mocking Guidelines
+
+**Data Fetching:**
+- Utilize [TanStack Query](mdc:https:/tanstack.com/query/latest) for managing server state, caching, and background updates.
+- Leverage the [openapi-ts TanStack Query plugin](mdc:https:/heyapi.dev/openapi-ts/plugins/tanstack-query) to automatically generate type-safe query hooks based on the OpenAPI specification.
+  - Configuration: [openapi-ts.config.ts](mdc:openapi-ts.config.ts)
+- Import and use the generated query hooks directly within Svelte components or route load functions (`+page.server.ts`, `+layout.server.ts`) to fetch data.
+
+**Form Handling:**
+- Use [Superforms](mdc:https:/superforms.rocks) for robust form handling, validation, and progressive enhancement, especially when interacting with SvelteKit form actions.
+
+**Mocking (Development & Testing):**
+- Employ [Mock Service Worker (MSW)](mdc:https:/mswjs.io) to intercept network requests and provide mock responses during development and testing.
+- Define mock API handlers in the `src/mocks/handlers/` directory.
+- MSW is typically initialized for the browser in `src/hooks.client.ts` (verify existence and setup).
+- Ensure mocks align with the OpenAPI schema to maintain consistency.

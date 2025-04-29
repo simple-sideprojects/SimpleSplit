@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Structure Guidelines
+
+**File Organization:**
+- Svelte components: `src/lib/components/**/*.svelte`
+- Component-specific logic/state machines: `src/lib/components/**/*.svelte.ts`
+- Routes/Pages: `src/routes/**/*.svelte`
+- Route load functions: `src/routes/**/+page.ts`, `src/routes/**/+layout.ts`
+- API handlers: `src/routes/**/+server.ts`
+- Shared interfaces/types: `src/lib/interfaces/**/*.ts`
+- Shared utilities/helpers: `src/lib/utils/**/*.ts` (Create if needed)
+- Static assets: `static/`
+- Mock Service Worker handlers: `src/mocks/handlers/**/*.ts`
+- Paraglide messages: `messages/**/*.json`
+
+**Naming Conventions:**
+- Component files: lowercase-with-hyphens (e.g., `auth-form.svelte`)
+- Imported component names: PascalCase (e.g., `AuthForm`)
+- Variables, functions, props: camelCase (e.g., `handleSubmit`)
+
+**Routing:**
+- Use SvelteKit's file-based routing system ([src/routes](mdc:src/routes)).
+- Implement error handling using `+error.svelte` files.
+
+**Configuration:**
+- SvelteKit config: [svelte.config.js](mdc:svelte.config.js)
+- Vite config: [vite.config.ts](mdc:vite.config.ts)
+- TypeScript config: [tsconfig.json](mdc:tsconfig.json)
+- ESLint config: [eslint.config.js](mdc:eslint.config.js)
+- Prettier config: [.prettierrc](mdc:.prettierrc)
+- OpenAPI-TS config: [openapi-ts.config.ts](mdc:openapi-ts.config.ts)

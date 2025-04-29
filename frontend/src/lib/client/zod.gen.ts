@@ -24,6 +24,11 @@ export const zCreateGroup = z.object({
     name: z.string()
 });
 
+export const zEmailConfirmationRequest = z.object({
+    frontend_url: z.string(),
+    token: z.number().int()
+});
+
 export const zGroup = z.object({
     id: z.string().uuid().optional(),
     created_at: z.string().datetime().optional(),
@@ -92,6 +97,10 @@ export const zUserCreate = z.object({
     username: z.string()
 });
 
+export const zUserInfoUpdate = z.object({
+    username: z.string()
+});
+
 export const zUserResponse = z.object({
     id: z.string().uuid(),
     email: z.string().email(),
@@ -100,17 +109,30 @@ export const zUserResponse = z.object({
     updated_at: z.string().datetime()
 });
 
+export const zUserUpdatePassword = z.object({
+    old_password: z.string(),
+    new_password: z.string()
+});
+
 export const zValidationError = z.object({
     loc: z.array(z.unknown()),
     msg: z.string(),
     type: z.string()
 });
 
+export const zDeleteUserAccountDeleteResponse = z.object({});
+
 export const zReadUsersMeAccountGetResponse = zUserResponse;
+
+export const zUpdateUserInfoAccountPutResponse = z.object({});
+
+export const zUpdatePasswordAccountPasswordPutResponse = z.object({});
 
 export const zRegisterAuthRegisterPostResponse = zUserResponse;
 
 export const zLoginAuthLoginPostResponse = zToken;
+
+export const zConfirmEmailAuthConfirmEmailPostResponse = zToken;
 
 export const zReadGroupsGroupsGetResponse = z.array(zGroup);
 

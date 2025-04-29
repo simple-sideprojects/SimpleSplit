@@ -1,0 +1,59 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Implementation Guidelines
+
+**Technology Stack:**
+- SvelteKit with Svelte 5
+- TypeScript
+- Tailwind CSS
+- Tanstack Query ([openapi-ts plugin](mdc:https:/heyapi.dev/openapi-ts/plugins/tanstack-query))
+- Paraglide for translations
+
+**General Principles:**
+- Follow requirements carefully.
+- Write correct, up-to-date, bug-free, fully functional, secure, and efficient code.
+- Leave NO todos, placeholders, or missing pieces.
+- Be concise; comment only complex logic or idioms.
+- If unsure, state it instead of guessing.
+
+**Code Style and Structure:**
+- Write concise, technical TypeScript code with accurate Svelte 5 and SvelteKit examples.
+- Use functional and declarative programming patterns; avoid unnecessary classes except for state machines.
+- Prefer iteration and modularization over duplication.
+
+**Svelte 5 Usage:**
+- Use `$state`, `$derived`, `$effect`, `$props`, `$bindable`, and `$inspect` as documented.
+- Do not use legacy `on:<event>` handlers; use standard JavaScript `on<event>` (e.g., `onclick`).
+- Do not use `$$Props`; use `$props()` and `$bindable()`.
+- Structure `.svelte` files: component logic (`<script>`), markup (`<template>`), styles (`<style>`).
+- Leverage Svelte's compile-time optimizations.
+- Use `{key}` blocks to force re-rendering when necessary.
+- Use `$effect.tracking()` to optimize effect dependencies.
+
+**TypeScript Usage:**
+- Use TypeScript for all frontend code.
+- Prefer interfaces over types.
+- Avoid enums; use `as const` objects instead.
+- Enable strict mode.
+
+**UI and Styling:**
+- Use Tailwind CSS for utility-first styling.
+- Use Svelte's built-in transition and animation features.
+
+**Component Development:**
+- Implement proper component composition and reusability.
+- Use Svelte's props (`$props()`) for data passing between components.
+- Leverage Svelte's runes (`$state`, `$derived`) for local state management.
+
+**State Management:**
+- Use classes for complex state management (state machines) when runes are insufficient.
+
+**Performance Optimization:**
+- Implement code splitting using dynamic imports (`import()`).
+- Profile and monitor performance using browser developer tools.
+
+**Security:**
+- Prioritize security in all implementations.

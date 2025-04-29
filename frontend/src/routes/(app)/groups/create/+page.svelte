@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { superForm } from 'sveltekit-superforms';
+	import IconLoader from '~icons/tabler/loader';
 
 	const { data } = $props();
 
-	let isSubmitting = false;
-
-	let { form } = superForm(data.groupCreateForm);
+	let { form, submitting } = superForm(data.groupCreateForm);
 </script>
 
 <div class="space-y-6">
@@ -18,10 +17,7 @@
 			action="?/createGroup"
 			method="POST"
 			use:enhance={() => {
-				isSubmitting = true;
-
 				return async ({ update }) => {
-					isSubmitting = false;
 					update();
 				};
 			}}
@@ -45,10 +41,17 @@
 			<div class="flex justify-end">
 				<button
 					type="submit"
-					disabled={isSubmitting}
+					disabled={$submitting}
 					class="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 				>
-					{isSubmitting ? 'Creating...' : 'Create Group'}
+					{#if $submitting}
+						<div class="flex items-center gap-2">
+							<IconLoader class="size-4 animate-spin" />
+							<span>Creating...</span>
+						</div>
+					{:else}
+						Create Group
+					{/if}
 				</button>
 			</div>
 		</form>

@@ -1,4 +1,3 @@
-from uuid import UUID
 from sqlmodel import SQLModel
 
 
@@ -18,3 +17,8 @@ class JWTPayload(SQLModel, table=False):
         "email": str,
         "username": str
     }
+
+
+class EmailConfirmationRequest(SQLModel):
+    frontend_url: str
+    token: int
