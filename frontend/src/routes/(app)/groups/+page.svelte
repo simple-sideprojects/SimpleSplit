@@ -1,7 +1,21 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import IconPlus from '~icons/tabler/plus';
 
 	let { data } = $props();
+
+	let groups = $state(data.groups);
+
+	onMount(() => {
+		//Dummy Data loading
+		setTimeout(() => {
+			groups.push({
+				id: "1",
+				name: "Group1111",
+				members: []
+			});
+		}, 5000);
+	});
 </script>
 
 <div class="mx-auto w-full max-w-4xl">
@@ -16,9 +30,9 @@
 		</a>
 	</div>
 
-	{#if data.groups.length > 0}
+	{#if groups.length > 0}
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-			{#each data.groups as group (group.id)}
+			{#each groups as group (group.id)}
 				<a
 					href="/groups/{group.id}"
 					class="block rounded-lg border border-gray-200 p-4 hover:border-blue-500 hover:shadow-sm"

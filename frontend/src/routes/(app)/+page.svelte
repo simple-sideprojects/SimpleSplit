@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { TransactionComponent } from '$lib';
+	import { onPageLoad } from '$lib/app/controller.js';
+	import { onMount } from 'svelte';
 	import IconArrowDown from '~icons/tabler/arrow-down';
 	import IconArrowUp from '~icons/tabler/arrow-up';
 	import IconChevronDown from '~icons/tabler/chevron-down';
@@ -22,6 +24,10 @@
 	function formatAmount(amount: number): string {
 		return (amount / 100).toFixed(2);
 	}
+
+	onMount(() => {
+		onPageLoad(true, true);
+	});
 </script>
 
 <div class="space-y-6">

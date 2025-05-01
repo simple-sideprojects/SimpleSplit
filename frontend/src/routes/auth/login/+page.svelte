@@ -1,11 +1,43 @@
 <script lang="ts">
-	import { superForm } from 'sveltekit-superforms/client';
+	import { superForm, type FormResult } from 'sveltekit-superforms/client';
+	import { goto } from '$app/navigation';
+	import { login } from '$lib/shared/stores/auth.store';
+	import { browser } from '$app/environment';
+	import { onPageLoad } from '$lib/app/controller';
+	import type { PageData } from './$types';
+	import { onMount } from 'svelte';
 
-	const { data } = $props();
+	const { data } = $props<{ data: PageData }>();
+
+	let isSubmitting = $state(false);
 
 	const { form, errors, enhance, submit, message } = superForm(data.form, {
-		resetForm: false
+		resetForm: false,
+		onResult: ({ result }) => {
+			console.log('onResult', result);
+			login("demo");
+			goto('/');
+			return;
+
+			if (result.type !== 'success'){
+				return;
+			}
+			// Bei Erfolg Token im Store speichern und weiterleiten
+			if (result.type === 'success' && result.data?.success) {
+				if (browser && result.data?.token) {
+					// Login-Funktion im Store aufrufen
+					login(result.data.token);
+					
+					// Zur Hauptseite weiterleiten
+					goto('/');
+				}
+			}
+		}
 	});
+
+	onMount(() => {
+		onPageLoad(true, false);
+	})
 </script>
 
 <div class="flex h-screen items-center justify-center">
@@ -84,8 +116,9 @@
 					<button
 						type="submit"
 						class="flex w-full cursor-pointer justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+						disabled={isSubmitting}
 					>
-						Sign in
+						{isSubmitting ? 'Signing in...' : 'Sign in'}
 					</button>
 				</div>
 			</form>

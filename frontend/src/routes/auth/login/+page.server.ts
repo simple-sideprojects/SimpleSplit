@@ -4,18 +4,31 @@ import { zod } from 'sveltekit-superforms/adapters';
 import { message, superValidate } from 'sveltekit-superforms/server';
 import { z } from 'zod';
 import type { PageServerLoad } from './$types';
+import { isCompiledStatic } from '$lib/app/controller';
+import { building } from '$app/environment';
 
 const zEmailPasswordLogin = z.object({
 	email: z.string(),
 	password: z.string()
 });
 
-export const load: PageServerLoad = async () => {
+async function getPageData() {
 	const form = await superValidate(zod(zEmailPasswordLogin));
 	return { form };
 };
 
-export const actions: Actions = {
+export const load: PageServerLoad = async () => {
+	if (building){
+		return getPageData();
+	}
+	
+	return getPageData();
+};
+
+export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
+	data: async () => {
+		return getPageData();
+	},
 	default: async ({ request, cookies }) => {
 		const form = await superValidate(request, zod(zEmailPasswordLogin));
 
@@ -50,6 +63,10 @@ export const actions: Actions = {
 			});
 		}
 
-		return redirect(303, '/');
+		// Anstatt Redirect senden wir einen Auth-Token und Erfolgsstatusan den Client zurück
+		return {
+			success: true,
+			token: cookies.get('auth_token')
+		}
 	}
 };

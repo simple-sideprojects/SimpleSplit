@@ -1,18 +1,17 @@
-import { readGroupsGroupsGet, readUsersMeAccountGet } from '$lib/client';
-import { redirect } from '@sveltejs/kit';
+import { getRootLayoutData } from '$lib/server/layout-data';
 import type { LayoutServerLoad } from './$types';
+import { building } from '$app/environment';
 
 export const load: LayoutServerLoad = async ({ cookies }) => {
-	const userResponse = await readUsersMeAccountGet();
-	const groupsResponse = await readGroupsGroupsGet();
-
-	if (!userResponse.data) {
-		cookies.delete('auth_token', { path: '/' });
-		throw redirect(401, '/auth/login');
+	if (building){
+		return {
+			user: {
+				username: 'N/A',
+				email: 'N/A'
+			},
+			groups: []
+		};
 	}
-
-	return {
-		user: userResponse.data,
-		groups: groupsResponse.data
-	};
+	
+	return getRootLayoutData(cookies);
 };

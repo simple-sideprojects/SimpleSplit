@@ -1,22 +1,21 @@
 import { env } from '$env/dynamic/public';
-import { fail } from '@sveltejs/kit';
+import { fail, type Action } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { isCompiledStatic } from '$lib/app/controller';
+import { building } from '$app/environment';
 
-export const load: PageServerLoad = async ({ fetch, params, url }) => {
-	const page = parseInt(url.searchParams.get('page') || '1');
-	const limit = parseInt(url.searchParams.get('limit') || '25');
-
+async function getPageData(fetch: Fetch, page: number, limit: number, groupId: string) {
 	const [transactionsRes, totalRes] = await Promise.all([
 		fetch(
-			`${env.PUBLIC_BACKEND_URL}/api/groups/${params.groupId}/transactions?page=${page}&limit=${limit}`
+			`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions?page=${page}&limit=${limit}`
 		),
-		fetch(`${env.PUBLIC_BACKEND_URL}/api/groups/${params.groupId}/transactions/total`)
+		fetch(`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/total`)
 	]);
 
 	const [transactions, total] = await Promise.all([transactionsRes.json(), totalRes.json()]);
 
 	return {
-		groupId: params.groupId,
+		groupId: groupId,
 		transactions,
 		total,
 		page,
@@ -25,7 +24,32 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
 	};
 };
 
-export const actions: Actions = {
+export const load: PageServerLoad = async ({ fetch, params, url }) => {
+	if (building){
+		return {
+			groupId: params.groupId,
+			transactions: [],
+			total: 0,
+			page: 1,
+			limit: 25,
+			totalPages: 1
+		};
+	}
+
+	const page = parseInt(url.searchParams.get('page') || '1');
+	const limit = parseInt(url.searchParams.get('limit') || '25');
+
+	return getPageData(fetch, page, limit, params.groupId);
+};
+
+export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
+	data: async ({ request, fetch, params }) => {
+		const formData = await request.formData();
+		const page = parseInt(formData.get('page') as string || '1');
+		const limit = parseInt(formData.get('limit') as string || '25');
+
+		return getPageData(fetch, page, limit, params.groupId);
+	},
 	edit: async ({ request, fetch, params }) => {
 		const formData = await request.formData();
 		const id = formData.get('id');

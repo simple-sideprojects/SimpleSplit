@@ -1,7 +1,10 @@
 import { env } from '$env/dynamic/public';
-import type { PageServerLoad } from './$types';
+import type { Actions, PageServerLoad } from './$types';
+import { isCompiledStatic } from '$lib/app/controller';
+import { building } from '$app/environment';
+import { getRootLayoutData } from '$lib/server/layout-data';
 
-export const load: PageServerLoad = async ({ fetch }) => {
+async function getPageData(fetch: Fetch) {
 	const [balanceRes, recentRes] = await Promise.all([
 		fetch(`${env.PUBLIC_BACKEND_URL}/balance`),
 		fetch(`${env.PUBLIC_BACKEND_URL}/recent`)
@@ -13,4 +16,26 @@ export const load: PageServerLoad = async ({ fetch }) => {
 		balances,
 		transactions
 	};
+};
+
+export const load: PageServerLoad = async ({ fetch, cookies }) => {
+	if (building){
+		return {
+			balances: [],
+			transactions: []
+		};
+	}
+	
+	return getPageData(fetch);
+};
+
+export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
+	data: async ({ fetch, cookies }) => {
+		let page_data = await getPageData(fetch);
+		let layout_data = await getRootLayoutData(cookies);
+		return {
+			...page_data,
+			...layout_data
+		};
+	}
 };

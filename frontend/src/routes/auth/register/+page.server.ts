@@ -4,15 +4,28 @@ import { fail, redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
+import { isCompiledStatic } from '$lib/app/controller';
+import { building } from '$app/environment';
 
 const registerSchema = zUserCreate;
 
-export const load: PageServerLoad = async () => {
+async function getPageData() {
 	const form = await superValidate(zod(registerSchema));
 	return { form };
 };
 
-export const actions: Actions = {
+export const load: PageServerLoad = async () => {
+	if (building){
+		return getPageData();
+	}
+	
+	return getPageData();
+};
+
+export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
+	data: async () => {
+		return getPageData();
+	},
 	default: async ({ request, cookies }) => {
 		const form = await superValidate(request, zod(registerSchema));
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { afterNavigate } from '$app/navigation';
+	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
 	import type { Group } from '$lib/client';
@@ -16,11 +16,13 @@
 	let mainElement: HTMLElement;
 
 	onMount(async () => {
-		if (!data.groups) {
-			return;
-		}
-
-		groups = data.groups;
+		//Dummy Data loading
+		setTimeout(() => {
+			groups.push({
+				id: "1",
+				name: "Test Group"
+			});
+		}, 5000);
 	});
 
 	afterNavigate(() => {
