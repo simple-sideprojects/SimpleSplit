@@ -73,6 +73,12 @@ Set the correct SDK path in local.properties:
 sdk.dir=/home/marius/android-sdk
 ```
 
+Sync changes to capacitor:
+```
+./build-static.sh
+pnpm cap sync android
+```
+
 #### Debug SDK
 Build Debug SDK:
 ```
