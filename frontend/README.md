@@ -68,7 +68,7 @@ sdkmanager "platform-tools"
 
 ### Build the SDK
 
-Set the correct SDK path in local.properties:
+Set the correct SDK path in android/local.properties (If the file does not exist, create it):
 ```
 sdk.dir=/home/marius/android-sdk
 ```
