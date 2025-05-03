@@ -1,9 +1,10 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.simplesplit.app',
-  appName: 'SimpleSplit',
-  webDir: 'build-static',
+	appId: 'com.simplesplit.app',
+	appName: 'SimpleSplit',
+	webDir: 'build-static',
+	npmClient: 'pnpm',
 	plugins: {
 		"SplashScreen": {
 			"launchShowDuration": 0

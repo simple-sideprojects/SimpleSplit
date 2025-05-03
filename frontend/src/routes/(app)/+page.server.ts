@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/public';
 import type { Actions, PageServerLoad } from './$types';
-import { isCompiledStatic } from '$lib/app/controller';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
 import { getRootLayoutData } from '$lib/server/layout-data';
 
@@ -10,7 +10,7 @@ async function getPageData(fetch: Fetch) {
 		fetch(`${env.PUBLIC_BACKEND_URL}/recent`)
 	]);
 
-	const [balances, transactions] = await Promise.all([balanceRes.json(), recentRes.json()]);
+	const [balances, transactions] = await Promise.all([balanceRes.ok ? balanceRes.json() : [], recentRes.ok ? recentRes.json() : []]);
 
 	return {
 		balances,

@@ -1,10 +1,32 @@
 <script lang="ts">
-	import { superForm } from 'sveltekit-superforms/client';
+	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
+	import { onPageLoad } from '$lib/shared/app/controller.js';
+	import { clientSideLogin } from '$lib/shared/stores/auth.store.js';
+	import { onMount } from 'svelte';
+	import { superForm } from '$lib/shared/form/super-form';
 
 	const { data } = $props();
 
 	const { form, errors, enhance, submit, message } = superForm(data.form, {
-		resetForm: false
+		resetForm: false,
+		onResult: ({ result }) => {
+			if (result.type !== 'success'){
+				return;
+			}
+
+			if (browser && result.data?.token) {
+				// Login-Funktion im Store aufrufen
+				clientSideLogin(result.data.token);
+				
+				// Zur Hauptseite weiterleiten
+				goto('/');
+			}
+		}
+	});
+
+	onMount(async () => {
+		await onPageLoad(false, false);
 	});
 </script>
 
@@ -20,7 +42,7 @@
 		</div>
 
 		<div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-			<form class="space-y-6" method="POST" use:enhance>
+			<form class="space-y-6" method="POST" use:enhance action="?/register">
 				{#if $message}
 					<div class="rounded-md bg-red-50 p-4">
 						<div class="flex">

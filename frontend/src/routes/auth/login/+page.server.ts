@@ -4,7 +4,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import { message, superValidate } from 'sveltekit-superforms/server';
 import { z } from 'zod';
 import type { PageServerLoad } from './$types';
-import { isCompiledStatic } from '$lib/app/controller';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
 
 const zEmailPasswordLogin = z.object({
@@ -19,6 +19,7 @@ async function getPageData() {
 
 export const load: PageServerLoad = async () => {
 	if (building){
+		//This data is static and can be used for static builds
 		return getPageData();
 	}
 	
@@ -29,7 +30,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 	data: async () => {
 		return getPageData();
 	},
-	default: async ({ request, cookies }) => {
+	login: async ({ request, cookies }) => {
 		const form = await superValidate(request, zod(zEmailPasswordLogin));
 
 		if (!form.valid) {
@@ -54,6 +55,11 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 				maxAge: 60 * 60 * 24 * 7, // 1 week
 				sameSite: 'strict'
 			});
+
+			return {
+				token: loginResponse.data.access_token,
+				form
+			}
 		} catch (error) {
 			// Handle API errors (assuming non-validation errors are API/login errors)
 			console.error('Login error:', error);
@@ -61,12 +67,6 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			return message(form, 'Invalid email or password', {
 				status: 401 // Unauthorized status
 			});
-		}
-
-		// Anstatt Redirect senden wir einen Auth-Token und Erfolgsstatusan den Client zurück
-		return {
-			success: true,
-			token: cookies.get('auth_token')
 		}
 	}
 };

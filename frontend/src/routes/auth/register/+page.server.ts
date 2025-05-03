@@ -4,7 +4,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
-import { isCompiledStatic } from '$lib/app/controller';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
 
 const registerSchema = zUserCreate;
@@ -26,7 +26,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 	data: async () => {
 		return getPageData();
 	},
-	default: async ({ request, cookies }) => {
+	register: async ({ request, cookies }) => {
 		const form = await superValidate(request, zod(registerSchema));
 
 		if (!form.valid) {
@@ -57,8 +57,11 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 				maxAge: 60 * 60 * 24 * 7,
 				sameSite: 'strict'
 			});
-
-			throw redirect(303, '/dashboard');
+			
+			return {
+				token: loginResponse.data.access_token,
+				form
+			}
 		} catch (error: unknown) {
 			if (error instanceof Error && error.message.includes('fetch')) {
 				return setError(form, '', 'The server is currently unavailable. Please try again later.');

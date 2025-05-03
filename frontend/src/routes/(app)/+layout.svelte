@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { building } from '$app/environment';
 	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
@@ -12,17 +13,17 @@
 
 	let { data, children } = $props();
 
-	let groups: Group[] = $state([]);
+	let groups: Group[] = $state(data.groups ?? []);
 	let mainElement: HTMLElement;
 
 	onMount(async () => {
 		//Dummy Data loading
-		setTimeout(() => {
+		/*setTimeout(() => {
 			groups.push({
 				id: "1",
 				name: "Test Group"
 			});
-		}, 5000);
+		}, 5000);*/
 	});
 
 	afterNavigate(() => {

@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/public';
 import type { Actions, PageServerLoad } from './$types';
-import { isCompiledStatic } from '$lib/app/controller';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
 
 async function getPageData(fetch: Fetch) {

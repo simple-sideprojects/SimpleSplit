@@ -1,43 +1,42 @@
 <script lang="ts">
-	import { superForm, type FormResult } from 'sveltekit-superforms/client';
 	import { goto } from '$app/navigation';
-	import { login } from '$lib/shared/stores/auth.store';
+	import { clientSideLogin } from '$lib/shared/stores/auth.store';
 	import { browser } from '$app/environment';
-	import { onPageLoad } from '$lib/app/controller';
+	import { onPageLoad } from '$lib/shared/app/controller';
 	import type { PageData } from './$types';
 	import { onMount } from 'svelte';
+	import { superForm } from '$lib/shared/form/super-form';
 
 	const { data } = $props<{ data: PageData }>();
 
 	let isSubmitting = $state(false);
 
-	const { form, errors, enhance, submit, message } = superForm(data.form, {
+	const { form, errors, enhance, submit, message, constraints } = superForm(data.form, {
 		resetForm: false,
+		onSubmit: (event) => {
+			isSubmitting = true;
+		},
 		onResult: ({ result }) => {
-			console.log('onResult', result);
-			login("demo");
-			goto('/');
-			return;
-
 			if (result.type !== 'success'){
+				isSubmitting = false;
 				return;
 			}
-			// Bei Erfolg Token im Store speichern und weiterleiten
-			if (result.type === 'success' && result.data?.success) {
-				if (browser && result.data?.token) {
-					// Login-Funktion im Store aufrufen
-					login(result.data.token);
-					
-					// Zur Hauptseite weiterleiten
-					goto('/');
-				}
+			console.log('result', result);
+
+	        if (browser && result.data?.token) {
+				// Login-Funktion im Store aufrufen
+				clientSideLogin(result.data.token);
+				
+				// Zur Hauptseite weiterleiten
+				goto('/');
 			}
+			isSubmitting = false;
 		}
 	});
 
-	onMount(() => {
-		onPageLoad(true, false);
-	})
+	onMount(async () => {
+		await onPageLoad(false, false);
+	});
 </script>
 
 <div class="flex h-screen items-center justify-center">
@@ -52,7 +51,7 @@
 		</div>
 
 		<div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-			<form class="space-y-6" method="POST" use:enhance>
+			<form class="space-y-6" method="POST" use:enhance action="?/login">
 				{#if $message}
 					<div class="rounded-md bg-red-50 p-4">
 						<div class="flex">
@@ -77,6 +76,7 @@
 								? 'border-red-500'
 								: 'border-gray-300'}"
 							aria-invalid={$errors.email ? 'true' : 'false'}
+						    {...$constraints.email}
 						/>
 						{#if $errors.email}
 							<p class="mt-1 text-sm text-red-600">This is not a valid email address</p>

@@ -2,7 +2,7 @@ import { acceptInviteInvitesAcceptTokenGet } from '$lib/client';
 import { redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { building } from '$app/environment';
-import { isCompiledStatic } from '$lib/app/controller';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 
 async function getPageData(token: string) {
 	if (!token) {

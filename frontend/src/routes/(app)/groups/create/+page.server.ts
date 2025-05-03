@@ -1,4 +1,4 @@
-import { isCompiledStatic } from '$lib/app/controller';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 import { createGroupGroupsPost } from '$lib/client';
 import { redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';

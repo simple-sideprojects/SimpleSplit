@@ -8,13 +8,13 @@
 
 	onMount(() => {
 		//Dummy Data loading
-		setTimeout(() => {
+		/*setTimeout(() => {
 			groups.push({
 				id: "1",
 				name: "Group1111",
 				members: []
 			});
-		}, 5000);
+		}, 5000);*/
 	});
 </script>
 

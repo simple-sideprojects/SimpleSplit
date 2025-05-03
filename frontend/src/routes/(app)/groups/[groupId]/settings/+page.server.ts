@@ -1,4 +1,4 @@
-import { isCompiledStatic } from '$lib/app/controller';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 import type { Actions, PageServerLoad } from './$types';
 import {
 	deleteGroupGroupsGroupIdDelete,

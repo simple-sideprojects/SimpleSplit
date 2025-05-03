@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/public';
 import { fail, type Action } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { isCompiledStatic } from '$lib/app/controller';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
 
 async function getPageData(fetch: Fetch, page: number, limit: number, groupId: string) {
