@@ -45,12 +45,12 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			}
 		});
 
-		if (!response.error) {
-			return redirect(303, `/groups/${response.data.id}`);
+		if (response.error) {
+			return {
+				groupCreateForm
+			};
 		}
 
-		return {
-			groupCreateForm
-		};
+		redirect(303, `/groups/${response.data.id}`);
 	}
 };

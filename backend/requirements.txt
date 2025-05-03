@@ -5,6 +5,7 @@ passlib[bcrypt]
 pyjwt
 python-dotenv
 pydantic-settings
+argon2_cffi
 pydantic[email]
 
 fastapi-sqlalchemy

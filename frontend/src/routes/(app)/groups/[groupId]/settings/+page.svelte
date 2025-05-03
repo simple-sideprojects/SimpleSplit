@@ -22,12 +22,10 @@
 		resetForm: true,
 		onResult: ({ result }) => {
 			if (result.type === 'success') {
-				// Update local data with the changes from the server
 				if (result.data?.group) {
 					data.group = result.data.group;
 				}
 
-				// Show success toast
 				if ($inviteMemberForm.email) {
 					toast.success(`Invitation sent to ${$inviteMemberForm.email}`);
 				}

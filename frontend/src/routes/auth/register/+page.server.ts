@@ -18,7 +18,7 @@ export const load: PageServerLoad = async () => {
 	if (building){
 		return getPageData();
 	}
-	
+
 	return getPageData();
 };
 
@@ -35,39 +35,34 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 
 		const { email, password, username } = form.data;
 
-		try {
-			await registerAuthRegisterPost({
-				body: { email, password, username },
-				throwOnError: true
-			});
+		await registerAuthRegisterPost({
+			body: { email, password, username },
+			throwOnError: true
+		});
 
-			const loginResponse = await loginAuthLoginPost({
-				body: {
-					username: email,
-					password: password,
-					scope: ''
-				},
-				throwOnError: true
-			});
-
-			cookies.set('auth_token', loginResponse.data.access_token, {
-				path: '/',
-				httpOnly: true,
-				secure: process.env.NODE_ENV === 'production',
-				maxAge: 60 * 60 * 24 * 7,
-				sameSite: 'strict'
-			});
-			
-			return {
-				token: loginResponse.data.access_token,
-				form
+		const loginResponse = await loginAuthLoginPost({
+			body: {
+				username: email,
+				password: password,
+				scope: ''
 			}
-		} catch (error: unknown) {
-			if (error instanceof Error && error.message.includes('fetch')) {
-				return setError(form, '', 'The server is currently unavailable. Please try again later.');
-			}
+		});
 
+		if (!loginResponse?.data) {
 			return setError(form, '', 'An unexpected error occurred during registration.');
+		}
+
+		cookies.set('auth_token', loginResponse.data.access_token, {
+			path: '/',
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			maxAge: 60 * 60 * 24 * 7,
+			sameSite: 'strict'
+		});
+
+		return {
+			token: loginResponse.data.access_token,
+			form
 		}
 	}
 };

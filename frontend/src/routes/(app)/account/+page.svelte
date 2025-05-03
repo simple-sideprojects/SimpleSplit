@@ -1,121 +1,71 @@
 <script lang="ts">
-	import { env } from '$env/dynamic/public';
+	import { toast } from 'svelte-sonner';
+	import { superForm } from 'sveltekit-superforms/client';
+	import IconDeviceFloppy from '~icons/tabler/device-floppy';
+	import IconLoader from '~icons/tabler/loader';
 	import IconLock from '~icons/tabler/lock';
+	import IconLogout from '~icons/tabler/logout';
 	import IconTrash from '~icons/tabler/trash';
 
-	let username = 'Max Mustermann';
-	let email = 'max@mustermann.de';
-	let currentPassword = '';
-	let newPassword = '';
-	let confirmPassword = '';
-	let isSubmitting = false;
-	let error = '';
-	let deleteConfirmation = '';
-	let showDeleteConfirm = false;
+	let { data } = $props();
 
-	async function handleProfileUpdate(event: Event) {
-		event.preventDefault();
-
-		if (!username.trim() || !email.trim()) {
-			error = 'Please fill in all fields';
-			return;
+	const {
+		form: usernameForm,
+		enhance: enhanceUsername,
+		errors: usernameErrors,
+		submitting: usernameSubmitting
+	} = superForm(data.usernameForm, {
+		onResult: ({ result }) => {
+			if (result.type === 'success') {
+				toast.success('Username updated successfully');
+			}
 		}
+	});
 
-		isSubmitting = true;
-		error = '';
-
-		try {
-			const response = await fetch(`${env.PUBLIC_BACKEND_URL}/api/account`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ username, email })
-			});
-
-			if (!response.ok) throw new Error('Failed to update profile');
-		} catch (err) {
-			console.error(err);
-			error = 'Failed to update profile. Please try again.';
-		} finally {
-			isSubmitting = false;
+	const {
+		form: passwordForm,
+		enhance: enhancePassword,
+		errors: passwordErrors,
+		submitting: passwordSubmitting
+	} = superForm(data.passwordForm, {
+		resetForm: true,
+		onResult: ({ result }) => {
+			if (result.type === 'success') {
+				toast.success('Password updated successfully');
+			}
 		}
-	}
+	});
 
-	async function handlePasswordUpdate(event: Event) {
-		event.preventDefault();
-
-		if (!currentPassword || !newPassword || !confirmPassword) {
-			error = 'Please fill in all password fields';
-			return;
+	const {
+		form: deleteAccountForm,
+		enhance: enhanceDeleteAccount,
+		errors: deleteAccountErrors,
+		submitting: deleteAccountSubmitting
+	} = superForm(data.deleteAccountForm, {
+		onResult: ({ result }) => {
+			if (result.type === 'success') {
+				toast.success('Account deleted successfully');
+			}
 		}
+	});
 
-		if (newPassword !== confirmPassword) {
-			error = 'New passwords do not match';
-			return;
-		}
-
-		if (newPassword.length < 8) {
-			error = 'New password must be at least 8 characters long';
-			return;
-		}
-
-		isSubmitting = true;
-		error = '';
-
-		try {
-			const response = await fetch(`${env.PUBLIC_BACKEND_URL}/api/account/password`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					currentPassword,
-					newPassword
-				})
-			});
-
-			if (!response.ok) throw new Error('Failed to update password');
-
-			currentPassword = '';
-			newPassword = '';
-			confirmPassword = '';
-		} catch (err) {
-			console.error(err);
-			error = 'Failed to update password. Please verify your current password and try again.';
-		} finally {
-			isSubmitting = false;
-		}
-	}
-
-	async function handleAccountDelete(event: Event) {
-		event.preventDefault();
-
-		if (deleteConfirmation !== username) {
-			error = 'Please type your username correctly to confirm deletion';
-			return;
-		}
-
-		isSubmitting = true;
-		error = '';
-
-		try {
-			const response = await fetch(`${env.PUBLIC_BACKEND_URL}/api/account`, {
-				method: 'DELETE'
-			});
-
-			if (!response.ok) throw new Error('Failed to delete account');
-		} catch (err) {
-			console.error(err);
-			error = 'Failed to delete account. Please try again.';
-		} finally {
-			isSubmitting = false;
-		}
-	}
+	let showDeleteConfirm = $state(false);
 </script>
 
 <div class="space-y-4">
-	<h1 class="text-2xl font-bold">Account Settings</h1>
+	<div class="flex items-center justify-between">
+		<h1 class="text-2xl font-bold">Account Settings</h1>
+		<!-- Mobile Sign Out Button -->
+		<form action="?/signOut" method="POST" class="sm:hidden">
+			<button
+				type="submit"
+				class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+			>
+				<IconLogout class="size-4" />
+				Sign Out
+			</button>
+		</form>
+	</div>
 
 	<!-- Profile Information -->
 	<div class="rounded-lg border border-gray-100 bg-white shadow-sm">
@@ -124,8 +74,9 @@
 			<p class="mt-0.5 text-sm text-gray-500">Update your account details and email preferences.</p>
 		</div>
 
-		<form class="p-4" onsubmit={handleProfileUpdate}>
-			<div class="grid gap-8 sm:grid-cols-2">
+		<div class="grid gap-8 p-4">
+			<!-- Username Form -->
+			<form action="?/updateUsername" method="POST" class="grid gap-4" use:enhanceUsername>
 				<div>
 					<div class="mb-2 flex flex-col">
 						<label for="username" class="text-sm font-medium text-gray-900">Username</label>
@@ -133,50 +84,57 @@
 							>This is your display name visible to other users</span
 						>
 					</div>
-					<input
-						type="text"
-						name="username"
-						id="username"
-						bind:value={username}
-						required
-						class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-					/>
-				</div>
-
-				<div>
-					<div class="mb-2 flex flex-col">
-						<label for="email" class="text-sm font-medium text-gray-900">Email Address</label>
-						<span class="mt-0.5 text-xs text-gray-500"
-							>Your email address for notifications and login</span
+					<div class="flex gap-3">
+						<input
+							type="text"
+							name="username"
+							id="username"
+							bind:value={$usernameForm.username}
+							required
+							class="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
+						/>
+						<button
+							type="submit"
+							disabled={$usernameSubmitting}
+							class="flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 						>
+							{#if $usernameSubmitting}
+								<IconLoader class="size-4 animate-spin" />
+								Saving...
+							{:else}
+								<IconDeviceFloppy class="size-4" />
+								Save
+							{/if}
+						</button>
 					</div>
-					<input
-						type="email"
-						name="email"
-						id="email"
-						bind:value={email}
-						required
-						class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-					/>
+					{#if $usernameErrors.username}
+						<p class="mt-1 text-xs text-red-600">{$usernameErrors.username}</p>
+					{/if}
+					{#if $usernameErrors._errors}
+						<div class="mt-2 rounded-md bg-red-50 p-2">
+							<p class="text-xs text-red-700">{$usernameErrors._errors}</p>
+						</div>
+					{/if}
 				</div>
-			</div>
+			</form>
 
-			{#if error}
-				<div class="mt-4 rounded-md bg-red-50 p-3">
-					<p class="text-sm text-red-700">{error}</p>
+			<!-- Email Form -->
+			<div class="flex flex-col">
+				<div class="mb-2 flex flex-col">
+					<label for="email" class="text-sm font-medium text-gray-900">Email Address</label>
+					<span class="mt-0.5 text-xs text-gray-500"
+						>Your email address for notifications and login</span
+					>
 				</div>
-			{/if}
-
-			<div class="mt-4 flex justify-end">
-				<button
-					type="submit"
-					disabled={isSubmitting}
-					class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
-				>
-					{isSubmitting ? 'Saving...' : 'Save Changes'}
-				</button>
+				<input
+					type="email"
+					id="email"
+					value={data.userData?.email}
+					readonly
+					class="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-gray-600 sm:text-sm"
+				/>
 			</div>
-		</form>
+		</div>
 	</div>
 
 	<!-- Security -->
@@ -188,23 +146,26 @@
 			</p>
 		</div>
 
-		<form class="p-4" onsubmit={handlePasswordUpdate}>
+		<form action="?/updatePassword" method="POST" class="p-4" use:enhancePassword>
 			<div class="grid gap-4 lg:grid-cols-2">
 				<div>
 					<div class="mb-2 flex flex-col">
-						<label for="newPassword" class="text-sm font-medium text-gray-900">New Password</label>
+						<label for="new_password" class="text-sm font-medium text-gray-900">New Password</label>
 						<span class="mt-0.5 text-xs text-gray-500">At least 8 characters required</span>
 					</div>
 					<input
 						type="password"
-						name="newPassword"
-						id="newPassword"
-						bind:value={newPassword}
+						name="new_password"
+						id="new_password"
+						bind:value={$passwordForm.new_password}
 						required
 						minlength="8"
 						class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
 						placeholder="Enter new password"
 					/>
+					{#if $passwordErrors.new_password}
+						<p class="mt-1 text-xs text-red-600">{$passwordErrors.new_password}</p>
+					{/if}
 				</div>
 
 				<div>
@@ -218,49 +179,80 @@
 						type="password"
 						name="confirmPassword"
 						id="confirmPassword"
-						bind:value={confirmPassword}
+						bind:value={$passwordForm.confirmPassword}
 						required
 						class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
 						placeholder="Confirm new password"
 					/>
+					{#if $passwordErrors.confirmPassword}
+						<p class="mt-1 text-xs text-red-600">{$passwordErrors.confirmPassword}</p>
+					{/if}
 				</div>
 
 				<div>
 					<div class="mb-2 flex flex-col">
-						<label for="currentPassword" class="text-sm font-medium text-gray-900"
+						<label for="old_password" class="text-sm font-medium text-gray-900"
 							>Current Password</label
 						>
 						<span class="mt-0.5 text-xs text-gray-500">Enter your current password to verify</span>
 					</div>
 					<input
 						type="password"
-						name="currentPassword"
-						id="currentPassword"
-						bind:value={currentPassword}
+						name="old_password"
+						id="old_password"
+						bind:value={$passwordForm.old_password}
 						required
 						class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
 						placeholder="Enter current password"
 					/>
+					{#if $passwordErrors.old_password}
+						<p class="mt-1 text-xs text-red-600">{$passwordErrors.old_password}</p>
+					{/if}
 				</div>
 			</div>
 
-			{#if error}
+			{#if $passwordErrors._errors}
 				<div class="mt-4 rounded-md bg-red-50 p-3">
-					<p class="text-sm text-red-700">{error}</p>
+					<p class="text-sm text-red-700">{$passwordErrors._errors}</p>
 				</div>
 			{/if}
 
 			<div class="mt-4 flex justify-end">
 				<button
 					type="submit"
-					disabled={isSubmitting}
-					class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+					disabled={$passwordSubmitting}
+					class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 				>
 					<IconLock class="size-4" />
-					{isSubmitting ? 'Updating Password...' : 'Update Password'}
+					{$passwordSubmitting ? 'Updating Password...' : 'Update Password'}
 				</button>
 			</div>
 		</form>
+	</div>
+
+	<!-- Sign Out -->
+	<div class="rounded-lg border border-gray-100 bg-white shadow-sm">
+		<div class="border-b border-gray-200 px-4 py-3">
+			<h2 class="text-base font-medium text-gray-900">Sign Out</h2>
+			<p class="mt-0.5 text-sm text-gray-500">Sign out from your account on this device.</p>
+		</div>
+
+		<div class="p-4">
+			<div class="flex flex-col sm:flex-row sm:justify-between">
+				<p class="mb-4 text-sm text-gray-700 sm:mb-0">
+					This will sign you out from your current session on this device.
+				</p>
+				<form action="?/signOut" method="POST">
+					<button
+						type="submit"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+					>
+						<IconLogout class="size-4" />
+						Sign Out
+					</button>
+				</form>
+			</div>
+		</div>
 	</div>
 
 	<!-- Delete Account -->
@@ -278,51 +270,61 @@
 					<button
 						type="button"
 						onclick={() => (showDeleteConfirm = true)}
-						class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
 					>
 						<IconTrash class="size-4" />
 						Delete Account
 					</button>
 				</div>
 			{:else}
-				<form class="space-y-4" onsubmit={handleAccountDelete}>
+				<form action="?/deleteAccount" method="POST" class="space-y-4" use:enhanceDeleteAccount>
 					<div>
 						<div class="mb-2 flex flex-col">
-							<label for="confirm" class="text-sm font-medium text-gray-900">Confirm Deletion</label
+							<label for="deleteConfirmation" class="text-sm font-medium text-gray-900"
+								>Confirm Deletion</label
 							>
 							<span class="mt-0.5 text-xs text-gray-500"
-								>Please type your username "{username}" to confirm</span
+								>Please type your username "{data.userData?.username}" to confirm</span
 							>
 						</div>
 						<input
 							type="text"
-							name="confirm"
-							id="confirm"
-							bind:value={deleteConfirmation}
+							name="deleteConfirmation"
+							id="deleteConfirmation"
+							bind:value={$deleteAccountForm.deleteConfirmation}
 							required
 							class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:text-sm"
 							placeholder="Enter your username to confirm"
 						/>
+						{#if $deleteAccountErrors.deleteConfirmation}
+							<p class="mt-1 text-xs text-red-600">{$deleteAccountErrors.deleteConfirmation}</p>
+						{/if}
 					</div>
+
+					{#if $deleteAccountErrors._errors}
+						<div class="mt-4 rounded-md bg-red-50 p-3">
+							<p class="text-sm text-red-700">{$deleteAccountErrors._errors}</p>
+						</div>
+					{/if}
 
 					<div class="flex justify-end gap-3">
 						<button
 							type="button"
 							onclick={() => {
 								showDeleteConfirm = false;
-								deleteConfirmation = '';
+								$deleteAccountForm.deleteConfirmation = '';
 							}}
-							class="rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
+							class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
-							disabled={isSubmitting || deleteConfirmation !== username}
-							class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+							disabled={$deleteAccountSubmitting}
+							class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 						>
 							<IconTrash class="size-4" />
-							{isSubmitting ? 'Deleting...' : 'Confirm Delete'}
+							{$deleteAccountSubmitting ? 'Deleting...' : 'Confirm Delete'}
 						</button>
 					</div>
 				</form>

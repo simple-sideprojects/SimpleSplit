@@ -79,7 +79,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			}
 		});
 
-		throw redirect(303, '/');
+		return redirect(303, '/');
 	},
 	inviteMember: async ({ request, params }) => {
 		const inviteMemberForm = await superValidate(
@@ -106,7 +106,6 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			return setError(inviteMemberForm, 'email', 'Failed to invite member');
 		});
 
-		// Fetch updated group data with the new invitation
 		const { data: updatedGroup } = await readGroupGroupsGroupIdGet({
 			path: {
 				group_id: params.groupId
@@ -131,7 +130,6 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			});
 		}
 
-		// Fetch updated group data with the new invitation
 		const { data: updatedGroup } = await readGroupGroupsGroupIdGet({
 			path: {
 				group_id: params.groupId
@@ -153,7 +151,6 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			});
 		}
 
-		// Reject the invite using the token
 		const { data: rejectionResponse } = await rejectInviteInvitesRejectTokenDelete({
 			path: {
 				token: inviteToken
@@ -168,7 +165,6 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			});
 		}
 
-		// Fetch updated group data
 		const { data: updatedGroup } = await readGroupGroupsGroupIdGet({
 			path: {
 				group_id: params.groupId

@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Structure
+
+This is a FastAPI backend application.
+
+- **Main Application:** The main FastAPI application instance and entry point is defined in [`app/main.py`](mdc:app/main.py).
+- **Configuration:** Application settings, including database connection details and secrets, are managed via Pydantic settings in [`app/config.py`](mdc:app/config.py) and loaded from the [`.env`](mdc:.env) file. An example environment file is provided in [`.env.example`](mdc:.env.example).
+- **Database:**
+    - Database session management and engine creation are handled in [`app/database/database.py`](mdc:app/database/database.py).
+    - Database models (using SQLModel) are defined within the [`app/database/models/`](mdc:app/database/models) directory.
+- **API Routers:** API endpoints are organized into routers located in the [`app/routers/`](mdc:app/routers) directory. These are included in the main app in [`app/main.py`](mdc:app/main.py).
+- **Services:** Business logic is encapsulated in service layers found in the [`app/services/`](mdc:app/services) directory.
+- **Middleware:** Custom middleware is located in [`app/middleware/`](mdc:app/middleware).
+- **Dependencies:** Python package dependencies are listed in [`requirements.txt`](mdc:requirements.txt).
+- **Containerization:** Docker configuration is defined in [`Dockerfile`](mdc:Dockerfile) and [`docker-compose.yaml`](mdc:docker-compose.yaml).

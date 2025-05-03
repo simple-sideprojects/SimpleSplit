@@ -22,7 +22,7 @@ export const handleAuth: Handle = ({ event, resolve }) => {
 			throw redirect(303, '/');
 		}
 	} else if (!event.route.id?.includes('auth')) {
-		throw redirect(303, '/auth/login');
+		return redirect(303, '/auth/login');
 	}
 
 	return resolve(event);

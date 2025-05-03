@@ -1,0 +1,29 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Testing Guidelines
+
+**Framework:**
+- Use [Vitest](mdc:https:/vitest.dev) for unit and component testing.
+- Test configuration: [vite.config.ts](mdc:vite.config.ts), [vitest-setup-client.ts](mdc:vitest-setup-client.ts)
+
+**Mocking:**
+- Use [Mock Service Worker (MSW)](mdc:https:/mswjs.io) for mocking API requests during development and testing.
+- MSW handlers: `src/mocks/handlers/**/*.ts`
+- MSW setup: Check `src/hooks.client.ts` or similar setup files for browser integration if applicable.
+
+**Types of Tests:**
+- **Unit Tests:** Test individual functions, utilities, or components in isolation.
+- **Component Tests:** Test Svelte components, ensuring they render correctly and respond to interactions.
+- **Integration Tests (Vitest):** Test interactions between multiple components or modules within the frontend.
+- **End-to-End Tests (Playwright):** Use Playwright for testing user flows across the application.
+  - Playwright config: [playwright.config.ts](mdc:playwright.config.ts)
+  - Playwright tests: `tests/**/*.spec.ts`
+
+**Best Practices:**
+- Write clear, concise, and maintainable tests.
+- Aim for good test coverage, focusing on critical paths and complex logic.
+- Keep tests independent and avoid relying on the state of previous tests.
+- Use descriptive test names.

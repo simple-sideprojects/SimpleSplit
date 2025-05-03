@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { env } from '$env/dynamic/public';
+	import IconLoader from '~icons/tabler/loader';
 	import IconX from '~icons/tabler/x';
 
 	let { openDialog = $bindable(), transaction } = $props();
@@ -10,6 +11,7 @@
 	let from = $state('');
 	let to = $state<string[]>([]);
 	let error = $state<string | null>(null);
+	let isSubmitting = $state(false);
 
 	openDialog = () => {
 		description = transaction.description;
@@ -48,9 +50,11 @@
 		event.preventDefault();
 
 		error = null;
+		isSubmitting = true;
 
 		if (!description || !amount || !from || to.length === 0) {
 			error = 'Please fill in all fields';
+			isSubmitting = false;
 			return;
 		}
 
@@ -75,6 +79,8 @@
 			closeDialog();
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to update transaction';
+		} finally {
+			isSubmitting = false;
 		}
 	}
 </script>
@@ -159,9 +165,17 @@
 			</button>
 			<button
 				type="submit"
-				class="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+				disabled={isSubmitting}
+				class="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 			>
-				Save Changes
+				{#if isSubmitting}
+					<div class="flex items-center gap-2">
+						<IconLoader class="size-4 animate-spin" />
+						<span>Saving...</span>
+					</div>
+				{:else}
+					Save Changes
+				{/if}
 			</button>
 		</div>
 	</form>

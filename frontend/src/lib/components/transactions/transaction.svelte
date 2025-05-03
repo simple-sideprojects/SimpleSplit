@@ -25,14 +25,14 @@
 				<div class="flex items-center gap-1">
 					<button
 						type="button"
-						class="rounded p-1 text-gray-500 hover:bg-gray-100"
+						class="cursor-pointer rounded p-1 text-gray-500 hover:bg-gray-100"
 						onclick={() => onEdit(transaction)}
 					>
 						<IconEdit class="size-4" />
 					</button>
 					<button
 						type="button"
-						class="rounded p-1 text-gray-500 hover:bg-gray-100"
+						class="cursor-pointer rounded p-1 text-gray-500 hover:bg-gray-100"
 						onclick={() => onDelete(transaction)}
 					>
 						<IconTrash class="size-4" />

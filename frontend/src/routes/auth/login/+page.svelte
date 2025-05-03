@@ -6,31 +6,25 @@
 	import type { PageData } from './$types';
 	import { onMount } from 'svelte';
 	import { superForm } from '$lib/shared/form/super-form';
+	import IconLoader from '~icons/tabler/loader';
 
 	const { data } = $props<{ data: PageData }>();
 
-	let isSubmitting = $state(false);
-
-	const { form, errors, enhance, submit, message, constraints } = superForm(data.form, {
+	const { form, errors, enhance, submit, message, constraints, submitting } = superForm(data.form, {
 		resetForm: false,
-		onSubmit: (event) => {
-			isSubmitting = true;
-		},
 		onResult: ({ result }) => {
 			if (result.type !== 'success'){
-				isSubmitting = false;
 				return;
 			}
 			console.log('result', result);
 
-	        if (browser && result.data?.token) {
+			if (browser && result.data?.token) {
 				// Login-Funktion im Store aufrufen
 				clientSideLogin(result.data.token);
-				
+
 				// Zur Hauptseite weiterleiten
 				goto('/');
 			}
-			isSubmitting = false;
 		}
 	});
 
@@ -88,9 +82,9 @@
 					<div class="flex items-center justify-between">
 						<label for="password" class="block text-sm/6 font-medium text-gray-900">Password</label>
 						<div class="text-sm">
-							<a href="#" class="font-semibold text-blue-600 hover:text-blue-800"
-								>Forgot password?</a
-							>
+							<a href="#" class="font-semibold text-blue-600 hover:text-blue-800">
+								Forgot password?
+							</a>
 						</div>
 					</div>
 					<div class="mt-2">
@@ -115,10 +109,15 @@
 				<div>
 					<button
 						type="submit"
-						class="flex w-full cursor-pointer justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-						disabled={isSubmitting}
+						disabled={$submitting}
+						class="flex w-full cursor-pointer justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
 					>
-						{isSubmitting ? 'Signing in...' : 'Sign in'}
+						{#if $submitting}
+							<IconLoader class="mr-2 size-4 animate-spin" />
+							Signing in...
+						{:else}
+							Sign in
+						{/if}
 					</button>
 				</div>
 			</form>
