@@ -1,5 +1,5 @@
-name: Build Android
-run-name: Creating Production Ready Android App 🚀
+name: Build Mobile Apps
+run-name: Creating Production Ready App 🚀
 
 on:
   release:
