@@ -1,0 +1,201 @@
+name: Build Android
+run-name: Creating Production Ready Android App 🚀
+
+on:
+  release:
+    types: [created]
+
+defaults:
+  run:
+    working-directory: ./frontend
+
+jobs:
+  build-android:
+    name: Build Android APK
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Setup java
+        uses: actions/setup-java@v3
+        with:
+          distribution: "microsoft"
+          java-version: "21"
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 23
+          cache: 'pnpm'
+
+      - name: install dependencies
+        run: pnpm ci
+
+      - name: Create Build Folder
+        run: pnpm build:static
+
+      - name: Capacitor update
+        run: pnpm cap update
+
+      - name: Capacitor copy
+        run: pnpm cap copy
+      
+      # TODO: Check for folder structure in README for generating splash screen 
+      #- name: Generate icons and splash screen to android folder 
+      #  run:  if [ -d "./resources" ]; then npm install @capacitor/assets --save-dev && npx capacitor-assets generate --android; fi
+        
+      - name: Build app bundle
+        run: cd android && ./gradlew bundle && ./gradlew assembleDebug
+
+      - name: Extract Android signing key from env
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE }}" > android/release.jks.base64
+          base64 -d android/release.jks.base64 > android/release.decrypted.jks
+
+      - name: Sign dev build
+        run: jarsigner -keystore android/release.decrypted.jks -storepass "${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" -signedjar ./android/app/build/outputs/bundle/release/app-release-signed.aab ./android/app/build/outputs/bundle/release/app-release.aab release
+
+      - name: Check folder content of android output
+        run: ls ./android/app/build/outputs/bundle/release
+      
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: ./android/app/build/outputs/bundle/release/app-release-signed.aab
+
+      - name: Upload Release AAB to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./android/app/build/outputs/bundle/release/app-release-signed.aab
+          asset_name: SimpleSplit-android.aab
+          tag: ${{ github.event.release.tag_name }}
+          overwrite: true
+      
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: ./android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Debug APK to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./android/app/build/outputs/apk/debug/app-debug.apk
+          asset_name: SimpleSplit-android-debug.apk
+          tag: ${{ github.event.release.tag_name }}
+          overwrite: true
+
+  build-ios:
+    runs-on: macos-13
+    name: Build iOS app
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Install the Apple certificate and provisioning profile
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # apply provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+      - name: Set up XCode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 14.3.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 19.x
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 23
+          cache: 'pnpm'
+
+      - name: install dependencies
+        run: pnpm ci
+
+      - name: Create Build Folder
+        run: pnpm build:static
+
+      - name: Capacitor update
+        run: pnpm cap update
+
+      - name: Capacitor copy
+        run: pnpm cap copy
+
+      - name: Build project
+        run: xcodebuild -workspace './ios/App/App.xcworkspace' -scheme App -destination generic/platform=iOS -archivePath App.xcarchive archive
+
+      - name: 🍻 Assemble IPA
+        run: xcodebuild archive -archivePath App.xcarchive -exportArchive -exportOptionsPlist ./archive.plist -exportPath ./ios/output -allowProvisioningUpdates
+      
+      - name: Upload iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-ios-ipa
+          path: ./ios/output/
+
+      - name: Upload Debug APK to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./ios/output/App.ipa
+          asset_name: ios-app.ipa
+          tag: ${{ github.event.release.tag_name }}
+          overwrite: true
+
+      # For use on self-hosted runners, see 
+      # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
+      #- name: Clean up keychain and provisioning profile
+      #  if: ${{ always() }}
+      #  run: |
+      #    security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+      #    rm ~/Library/MobileDevice/Provisioning\ Profiles/build_pp.mobileprovision
