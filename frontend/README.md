@@ -133,3 +133,10 @@ sudo usermod -aG kvm $USER
 # Log out and back in:
 newgrp kvm
 ```
+
+### Generate Android Release Keystore
+
+```
+keytool -genkey -v -keystore release.jks -alias release -keyalg RSA -keysize 2048 -validity 10000
+base64 release.jks > release.jks.base64
+```
