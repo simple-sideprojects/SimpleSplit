@@ -115,7 +115,11 @@
 		{@render children()}
 
 		{#if page.url.pathname !== '/account'}
-			<AddTransactionButton />
+			<AddTransactionButton
+				transactionForm={data.transactionForm}
+				groups={data.groups}
+				user={data.user}
+			/>
 		{/if}
 	</main>
 

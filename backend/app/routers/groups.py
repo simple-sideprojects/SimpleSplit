@@ -1,11 +1,12 @@
-from typing import Annotated
+from typing import Annotated, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import select
 from app import config
 from app.database.database import SessionDep
 from app.database.models.group import CreateGroup, Group, GroupWithUsersResponse, UpdateGroup
 from app.database.models.user import User
+from app.database.models.transaction import Transaction, TransactionRead
 from app.services.auth import AuthService, oauth2_scheme
 from app.middleware.is_user_group import is_user_in_group
 
@@ -41,6 +42,20 @@ async def read_group(group_id: UUID, session: SessionDep, token: Annotated[str, 
     group_response = GroupWithUsersResponse.model_validate(db_group)
 
     return group_response
+
+
+@router.get("/{group_id}/transactions", tags=["groups", "transactions"], response_model=List[TransactionRead])
+def read_group_transactions(
+    *,
+    session: SessionDep,
+    group: Annotated[Group, Depends(is_user_in_group)],
+    skip: int = 0,
+    limit: int = Query(default=100, ge=1, le=200)
+):
+    statement = select(Transaction).where(
+        Transaction.group_id == group.id).order_by(Transaction.purchased_on.desc()).order_by(Transaction.created_at.desc()).offset(skip).limit(limit)
+    transactions = session.exec(statement).all()
+    return transactions
 
 
 @router.post("/", tags=["groups"], response_model=Group)
