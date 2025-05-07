@@ -6,8 +6,8 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
 	if (building){
 		return {
 			user: {
-				username: 'N/A',
-				email: 'N/A'
+				username: null,
+				email: null
 			},
 			groups: []
 		};

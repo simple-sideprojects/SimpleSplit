@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { TransactionComponent } from '$lib';
 	import type { Group } from '$lib/client/types.gen.js';
-	import { onPageLoad } from '$lib/shared/app/controller.js';
+	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
 	import { onMount } from 'svelte';
 	import IconArrowDown from '~icons/tabler/arrow-down';
 	import IconArrowUp from '~icons/tabler/arrow-up';
@@ -36,7 +36,11 @@
 		return (amount / 100).toFixed(2);
 	}
 
+	//Mobile App functionality
 	onMount(async () => {
+		if(!isCompiledStatic()){
+			return;
+		}
 		const serverData : {
 			balances: Balance[],
 			transactions: [],
@@ -45,8 +49,10 @@
 				email: string
 			},
 			groups: Group[]
-		} = await onPageLoad(true, true);
-		console.log('serverData', serverData);
+		}|null = await onPageLoad(true, true);
+		if(serverData === null){
+			return;
+		}
 
 		balances = serverData.balances;
 		transactions = serverData.transactions;
@@ -81,7 +87,7 @@
 	<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
 		<h2 class="mb-4 text-lg font-semibold">Individual Balances</h2>
 		<div class="space-y-3">
-			{#each data.balances as balance (balance.username)}
+			{#each balances as balance (balance.username)}
 				<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
 					<span class="font-medium">{balance.username}</span>
 					<span class={balance.balance >= 0 ? 'text-green-500' : 'text-red-500'}>
@@ -107,7 +113,7 @@
 		</summary>
 
 		<div class="border-t border-gray-100">
-			{#each data.transactions as transaction (transaction.id)}
+			{#each transactions as transaction (transaction.id)}
 				<div class="border-b border-gray-100 last:border-b-0">
 					<TransactionComponent {transaction} />
 				</div>

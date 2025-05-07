@@ -22,6 +22,24 @@ To create a production version of your app:
 ```
 Afterwards you can start the server with `pnpm exec serve build-static`.
 
+## Test the App locally
+
+Run both the node frontend as an api for the app & the static app frontend:
+```
+./build-static.sh && ./build-node.sh && (pnpm preview & pnpm exec serve build-static)
+```
+Afterwards you can use the app at http://localhost:3000
+
+or
+
+```
+./build-static.sh && ./build-node.sh
+pnpm exec serve build-static
+pnpm dev
+```
+
+## Android
+
 ### Android Setup
 
 Download the Command line tools: https://developer.android.com/studio#command-line-tools-only

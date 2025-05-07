@@ -1,3 +1,4 @@
+import { building } from '$app/environment';
 import {
 	deleteUserAccountDelete,
 	readUsersMeAccountGet,
@@ -5,10 +6,12 @@ import {
 	updateUserInfoAccountPut
 } from '$lib/client';
 import { zUserInfoUpdate } from '$lib/client/zod.gen';
-import { fail, redirect } from '@sveltejs/kit';
+import { isCompiledStatic } from '$lib/shared/app/controller';
+import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
+import type { PageServerLoad } from './$types';
 
 const passwordFormSchema = z
 	.object({
@@ -25,7 +28,7 @@ const deleteAccountSchema = z.object({
 	deleteConfirmation: z.string().min(1, 'Confirmation is required')
 });
 
-export async function load() {
+async function getPageData() {
 	const { data: userData, error } = await readUsersMeAccountGet();
 
 	if (error || !userData) {
@@ -55,9 +58,28 @@ export async function load() {
 		passwordForm,
 		deleteAccountForm
 	};
-}
+};
 
-export const actions = {
+export const load: PageServerLoad = async () => {
+	if (building){
+		return {
+			userData: null,
+			usernameForm: await superValidate(zod(zUserInfoUpdate)),
+			passwordForm: await superValidate(zod(passwordFormSchema)),
+			deleteAccountForm: await superValidate(zod(deleteAccountSchema))
+		};
+	}
+	
+	return getPageData();
+};
+
+export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
+	data: async ({ request }) => {
+		let page_data = await getPageData();
+		return {
+			...page_data
+		};
+	},
 	updateUsername: async ({ request }) => {
 		const form = await superValidate(request, zod(zUserInfoUpdate));
 

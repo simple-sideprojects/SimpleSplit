@@ -10,20 +10,24 @@
 
 	const { data } = $props<{ data: PageData }>();
 
-	const { form, errors, enhance, submit, message, constraints, submitting } = superForm(data.form, {
+	const { form, errors, enhance, message, constraints, submitting } = superForm(data.form, {
 		resetForm: false,
-		onResult: ({ result }) => {
+		onResult: async ({ result, cancel }) => {
 			if (result.type !== 'success'){
 				return;
 			}
-			console.log('result', result);
+			console.log('result', result, result.data?.token);
 
-			if (browser && result.data?.token) {
+			if (result.data && result.data.token) {
+				console.log('login');
 				// Login-Funktion im Store aufrufen
 				clientSideLogin(result.data.token);
+				console.log('redirecting');
 
 				// Zur Hauptseite weiterleiten
-				goto('/');
+				await goto('/');
+			}else{
+				cancel();
 			}
 		}
 	});

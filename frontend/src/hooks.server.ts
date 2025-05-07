@@ -4,7 +4,8 @@ import { i18n } from '$lib/i18n';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { building } from '$app/environment';
-import { csrf } from './hooks/csrf';
+import { csrf } from './lib/server/hooks/csrf';
+import { cors } from './lib/server/hooks/cors';
 
 const handleParaglide: Handle = i18n.handle();
 
@@ -28,7 +29,9 @@ export const handleAuth: Handle = ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle = sequence(csrf([], ["http://localhost:3000", "http://localhost:4173", "http://localhost:5173"]), handleParaglide, handleAuth);
+const allowedOrigins = ["http://localhost:3000", "http://localhost:4173", "http://localhost:5173"]
+
+export const handle = sequence(cors(allowedOrigins), csrf([], allowedOrigins), handleParaglide, handleAuth);
 
 if (dev) {
 	const { server } = await import('./mocks/server');
