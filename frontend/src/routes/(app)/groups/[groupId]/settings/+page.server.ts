@@ -1,3 +1,5 @@
+import { isCompiledStatic } from '$lib/shared/app/controller';
+import type { Actions, PageServerLoad } from './$types';
 import {
 	deleteGroupGroupsGroupIdDelete,
 	deleteUserFromGroupGroupsGroupIdUsersUserIdDelete,
@@ -12,11 +14,12 @@ import { fail, redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
+import { building } from '$app/environment';
 
-export async function load({ params }) {
+async function getPageData(groupId: string) {
 	const { data: group } = await readGroupGroupsGroupIdGet({
 		path: {
-			group_id: params.groupId
+			group_id: groupId
 		}
 	});
 
@@ -28,7 +31,27 @@ export async function load({ params }) {
 	};
 }
 
-export const actions = {
+export const load: PageServerLoad = async ({ params }) => {
+	if (building){
+		const inviteMemberForm = await superValidate(zod(zGroupInviteCreate));
+
+		return {
+			group: {
+				name: 'Group Name',
+				description: 'Group Description',
+				members: []
+			},
+			inviteMemberForm: inviteMemberForm
+		};
+	}
+	
+	return getPageData(params.groupId);
+};
+
+export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
+	data: async ({ params }) => {
+		return getPageData(params.groupId);
+	},
 	updateGroupName: async ({ request, params }) => {
 		const form = await superValidate(request, zod(zUpdateGroup));
 

@@ -1,5 +1,10 @@
 <script lang="ts">
+	import { building } from '$app/environment';
+	import { goto } from '$app/navigation';
 	import { TransactionComponent } from '$lib';
+	import type { Group } from '$lib/client/types.gen.js';
+	import { onPageLoad } from '$lib/shared/app/controller.js';
+	import { onMount } from 'svelte';
 	import IconArrowDown from '~icons/tabler/arrow-down';
 	import IconArrowUp from '~icons/tabler/arrow-up';
 	import IconChevronDown from '~icons/tabler/chevron-down';
@@ -12,16 +17,42 @@
 
 	let { data } = $props();
 
+	let balances: Balance[] = $state(data.balances ?? []);
+	let transactions: [] = $state(data.transactions ?? []);
+	let user = $state(data.user ?? {
+		username: '',
+		email: ''
+	});
+	let groups: Group[] = $state(data.groups ?? []);
+
 	let totalPositive = $derived(
-		data.balances.reduce((acc: number, b: Balance) => (b.balance > 0 ? acc + b.balance : acc), 0)
+		balances.reduce((acc: number, b: Balance) => (b.balance > 0 ? acc + b.balance : acc), 0)
 	);
 	let totalNegative = $derived(
-		data.balances.reduce((acc: number, b: Balance) => (b.balance < 0 ? acc + b.balance : acc), 0)
+		balances.reduce((acc: number, b: Balance) => (b.balance < 0 ? acc + b.balance : acc), 0)
 	);
 
 	function formatAmount(amount: number): string {
 		return (amount / 100).toFixed(2);
 	}
+
+	onMount(async () => {
+		const serverData : {
+			balances: Balance[],
+			transactions: [],
+			user: {
+				username: string,
+				email: string
+			},
+			groups: Group[]
+		} = await onPageLoad(true, true);
+		console.log('serverData', serverData);
+
+		balances = serverData.balances;
+		transactions = serverData.transactions;
+		user = serverData.user;
+		groups = serverData.groups;
+	});
 </script>
 
 <div class="space-y-6">

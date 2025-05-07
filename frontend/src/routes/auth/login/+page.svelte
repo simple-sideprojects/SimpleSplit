@@ -1,11 +1,35 @@
 <script lang="ts">
-	import { superForm } from 'sveltekit-superforms/client';
+	import { goto } from '$app/navigation';
+	import { clientSideLogin } from '$lib/shared/stores/auth.store';
+	import { browser } from '$app/environment';
+	import { onPageLoad } from '$lib/shared/app/controller';
+	import type { PageData } from './$types';
+	import { onMount } from 'svelte';
+	import { superForm } from '$lib/shared/form/super-form';
 	import IconLoader from '~icons/tabler/loader';
 
-	const { data } = $props();
+	const { data } = $props<{ data: PageData }>();
 
-	const { form, errors, enhance, message, submitting } = superForm(data.form, {
-		resetForm: false
+	const { form, errors, enhance, submit, message, constraints, submitting } = superForm(data.form, {
+		resetForm: false,
+		onResult: ({ result }) => {
+			if (result.type !== 'success'){
+				return;
+			}
+			console.log('result', result);
+
+			if (browser && result.data?.token) {
+				// Login-Funktion im Store aufrufen
+				clientSideLogin(result.data.token);
+
+				// Zur Hauptseite weiterleiten
+				goto('/');
+			}
+		}
+	});
+
+	onMount(async () => {
+		await onPageLoad(false, false);
 	});
 </script>
 
@@ -21,7 +45,7 @@
 		</div>
 
 		<div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-			<form class="space-y-6" method="POST" use:enhance>
+			<form class="space-y-6" method="POST" use:enhance action="?/login">
 				{#if $message}
 					<div class="rounded-md bg-red-50 p-4">
 						<div class="flex">
@@ -46,6 +70,7 @@
 								? 'border-red-500'
 								: 'border-gray-300'}"
 							aria-invalid={$errors.email ? 'true' : 'false'}
+						    {...$constraints.email}
 						/>
 						{#if $errors.email}
 							<p class="mt-1 text-sm text-red-600">This is not a valid email address</p>

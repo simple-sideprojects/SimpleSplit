@@ -10,6 +10,7 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+	type Fetch = typeof fetch;
 }
 
 export {};

@@ -1,38 +1,135 @@
-# sv
+# Node App
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
-
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+Build with:
+```
+./build-node.sh
 ```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+Afterwards you can start the dev server with
+```
+pnpm preview
 ```
 
-## Building
+# Mobile-App
+The entry point for the mobile app is "/welcome". This is nessesary because middlewares for prerendered apps are not working and thus the Dashboard would be displayed for a very short duration because the app detects, that it should redirect the user to the Login Page.
+
+When running the mobile static compiled version and the web node compiled version on the same device it is nessesary to build the static version first, because `pnpm preview` seems to still use the `.env` file provided in the working directory.
 
 To create a production version of your app:
 
 ```bash
-npm run build
+./build-static.sh
+```
+Afterwards you can start the server with `pnpm exec serve build-static`.
+
+### Android Setup
+
+Download the Command line tools: https://developer.android.com/studio#command-line-tools-only
+
+```
+mkdir ~/android-sdk
+cd ~/android-sdk
+mv ?? ~/android-sdk
+unzip commandlinetools-linux-???_latest.zip
 ```
 
-You can preview the production build with `npm run preview`.
+In the folder cmline-tools I created a folder latest and moved the files into that folder for better versioning.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Install the build tools:
+```
+sdkmanager "build-tools;34.0.0"
+```
+
+Install the Java JDK:
+```
+sudo apt install openjdk-21-jdk
+ls /usr/lib/jvm
+java --version
+```
+
+Setup the path:
+```
+export ANDROID_SDK_ROOT=~/android-sdk
+export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+export PATH=$ANDROID_SDK_ROOT/emulator:$PATH
+```
+
+Maybe you could also do:
+```
+sudo apt install android-sdk
+ls /usr/lib/android-sdk
+```
+
+Maybe you need to install the emulator and platform-tools:
+```
+sdkmanager "emulator"
+sdkmanager "platform-tools"
+```
+
+### Build the SDK
+
+Set the correct SDK path in android/local.properties (If the file does not exist, create it):
+```
+sdk.dir=/home/marius/android-sdk
+```
+
+Sync changes to capacitor:
+```
+./build-static.sh
+pnpm cap sync android
+```
+
+#### Debug SDK
+Build Debug SDK:
+```
+./gradlew assembleDebug
+```
+
+Install the APK to the emulator:
+```
+adb devices
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+#### Release SDK
+
+Build Debug SDK:
+```
+./gradlew assembleRelease
+```
+
+### Use the Emulator under Linux via CLI
+
+> Alternatively just start Android Studio and you can see an open emulator. You can install the APK easily like mentioned in "Building the SDK -> Debug SDK"
+
+List available devices:
+```
+avdmanager list avd
+```
+
+Install a system image:
+```
+sdkmanager --list
+sdkmanager "system-images;android-35;google_apis;x86_64"
+```
+
+Create a avd (Android Virtual Device):
+```
+avdmanager list device
+avdmanager create avd --name "name" --package "system-images;android-35;google_apis;x86_64" --device "pixel_9_pro"
+```
+
+Start the device:
+```
+emulator -avd "name"
+```
+
+If "This user doesn't have permissions to use KVM (/dev/kvm).":
+```
+# Check if you are in the kvm group
+groups
+# If not, add to group:
+sudo usermod -aG kvm $USER
+# Log out and back in:
+newgrp kvm
+```

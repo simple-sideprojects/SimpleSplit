@@ -1,12 +1,12 @@
 import { acceptInviteInvitesAcceptTokenGet } from '$lib/client';
-import { redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from '../$types';
+import { redirect, type Actions } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+import { building } from '$app/environment';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 
-export const load: PageServerLoad = async ({ params }) => {
-	const token = params.token;
-
+async function getPageData(token: string) {
 	if (!token) {
-		return redirect(303, '/');
+		throw redirect(303, '/');
 	}
 
 	const { data: inviteData } = await acceptInviteInvitesAcceptTokenGet({
@@ -14,8 +14,22 @@ export const load: PageServerLoad = async ({ params }) => {
 	});
 
 	if (!inviteData) {
-		return redirect(303, '/');
+		throw redirect(303, '/');
 	}
 
-	return redirect(301, '/');
+	throw redirect(301, '/');
+};
+
+export const load: PageServerLoad = async ({ params }) => {
+	if (building){
+		return {};
+	}
+	
+	return getPageData(params.token);
+};
+
+export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
+	data: async ({ params }) => {
+		return getPageData(params.token || '');
+	}
 };

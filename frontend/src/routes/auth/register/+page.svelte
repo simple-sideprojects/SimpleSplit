@@ -1,11 +1,29 @@
 <script lang="ts">
-	import { superForm } from 'sveltekit-superforms/client';
+	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
+	import { onPageLoad } from '$lib/shared/app/controller.js';
+	import { clientSideLogin } from '$lib/shared/stores/auth.store.js';
+	import { onMount } from 'svelte';
+	import { superForm } from '$lib/shared/form/super-form';
 	import IconLoader from '~icons/tabler/loader';
 
 	const { data } = $props();
 
-	const { form, errors, enhance, message, submitting } = superForm(data.form, {
+	const { form, errors, enhance, submit, message, submitting } = superForm(data.form, {
 		resetForm: false,
+		onResult: ({ result }) => {
+			if (result.type !== 'success'){
+				return;
+			}
+
+			if (browser && result.data?.token) {
+				// Login-Funktion im Store aufrufen
+				clientSideLogin(result.data.token);
+
+				// Zur Hauptseite weiterleiten
+				goto('/');
+			}
+		},
 		onError({ result }) {
 			if (result.type === 'error') {
 				message.set('An error occurred while registering');
@@ -14,6 +32,10 @@
 				message.set('An unexpected error occurred while registering');
 			}
 		}
+	});
+
+	onMount(async () => {
+		await onPageLoad(false, false);
 	});
 </script>
 
@@ -29,7 +51,7 @@
 		</div>
 
 		<div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-			<form class="space-y-6" method="POST" use:enhance>
+			<form class="space-y-6" method="POST" use:enhance action="?/register">
 				{#if $message}
 					<div class="rounded-md bg-red-50 p-4">
 						<div class="flex">

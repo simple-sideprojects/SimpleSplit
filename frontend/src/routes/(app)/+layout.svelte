@@ -1,7 +1,10 @@
 <script lang="ts">
-	import { afterNavigate } from '$app/navigation';
+	import { building } from '$app/environment';
+	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
+	import type { Group } from '$lib/client';
+	import { onMount } from 'svelte';
 	import IconDashboard from '~icons/tabler/dashboard';
 	import IconPlus from '~icons/tabler/plus';
 	import IconSettings from '~icons/tabler/settings';
@@ -10,7 +13,18 @@
 
 	let { data, children } = $props();
 
+	let groups: Group[] = $state(data.groups ?? []);
 	let mainElement: HTMLElement;
+
+	onMount(async () => {
+		//Dummy Data loading
+		/*setTimeout(() => {
+			groups.push({
+				id: "1",
+				name: "Test Group"
+			});
+		}, 5000);*/
+	});
 
 	afterNavigate(() => {
 		mainElement?.scrollTo(0, 0);
@@ -60,7 +74,7 @@
 						</a>
 					</div>
 					<div class="mt-2 space-y-1">
-						{#each data.groups as group (group.id)}
+						{#each groups as group (group.id)}
 							<a
 								href="/groups/{group.id}"
 								class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium {page.url.pathname.startsWith(
@@ -73,7 +87,7 @@
 							</a>
 						{/each}
 
-						{#if data.groups.length === 0}
+						{#if groups.length === 0}
 							<div class="px-6 py-1 text-sm text-gray-500">
 								No groups yet. Create your first group to get started!
 							</div>

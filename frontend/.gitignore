@@ -7,6 +7,8 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+/build-node
+/build-static
 
 # OS
 .DS_Store
@@ -34,3 +36,6 @@ src/lib/paraglide
 # Tauri
 src-tauri/target
 src-tauri/gen/schemas
+
+# Capacitor
+android/.idea
