@@ -9,6 +9,11 @@ export type BodyLoginAuthLoginPost = {
     client_secret?: string | null;
 };
 
+export type BodyUpdateTransactionTransactionsTransactionIdPut = {
+    transaction_in: TransactionUpdate;
+    settings: Settings;
+};
+
 export type CreateGroup = {
     name: string;
 };
@@ -52,13 +57,97 @@ export type InvitationTokenResponse = {
     token: string;
 };
 
+export type Settings = {
+    PROD: boolean;
+    FRONTEND_URL: string;
+    DATABASE_URL: string;
+    SECRET_KEY: string;
+    ALGORITHM: string;
+    ACCESS_TOKEN_EXPIRE_MINUTES: number;
+    SMTP_SERVER: string;
+    SMTP_PORT: number;
+    SMTP_USER: string;
+    SMTP_PASSWORD: string;
+    SMTP_USE_TLS: boolean;
+    SENDER_EMAIL: string;
+    EMAIL_ACCOUNT_VERIFICATION: boolean;
+};
+
 export type Token = {
     access_token: string;
     token_type: string;
 };
 
+export type TransactionCreate = {
+    id?: string;
+    created_at?: string;
+    updated_at?: string;
+    /**
+     * Total amount in smallest currency unit (e.g., cents)
+     */
+    amount: number;
+    title: string;
+    purchased_on?: string;
+    transaction_type?: TransactionType;
+    group_id: string;
+    payer_id: string;
+    participants: Array<TransactionParticipantCreate>;
+};
+
+export type TransactionParticipantCreate = {
+    amount_owed: number;
+    debtor_id: string;
+};
+
+export type TransactionParticipantRead = {
+    amount_owed: number;
+    transaction_id: string;
+    debtor_id: string;
+    id: string;
+    debtor: User;
+};
+
+export type TransactionRead = {
+    id?: string;
+    created_at?: string;
+    updated_at?: string;
+    /**
+     * Total amount in smallest currency unit (e.g., cents)
+     */
+    amount: number;
+    title: string;
+    purchased_on?: string;
+    transaction_type?: TransactionType;
+    group_id: string;
+    payer_id: string;
+    participants: Array<TransactionParticipantRead>;
+    payer: User;
+    group: Group;
+};
+
+export type TransactionType = 'EVEN' | 'AMOUNT' | 'PERCENTAGE';
+
+export type TransactionUpdate = {
+    amount?: number | null;
+    title?: string | null;
+    purchased_on?: string | null;
+    transaction_type?: TransactionType | null;
+    payer_id?: string | null;
+};
+
 export type UpdateGroup = {
     name: string;
+};
+
+export type User = {
+    id?: string;
+    created_at?: string;
+    updated_at?: string;
+    username: string;
+    email: string;
+    email_verified?: boolean;
+    email_verification_token?: number;
+    password?: string;
 };
 
 export type UserCreate = {
@@ -377,6 +466,36 @@ export type UpdateGroupGroupsGroupIdPutResponses = {
 
 export type UpdateGroupGroupsGroupIdPutResponse = UpdateGroupGroupsGroupIdPutResponses[keyof UpdateGroupGroupsGroupIdPutResponses];
 
+export type ReadGroupTransactionsGroupsGroupIdTransactionsGetData = {
+    body?: never;
+    path: {
+        group_id: string;
+    };
+    query?: {
+        skip?: number;
+        limit?: number;
+    };
+    url: '/groups/{group_id}/transactions';
+};
+
+export type ReadGroupTransactionsGroupsGroupIdTransactionsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReadGroupTransactionsGroupsGroupIdTransactionsGetError = ReadGroupTransactionsGroupsGroupIdTransactionsGetErrors[keyof ReadGroupTransactionsGroupsGroupIdTransactionsGetErrors];
+
+export type ReadGroupTransactionsGroupsGroupIdTransactionsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<TransactionRead>;
+};
+
+export type ReadGroupTransactionsGroupsGroupIdTransactionsGetResponse = ReadGroupTransactionsGroupsGroupIdTransactionsGetResponses[keyof ReadGroupTransactionsGroupsGroupIdTransactionsGetResponses];
+
 export type DeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteData = {
     body?: never;
     path: {
@@ -532,6 +651,169 @@ export type RejectInviteInvitesRejectTokenDeleteResponses = {
 };
 
 export type RejectInviteInvitesRejectTokenDeleteResponse = RejectInviteInvitesRejectTokenDeleteResponses[keyof RejectInviteInvitesRejectTokenDeleteResponses];
+
+export type ReadTransactionsUserIsParticipantInTransactionsGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        skip?: number;
+        limit?: number;
+        group_id?: string | null;
+    };
+    url: '/transactions/';
+};
+
+export type ReadTransactionsUserIsParticipantInTransactionsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReadTransactionsUserIsParticipantInTransactionsGetError = ReadTransactionsUserIsParticipantInTransactionsGetErrors[keyof ReadTransactionsUserIsParticipantInTransactionsGetErrors];
+
+export type ReadTransactionsUserIsParticipantInTransactionsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<TransactionRead>;
+};
+
+export type ReadTransactionsUserIsParticipantInTransactionsGetResponse = ReadTransactionsUserIsParticipantInTransactionsGetResponses[keyof ReadTransactionsUserIsParticipantInTransactionsGetResponses];
+
+export type CreateTransactionTransactionsPostData = {
+    body: TransactionCreate;
+    path?: never;
+    query: {
+        group_id: string;
+    };
+    url: '/transactions/';
+};
+
+export type CreateTransactionTransactionsPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateTransactionTransactionsPostError = CreateTransactionTransactionsPostErrors[keyof CreateTransactionTransactionsPostErrors];
+
+export type CreateTransactionTransactionsPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: TransactionRead;
+};
+
+export type CreateTransactionTransactionsPostResponse = CreateTransactionTransactionsPostResponses[keyof CreateTransactionTransactionsPostResponses];
+
+export type DeleteTransactionTransactionsTransactionIdDeleteData = {
+    body: Settings;
+    path: {
+        transaction_id: string;
+    };
+    query: {
+        token: string;
+    };
+    url: '/transactions/{transaction_id}';
+};
+
+export type DeleteTransactionTransactionsTransactionIdDeleteErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteTransactionTransactionsTransactionIdDeleteError = DeleteTransactionTransactionsTransactionIdDeleteErrors[keyof DeleteTransactionTransactionsTransactionIdDeleteErrors];
+
+export type DeleteTransactionTransactionsTransactionIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteTransactionTransactionsTransactionIdDeleteResponse = DeleteTransactionTransactionsTransactionIdDeleteResponses[keyof DeleteTransactionTransactionsTransactionIdDeleteResponses];
+
+export type ReadTransactionTransactionsTransactionIdGetData = {
+    body: Settings;
+    path: {
+        transaction_id: string;
+    };
+    query: {
+        token: string;
+    };
+    url: '/transactions/{transaction_id}';
+};
+
+export type ReadTransactionTransactionsTransactionIdGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReadTransactionTransactionsTransactionIdGetError = ReadTransactionTransactionsTransactionIdGetErrors[keyof ReadTransactionTransactionsTransactionIdGetErrors];
+
+export type ReadTransactionTransactionsTransactionIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: TransactionRead;
+};
+
+export type ReadTransactionTransactionsTransactionIdGetResponse = ReadTransactionTransactionsTransactionIdGetResponses[keyof ReadTransactionTransactionsTransactionIdGetResponses];
+
+export type UpdateTransactionTransactionsTransactionIdPutData = {
+    body: BodyUpdateTransactionTransactionsTransactionIdPut;
+    path: {
+        transaction_id: string;
+    };
+    query: {
+        token: string;
+    };
+    url: '/transactions/{transaction_id}';
+};
+
+export type UpdateTransactionTransactionsTransactionIdPutErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateTransactionTransactionsTransactionIdPutError = UpdateTransactionTransactionsTransactionIdPutErrors[keyof UpdateTransactionTransactionsTransactionIdPutErrors];
+
+export type UpdateTransactionTransactionsTransactionIdPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: TransactionRead;
+};
+
+export type UpdateTransactionTransactionsTransactionIdPutResponse = UpdateTransactionTransactionsTransactionIdPutResponses[keyof UpdateTransactionTransactionsTransactionIdPutResponses];
 
 export type ClientOptions = {
     baseUrl: 'http://localhost:8000' | (string & {});

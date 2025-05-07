@@ -110,7 +110,7 @@
 					<button
 						type="submit"
 						disabled={$submitting}
-						class="flex w-full cursor-pointer justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+						class="flex w-full cursor-pointer items-center justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
 					>
 						{#if $submitting}
 							<IconLoader class="mr-2 size-4 animate-spin" />

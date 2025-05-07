@@ -2,6 +2,7 @@
 	import IconPlus from '~icons/tabler/plus';
 	import AddTransactionDialog from './add-transaction-dialog.svelte';
 
+	let { transactionForm, groups, user } = $props();
 	let openDialog: () => void;
 </script>
 
@@ -14,4 +15,4 @@
 	Add Transaction
 </button>
 
-<AddTransactionDialog bind:openDialog />
+<AddTransactionDialog bind:openDialog form={transactionForm} {groups} {user} />

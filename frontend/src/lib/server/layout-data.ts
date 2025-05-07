@@ -4,6 +4,7 @@ import { redirect } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { readGroupsGroupsGet, readUsersMeAccountGet } from '$lib/client';
+import { zTransactionCreate } from '$lib/client/zod.gen';
 
 export async function getGroupLayoutData(groupId: string, request: Request) {
 	const updateGroupNameForm = await superValidate(request, zod(zUpdateGroup));
@@ -37,9 +38,11 @@ export async function getRootLayoutData(cookies: any) {
 		cookies.delete('auth_token', { path: '/' });
 		return redirect(302, '/auth/login');
 	}*/
+	const transactionForm = await superValidate(zod(zTransactionCreate));
 
 	return {
 		user: userResponse.data,
-		groups: groupsResponse.data ?? []
+		groups: groupsResponse.data ?? [],
+		transactionForm
 	};
 };

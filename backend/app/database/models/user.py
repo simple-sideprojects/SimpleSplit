@@ -1,11 +1,16 @@
 from uuid import UUID
 from sqlmodel import Field, Relationship, SQLModel
 from pydantic import EmailStr
+from typing import TYPE_CHECKING, List
 
 from app.database.models.base import BaseModel
 from app.database.models.group import Group
 from app.database.models.users_groups import UsersGroups
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from app.database.models.transaction import Transaction
+    from app.database.models.transaction_participant import TransactionParticipant
 
 
 class User(BaseModel, table=True):
@@ -19,6 +24,10 @@ class User(BaseModel, table=True):
         back_populates="users",
         link_model=UsersGroups
     )
+    paid_transactions: List["Transaction"] = Relationship(  # type: ignore
+        back_populates="payer")
+    owed_transactions: List["TransactionParticipant"] = Relationship(  # type: ignore
+        back_populates="debtor")
 
 
 class UserCreate(SQLModel):

@@ -5,6 +5,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     PROD: bool
     FRONTEND_URL: str
+    DATABASE_URL: str
 
     # Auth Settings
     SECRET_KEY: str
@@ -19,7 +20,7 @@ class Settings(BaseSettings):
     SMTP_USE_TLS: bool
     SENDER_EMAIL: str
     EMAIL_ACCOUNT_VERIFICATION: bool
-    
+
     model_config = SettingsConfigDict(env_file=".env")
 
 

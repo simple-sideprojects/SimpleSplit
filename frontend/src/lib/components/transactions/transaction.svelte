@@ -1,8 +1,19 @@
 <script lang="ts">
+	import type { TransactionRead } from '$lib/client';
 	import IconEdit from '~icons/tabler/edit';
 	import IconTrash from '~icons/tabler/trash';
 
-	let { transaction, showActions = false, onEdit = $bindable(), onDelete = $bindable() } = $props();
+	let {
+		transaction,
+		showActions = false,
+		onEdit = $bindable(),
+		onDelete = $bindable()
+	}: {
+		transaction: TransactionRead;
+		showActions?: boolean;
+		onEdit?: (transaction: TransactionRead) => void;
+		onDelete?: (transaction: TransactionRead) => void;
+	} = $props();
 
 	function formatAmount(amount: number): string {
 		return (amount / 100).toFixed(2);
@@ -20,7 +31,7 @@
 <div class="flex items-start justify-between p-4">
 	<div class="flex-1">
 		<div class="flex items-center gap-2">
-			<p class="font-medium">{transaction.description}</p>
+			<p class="font-medium">{transaction.title}</p>
 			{#if showActions && onEdit && onDelete}
 				<div class="flex items-center gap-1">
 					<button
@@ -41,11 +52,19 @@
 			{/if}
 		</div>
 		<p class="text-sm text-gray-500">
-			{transaction.from} → {transaction.to.join(', ')}
+			{transaction.payer.username} → {transaction.participants
+				.map((p) => `${p.debtor.username} (€${formatAmount(p.amount_owed)})`)
+				.join(', ')}
 		</p>
 	</div>
 	<div class="text-right">
 		<p class="font-medium">€{formatAmount(transaction.amount)}</p>
-		<p class="text-sm text-gray-500">{formatDate(transaction.date)}</p>
+		<p class="text-sm text-gray-500">
+			{#if transaction.purchased_on}
+				{formatDate(transaction.purchased_on)}
+			{:else if transaction.created_at}
+				{formatDate(transaction.created_at)}
+			{/if}
+		</p>
 	</div>
 </div>
