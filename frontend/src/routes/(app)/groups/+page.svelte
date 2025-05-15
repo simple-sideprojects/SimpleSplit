@@ -1,21 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import IconPlus from '~icons/tabler/plus';
-
+	import type { Group } from '$lib/client';
+	import { groupsStore } from '$lib/shared/stores/groups.store.js';
+	
+	//Handle provided data
 	let { data } = $props();
-
-	let groups = $state(data.groups);
-
-	onMount(() => {
-		//Dummy Data loading
-		/*setTimeout(() => {
-			groups.push({
-				id: "1",
-				name: "Group1111",
-				members: []
-			});
-		}, 5000);*/
-	});
+	let groups: Group[] = $derived(data.groups ?? Object.values($groupsStore) ?? []);
 </script>
 
 <div class="mx-auto w-full max-w-4xl">

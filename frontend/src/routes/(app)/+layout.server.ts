@@ -5,11 +5,8 @@ import { building } from '$app/environment';
 export const load: LayoutServerLoad = async ({ cookies }) => {
 	if (building){
 		return {
-			user: {
-				username: null,
-				email: null
-			},
-			groups: []
+			user: null,
+			groups: null
 		};
 	}
 	

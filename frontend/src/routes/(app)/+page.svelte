@@ -1,8 +1,5 @@
 <script lang="ts">
-	import { building } from '$app/environment';
-	import { goto } from '$app/navigation';
 	import { TransactionComponent } from '$lib';
-	import type { Group } from '$lib/client/types.gen.js';
 	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
 	import { onMount } from 'svelte';
 	import IconArrowDown from '~icons/tabler/arrow-down';
@@ -10,21 +7,18 @@
 	import IconChevronDown from '~icons/tabler/chevron-down';
 	import IconClock from '~icons/tabler/clock';
 
+	//Types
 	type Balance = {
 		username: string;
 		balance: number;
 	};
 
+	//Handle provided data
 	let { data } = $props();
-
 	let balances: Balance[] = $state(data.balances ?? []);
 	let transactions: [] = $state(data.transactions ?? []);
-	let user = $state(data.user ?? {
-		username: '',
-		email: ''
-	});
-	let groups: Group[] = $state(data.groups ?? []);
 
+	//Calculate balances
 	let totalPositive = $derived(
 		balances.reduce((acc: number, b: Balance) => (b.balance > 0 ? acc + b.balance : acc), 0)
 	);
@@ -32,9 +26,8 @@
 		balances.reduce((acc: number, b: Balance) => (b.balance < 0 ? acc + b.balance : acc), 0)
 	);
 
-	function formatAmount(amount: number): string {
-		return (amount / 100).toFixed(2);
-	}
+	//Formatter
+	const AmountFormatter = Intl.NumberFormat('de-DE', {style:'currency',currency:'EUR'});
 
 	//Mobile App functionality
 	onMount(async () => {
@@ -43,12 +36,7 @@
 		}
 		const serverData : {
 			balances: Balance[],
-			transactions: [],
-			user: {
-				username: string,
-				email: string
-			},
-			groups: Group[]
+			transactions: []
 		}|null = await onPageLoad(true, true);
 		if(serverData === null){
 			return;
@@ -56,8 +44,6 @@
 
 		balances = serverData.balances;
 		transactions = serverData.transactions;
-		user = serverData.user;
-		groups = serverData.groups;
 	});
 </script>
 
@@ -71,7 +57,7 @@
 				<IconArrowUp class="size-5 text-green-500" />
 				<h2 class="text-base font-semibold text-gray-900">You are owed</h2>
 			</div>
-			<p class="mt-2 text-2xl font-bold text-green-500">€{formatAmount(totalPositive)}</p>
+			<p class="mt-2 text-2xl font-bold text-green-500">{AmountFormatter.format(totalPositive)}</p>
 		</div>
 
 		<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
@@ -79,7 +65,7 @@
 				<IconArrowDown class="size-5 text-red-500" />
 				<h2 class="text-base font-semibold text-gray-900">You owe</h2>
 			</div>
-			<p class="mt-2 text-2xl font-bold text-red-500">€{formatAmount(Math.abs(totalNegative))}</p>
+			<p class="mt-2 text-2xl font-bold text-red-500">{AmountFormatter.format(Math.abs(totalNegative))}</p>
 		</div>
 	</div>
 
@@ -91,7 +77,7 @@
 				<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
 					<span class="font-medium">{balance.username}</span>
 					<span class={balance.balance >= 0 ? 'text-green-500' : 'text-red-500'}>
-						€{formatAmount(balance.balance)}
+						{AmountFormatter.format(balance.balance)}
 					</span>
 				</div>
 			{/each}

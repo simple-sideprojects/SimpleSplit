@@ -1,14 +1,20 @@
 <script lang="ts">
+	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
+	import { superForm } from '$lib/shared/form/super-form.js';
+	import { authStore, clientSideLogout, type User } from '$lib/shared/stores/auth.store.js';
+	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { superForm } from 'sveltekit-superforms/client';
 	import IconDeviceFloppy from '~icons/tabler/device-floppy';
 	import IconLoader from '~icons/tabler/loader';
 	import IconLock from '~icons/tabler/lock';
 	import IconLogout from '~icons/tabler/logout';
 	import IconTrash from '~icons/tabler/trash';
 
+	//Handle provided data
 	let { data } = $props();
+	let userData = $derived<User|null>(data.userData ?? $authStore.user ?? null);
 
+	//Handle Username Form
 	const {
 		form: usernameForm,
 		enhance: enhanceUsername,
@@ -22,6 +28,7 @@
 		}
 	});
 
+	//Handle Password Form
 	const {
 		form: passwordForm,
 		enhance: enhancePassword,
@@ -36,6 +43,8 @@
 		}
 	});
 
+	//Handle Delete Account Form
+	let showDeleteConfirm = $state(false);
 	const {
 		form: deleteAccountForm,
 		enhance: enhanceDeleteAccount,
@@ -49,14 +58,38 @@
 		}
 	});
 
-	let showDeleteConfirm = $state(false);
+	//Sign Out Form
+	const {
+		enhance: enhanceSignOut
+	} = superForm({}, {
+		onResult: async ({ result }) => {
+			if (result.type === 'success') {
+				toast.success('Signed out successfully');
+				await clientSideLogout();
+			}
+		}
+	});
+	
+	//Mobile App functionality
+	onMount(async () => {
+		if(!isCompiledStatic()){
+			return;
+		}
+		const serverData : {
+			userData: User,
+		}|null = await onPageLoad(true, true);
+		if(serverData === null){
+			return;
+		}
+		$authStore.user = serverData.userData;
+	});
 </script>
 
 <div class="space-y-4">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">Account Settings</h1>
 		<!-- Mobile Sign Out Button -->
-		<form action="?/signOut" method="POST" class="sm:hidden">
+		<form action="?/signOut" method="POST" class="sm:hidden" use:enhanceSignOut>
 			<button
 				type="submit"
 				class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
@@ -89,7 +122,7 @@
 							type="text"
 							name="username"
 							id="username"
-							bind:value={$usernameForm.username}
+							value={userData?.username}
 							required
 							class="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
 						/>
@@ -129,7 +162,7 @@
 				<input
 					type="email"
 					id="email"
-					value={data.userData?.email}
+					value={userData?.email}
 					readonly
 					class="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-gray-600 sm:text-sm"
 				/>
@@ -242,7 +275,7 @@
 				<p class="mb-4 text-sm text-gray-700 sm:mb-0">
 					This will sign you out from your current session on this device.
 				</p>
-				<form action="?/signOut" method="POST">
+				<form action="?/signOut" method="POST" use:enhanceSignOut>
 					<button
 						type="submit"
 						class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
@@ -284,7 +317,7 @@
 								>Confirm Deletion</label
 							>
 							<span class="mt-0.5 text-xs text-gray-500"
-								>Please type your username "{data.userData?.username}" to confirm</span
+								>Please type your username "{userData?.username}" to confirm</span
 							>
 						</div>
 						<input

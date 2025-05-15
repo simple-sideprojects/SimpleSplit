@@ -3,18 +3,28 @@ import { writable } from "svelte/store"
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 
+export type User = {
+    username: string,
+    email: string
+};
+
+type AuthStoreType = {
+    authenticated: boolean,
+    token: string | null,
+    user: User|null
+};
+
 function createAuthStore() {
-	const { subscribe, update, set } = persist(writable<{authenticated: boolean, token: string | null}>({
+	const { subscribe, update, set } = persist(writable<AuthStoreType>({
         authenticated: false,
-        token: null
+        token: null,
+        user: null
     }), createLocalStorage(), "auth");
 
-	let authData: {
-        authenticated: boolean,
-        token: string | null
-    } = {
+	let authData: AuthStoreType = {
         authenticated: false,
-        token: null
+        token: null,
+        user: null
     };
 	subscribe((value) => {
 		authData = value;
@@ -24,7 +34,12 @@ function createAuthStore() {
 		subscribe,
 		update,
 		set,
-		getAuthData: () => authData
+		getAuthData: () => authData,
+        getUser: () => authData.user,
+        setUser: (user: User|null) => update((state) => ({
+            ...state,
+            user: user
+        }))
 	};
 }
 
@@ -35,26 +50,17 @@ export function clientSideLogin(token: string): void {
     if (!browser) return;
     authStore.update(() => ({
         authenticated: true,
-        token: token
+        token: token,
+        user: null
     }));
 }
 
-export function clientSideLogout(): void {
+export async function clientSideLogout(): Promise<void> {
     if (!browser) return;
     authStore.update(() => ({
         authenticated: false,
-        token: null
+        token: null,
+        user: null
     }));
-    goto('/auth/login');
+    await goto('/auth/login');
 }
-
-// Auth-Check Funktion
-export function checkAuth(): boolean {
-    if (!browser) return false;
-    const isAuth = !!token;
-    authStore.update(() => ({
-        authenticated: isAuth,
-        token: isAuth ? token : null
-    }));
-    return isAuth;
-} 

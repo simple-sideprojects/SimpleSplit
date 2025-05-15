@@ -2,18 +2,25 @@
 	import { env } from '$env/dynamic/public';
 	import { EditTransactionDialog, Pagination, TransactionComponent } from '$lib';
 	import type { ITransaction } from '$lib/interfaces';
+	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	import { building } from '$app/environment';
 
+	//Handle provided data
 	let { data } = $props();
-
-	let transactions = $state<ITransaction[]>([]);
-	let totalTransactions = $state(0);
-	let currentPage = $state(1);
-	let itemsPerPage = $state(25);
+	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
+	let transactions = $state<ITransaction[]>(data.transactions ?? []);
+	let totalTransactions = $state(data.total ?? 0);
+	let currentPage = $state(data.page ?? 1);
+	let itemsPerPage = $state(data.limit ?? 25);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let selectedTransaction = $state<ITransaction | null>(null);
 	let openEditDialog = $state<() => void>(() => {});
 
+	//Fetch transactions
 	async function fetchTransactions(page: number, limit: number) {
 		isLoading = true;
 		error = null;
@@ -21,9 +28,9 @@
 		try {
 			const [transactionsRes, totalRes] = await Promise.all([
 				fetch(
-					`${env.PUBLIC_BACKEND_URL}/api/groups/${data.group.id}/transactions?page=${page}&limit=${limit}`
+					`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions?page=${page}&limit=${limit}`
 				),
-				fetch(`${env.PUBLIC_BACKEND_URL}/api/groups/${data.group.id}/transactions/total`)
+				fetch(`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/total`)
 			]);
 
 			if (!transactionsRes.ok || !totalRes.ok) {
@@ -51,7 +58,7 @@
 
 		try {
 			const response = await fetch(
-				`${env.PUBLIC_BACKEND_URL}/api/groups/${data.group.id}/transactions/${transaction.id}`,
+				`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/${transaction.id}`,
 				{
 					method: 'DELETE'
 				}
@@ -79,6 +86,36 @@
 		itemsPerPage = newItemsPerPage;
 		currentPage = 1;
 	}
+
+	//Mobile App functionality
+	onMount(async () => {
+		if(!isCompiledStatic()){
+			return;
+		}
+
+		if (!groupId) {
+			goto('/groups');
+		}
+
+		const serverData : {
+			transactions: ITransaction[],
+			total: number,
+			page: number,
+			limit: number,
+			totalPages: number
+		}|null = await onPageLoad(true, true, {
+			groupId: groupId
+		});
+
+		if(serverData === null){
+			return;
+		}
+
+		transactions = serverData.transactions;
+		totalTransactions = serverData.total;
+		currentPage = serverData.page;
+		itemsPerPage = serverData.limit;
+	});
 </script>
 
 <div class="space-y-6">

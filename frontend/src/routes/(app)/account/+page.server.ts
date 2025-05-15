@@ -70,15 +70,12 @@ export const load: PageServerLoad = async () => {
 		};
 	}
 	
-	return getPageData();
+	return await getPageData();
 };
 
 export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data: async ({ request }) => {
-		let page_data = await getPageData();
-		return {
-			...page_data
-		};
+	data: async () => {
+		return await getPageData();
 	},
 	updateUsername: async ({ request }) => {
 		const form = await superValidate(request, zod(zUserInfoUpdate));

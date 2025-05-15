@@ -1,5 +1,5 @@
 // Source: https://gist.github.com/Maxiviper117/95a31750b74510bbb413d2e4ae20b4e8
-import type { Handle } from '@sveltejs/kit';
+import { isRedirect, type Handle } from '@sveltejs/kit';
 
 /**
  * CSRF protection middleware for SvelteKit.
@@ -34,6 +34,21 @@ export function cors(allowedOrigins: string[] = []): Handle {
                 response.headers.set('Access-Control-Allow-Origin', requestOrigin);
                 response.headers.set('Access-Control-Allow-Credentials', 'true');
                 return response;
+            }).catch((error) => {
+                if(!isRedirect(error))
+                    throw error;
+                return new Response(JSON.stringify({
+                    type: "redirect",
+                    status: error.status,
+                    location: error.location
+                }), {
+                    status: 200,
+                    headers: {
+                        'Access-Control-Allow-Origin': requestOrigin,
+                        'Access-Control-Allow-Credentials': 'true',
+                        'Content-Type': 'application/json',
+                    }
+                });
             });
         }
 

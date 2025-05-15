@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { building } from '$app/environment';
-	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
+	import { afterNavigate, invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
 	import type { Group } from '$lib/client';
+	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
+	import { authStore, type User } from '$lib/shared/stores/auth.store.js';
+	import { groupsStore, type GroupList } from '$lib/shared/stores/groups.store.js';
 	import { onMount } from 'svelte';
 	import IconDashboard from '~icons/tabler/dashboard';
 	import IconPlus from '~icons/tabler/plus';
@@ -11,23 +13,54 @@
 	import IconUser from '~icons/tabler/user';
 	import IconUsers from '~icons/tabler/users';
 
+	//Handle provided data
 	let { data, children } = $props();
+	let groups: Group[] = $derived(data.groups ?? Object.values($groupsStore) ?? []);
+	let user: User|null = $derived(data.user ?? $authStore.user ?? null);
 
-	let groups: Group[] = $state(data.groups ?? []);
-	let mainElement: HTMLElement;
-
-	onMount(async () => {
-		//Dummy Data loading
-		/*setTimeout(() => {
-			groups.push({
-				id: "1",
-				name: "Test Group"
-			});
-		}, 5000);*/
+	// Update groups when groupsStore changes
+	/*$effect(() => {
+		groups = Object.values($groupsStore);
 	});
 
+	// Update user when authStore changes
+	$effect(() => {
+		user = $authStore.user;
+	});*/
+
+	//ScrollToTop
+	let mainElement: HTMLElement;
 	afterNavigate(() => {
 		mainElement?.scrollTo(0, 0);
+	});
+
+	//Check if the current page is a group page
+	function isGroupPage(groupId: string): boolean {
+		return page.url.pathname == '/groups/dashboard/' && page.url.searchParams.get('groupId') == groupId;
+	}
+
+	//Mobile App functionality
+	onMount(async () => {
+		if(!isCompiledStatic()){
+			return;
+		}
+
+		const serverData : {
+			user: User|null,
+			groups: Group[]
+		}|null = await onLayoutLoad('/', true, true);
+
+		if(serverData === null){
+			return;
+		}
+
+		$authStore.user = serverData.user;
+		$groupsStore = groups.reduce((acc: GroupList, group) => {
+            if(group.id) {
+                acc[group.id] = group;
+            }
+            return acc;
+		}, {} as GroupList);
 	});
 </script>
 
@@ -76,10 +109,11 @@
 					<div class="mt-2 space-y-1">
 						{#each groups as group (group.id)}
 							<a
-								href="/groups/{group.id}"
-								class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium {page.url.pathname.startsWith(
-									`/groups/${group.id}`
-								)
+								href="/groups/dashboard/?groupId={group.id}"
+								onclick={() => {
+									invalidate(`/groups/dashboard/?groupId=${group.id}`);
+								}}
+								class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium {group.id !== undefined &&isGroupPage(group.id)
 									? 'bg-gray-100 text-gray-700'
 									: 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}"
 							>
@@ -107,9 +141,9 @@
 					<div>
 						<p class="text-xs">
 							<strong class="block font-medium">
-								{data.user.username ? data.user.username : data.user.email}
+								{user ? user.username : ''}
 							</strong>
-							<span>{data.user.email}</span>
+							<span>{user ? user.email : ''}</span>
 						</p>
 					</div>
 				</div>

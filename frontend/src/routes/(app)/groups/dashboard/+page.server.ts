@@ -1,8 +1,9 @@
 import { env } from '$env/dynamic/public';
-import type { Actions, PageServerLoad } from './$types';
 import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
 import { getGroupLayoutData } from '$lib/server/layout-data';
+import type { Actions, PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 
 async function getPageData(fetch: Fetch, groupId: string) {
 	const [balanceRes, recentRes] = await Promise.all([
@@ -18,25 +19,41 @@ async function getPageData(fetch: Fetch, groupId: string) {
 	};
 };
 
-export const load: PageServerLoad = async ({ fetch, params }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
 	if (building){
 		return {
 			balances: [],
 			transactions: []
 		};
 	}
-	
-	return getPageData(fetch, params.groupId);
+
+	const groupId = url.searchParams.get('groupId');
+
+	if (!groupId) {
+		throw redirect(303, '/groups');
+	}
+
+	return getPageData(fetch, groupId);
 };
 
 export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data: async ({ fetch, params, request }) => {
-		let page_data = await getPageData(fetch, params.groupId);
-	
-		let layout_data = await getGroupLayoutData(params.groupId, request);
-		return {
-			...page_data,
-			...layout_data
-		};
+	data_layout: async ({ request }) => {
+		const data = await request.formData();
+		const groupId = data.get('groupId');
+
+		if (!groupId) {
+			throw redirect(303, '/groups');
+		}
+		return getGroupLayoutData(groupId as string, request);
+	},
+	data: async ({ fetch, request }) => {
+		const data = await request.formData();
+		const groupId = data.get('groupId');
+
+		if (!groupId) {
+			throw redirect(303, '/groups');
+		}
+
+		return getPageData(fetch, groupId as string);
 	}
 };

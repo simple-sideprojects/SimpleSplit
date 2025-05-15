@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { superForm } from 'sveltekit-superforms';
+	import { superForm } from '$lib/shared/form/super-form.js';
 	import IconLoader from '~icons/tabler/loader';
+	import type { PageData } from './$types';
 
-	const { data } = $props();
+	const { data } = $props<{ data: PageData }>();
 
-	let { form, submitting } = superForm(data.groupCreateForm);
+	let { form, submitting, enhance } = superForm(data.groupCreateForm);
 </script>
 
 <div class="space-y-6">
@@ -16,11 +16,7 @@
 			class="space-y-6"
 			action="?/createGroup"
 			method="POST"
-			use:enhance={() => {
-				return async ({ update }) => {
-					update();
-				};
-			}}
+			use:enhance
 		>
 			<div class="space-y-1">
 				<div class="mb-3 flex flex-col">

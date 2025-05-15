@@ -51,6 +51,6 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			};
 		}
 
-		redirect(303, `/groups/${response.data.id}`);
+		redirect(303, `/groups/dashboard/?groupId=${response.data.id}`);
 	}
 };

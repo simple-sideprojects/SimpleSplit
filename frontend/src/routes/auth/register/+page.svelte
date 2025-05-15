@@ -11,7 +11,7 @@
 
 	const { form, errors, enhance, submit, message, submitting } = superForm(data.form, {
 		resetForm: false,
-		onResult: ({ result }) => {
+		onResult: async ({ result }) => {
 			if (result.type !== 'success'){
 				return;
 			}
@@ -21,7 +21,7 @@
 				clientSideLogin(result.data.token);
 
 				// Zur Hauptseite weiterleiten
-				goto('/');
+				await goto('/');
 			}
 		},
 		onError({ result }) {

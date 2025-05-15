@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/public';
-import { fail, type Action } from '@sveltejs/kit';
+import { fail, redirect, type Action } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
@@ -24,10 +24,10 @@ async function getPageData(fetch: Fetch, page: number, limit: number, groupId: s
 	};
 };
 
-export const load: PageServerLoad = async ({ fetch, params, url }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
 	if (building){
 		return {
-			groupId: params.groupId,
+			groupId: null,
 			transactions: [],
 			total: 0,
 			page: 1,
@@ -36,22 +36,39 @@ export const load: PageServerLoad = async ({ fetch, params, url }) => {
 		};
 	}
 
+	const groupId = url.searchParams.get('groupId');
+	if (!groupId) {
+		throw redirect(303, '/groups');
+	}
+
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '25');
 
-	return getPageData(fetch, page, limit, params.groupId);
+	return getPageData(fetch, page, limit, groupId);
 };
 
 export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data: async ({ request, fetch, params }) => {
+	data: async ({ request, fetch }) => {
 		const formData = await request.formData();
+		const groupId = formData.get('groupId');
+
+		if (!groupId) {
+			throw redirect(303, '/groups');
+		}
+
 		const page = parseInt(formData.get('page') as string || '1');
 		const limit = parseInt(formData.get('limit') as string || '25');
 
-		return getPageData(fetch, page, limit, params.groupId);
+		return getPageData(fetch, page, limit, groupId as string);
 	},
-	edit: async ({ request, fetch, params }) => {
+	edit: async ({ request, fetch }) => {
 		const formData = await request.formData();
+		const groupId = formData.get('groupId');
+
+		if (!groupId) {
+			throw redirect(303, '/groups');
+		}
+
 		const id = formData.get('id');
 		const description = formData.get('description');
 		const amount = formData.get('amount');
@@ -62,7 +79,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 
 		try {
 			const response = await fetch(
-				`${env.PUBLIC_BACKEND_URL}/api/groups/${params.groupId}/transactions/${id}`,
+				`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/${id}`,
 				{
 					method: 'PUT',
 					headers: {
@@ -86,9 +103,14 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			});
 		}
 	},
-
-	delete: async ({ request, fetch, params }) => {
+	delete: async ({ request, fetch }) => {
 		const formData = await request.formData();
+		const groupId = formData.get('groupId');
+
+		if (!groupId) {
+			throw redirect(303, '/groups');
+		}
+
 		const id = formData.get('id');
 
 		if (!id) {
@@ -97,7 +119,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 
 		try {
 			const response = await fetch(
-				`${env.PUBLIC_BACKEND_URL}/api/groups/${params.groupId}/transactions/${id}`,
+				`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/${id}`,
 				{
 					method: 'DELETE'
 				}
