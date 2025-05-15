@@ -1,10 +1,9 @@
 from typing import Annotated
 from fastapi import Depends
 from sqlmodel import Session, SQLModel, create_engine
-import os
+from app.config import get_settings
 
-postgres_url = os.getenv("DATABASE_URL")
-
+postgres_url = get_settings().DATABASE_URL
 engine = create_engine(postgres_url)
 
 
