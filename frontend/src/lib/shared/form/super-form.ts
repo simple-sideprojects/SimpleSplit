@@ -6,14 +6,15 @@ import { isCompiledStatic, createCustomRequestForFormAction } from '$lib/shared/
 export function superForm<T extends ZodValidation<AnyZodObject>>(
     ...params: Parameters<typeof realSuperForm<T, Message>>
 ) {
+    const options = params.length > 0 ? params[1] : {};
     return realSuperForm<T, Message>(params[0], {
-        ...params[1],
+        ...options,
         onSubmit: (event) => {
             if(isCompiledStatic()){
                 event.customRequest(createCustomRequestForFormAction);
             }
-            if(params[1].onSubmit !== undefined){
-                params[1].onSubmit(event);
+            if(options?.onSubmit !== undefined){
+                options.onSubmit(event);
             }
         }
     });

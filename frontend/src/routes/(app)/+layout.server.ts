@@ -9,11 +9,8 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
     if (building){
         const transactionForm = await superValidate(zod(zTransactionCreate));
         return {
-            user: {
-                username: 'N/A',
-                email: 'N/A'
-            },
-            groups: [],
+            user: null,
+            groups: null,
             transactionForm
         };
     }

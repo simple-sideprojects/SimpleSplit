@@ -39,3 +39,8 @@ src-tauri/gen/schemas
 
 # Capacitor
 android/.idea
+
+# Android Keystore
+release.jks
+release.jks.base64
+release.decrypted.jks

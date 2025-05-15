@@ -3,6 +3,8 @@ import type { Actions, PageServerLoad } from './$types';
 import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
 import { getGroupLayoutData } from '$lib/server/layout-data';
+import type { Actions, PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 import { readGroupTransactionsGroupsGroupIdTransactionsGet } from '$lib/client';
 
 async function getPageData(fetch: Fetch, groupId: string) {
@@ -23,7 +25,7 @@ async function getPageData(fetch: Fetch, groupId: string) {
 	};
 };
 
-export const load: PageServerLoad = async ({ fetch, params }) => {
+export const load: PageServerLoad = async ({ fetch, url }) => {
 	if (building){
 		return {
 			balances: [],
@@ -31,17 +33,33 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 		};
 	}
 
-	return getPageData(fetch, params.groupId);
+	const groupId = url.searchParams.get('groupId');
+
+	if (!groupId) {
+		throw redirect(303, '/groups');
+	}
+
+	return getPageData(fetch, groupId);
 };
 
 export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data: async ({ fetch, params, request }) => {
-		let page_data = await getPageData(fetch, params.groupId);
+	data_layout: async ({ request }) => {
+		const data = await request.formData();
+		const groupId = data.get('groupId');
 
-		let layout_data = await getGroupLayoutData(params.groupId, request);
-		return {
-			...page_data,
-			...layout_data
-		};
+		if (!groupId) {
+			throw redirect(303, '/groups');
+		}
+		return getGroupLayoutData(groupId as string, request);
+	},
+	data: async ({ fetch, request }) => {
+		const data = await request.formData();
+		const groupId = data.get('groupId');
+
+		if (!groupId) {
+			throw redirect(303, '/groups');
+		}
+
+		return getPageData(fetch, groupId as string);
 	}
 };

@@ -10,23 +10,16 @@ import {
 	updateGroupGroupsGroupIdPut
 } from '$lib/client';
 import { zGroupInviteCreate, zUpdateGroup } from '$lib/client/zod.gen';
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
 import { building } from '$app/environment';
 
-async function getPageData(groupId: string) {
-	const { data: group } = await readGroupGroupsGroupIdGet({
-		path: {
-			group_id: groupId
-		}
-	});
-
+async function getPageData() {
 	const inviteMemberForm = await superValidate(zod(zGroupInviteCreate));
 
 	return {
-		group,
 		inviteMemberForm
 	};
 }
@@ -36,24 +29,28 @@ export const load: PageServerLoad = async ({ params }) => {
 		const inviteMemberForm = await superValidate(zod(zGroupInviteCreate));
 
 		return {
-			group: {
-				name: 'Group Name',
-				description: 'Group Description',
-				members: []
-			},
 			inviteMemberForm: inviteMemberForm
 		};
 	}
 	
-	return getPageData(params.groupId);
+	return getPageData();
 };
 
 export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data: async ({ params }) => {
-		return getPageData(params.groupId);
+	data: async () => {
+		return getPageData();
 	},
-	updateGroupName: async ({ request, params }) => {
-		const form = await superValidate(request, zod(zUpdateGroup));
+	updateGroupName: async ({ request }) => {
+		const raw_data = await request.formData();
+		const groupId = raw_data.get('groupId');
+
+		if (!groupId) {
+			return fail(400, {
+				error: 'Group ID is required'
+			});
+		}
+
+		const form = await superValidate(raw_data, zod(zUpdateGroup));
 
 		if (!form.valid) {
 			return setError(form, 'name', 'Name is required');
@@ -61,29 +58,65 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 
 		await updateGroupGroupsGroupIdPut({
 			path: {
-				group_id: params.groupId
+				group_id: groupId as string
 			},
 			body: {
 				name: form.data.name
 			}
 		});
 
+		const groupResponse = await readGroupGroupsGroupIdGet({
+			path: {
+				group_id: groupId as string
+			}
+		});
+
+		if(groupResponse.error){
+			if(groupResponse.response.status === 401){
+				return redirect(302, '/auth/login');
+			}
+			return error(500, {
+				message: groupResponse.error
+			});
+		}
+	
+		if (!groupResponse.data) {
+			throw redirect(302, '/');
+		}
+
 		return {
-			form
+			form,
+			group: groupResponse.data
 		};
 	},
-	deleteGroup: async ({ params }) => {
+	deleteGroup: async ({ request }) => {
+		const raw_data = await request.formData();
+		const groupId = raw_data.get('groupId');
+
+		if (!groupId) {
+			return fail(400, {
+				error: 'Group ID is required'
+			});
+		}
 		await deleteGroupGroupsGroupIdDelete({
 			path: {
-				group_id: params.groupId
+				group_id: groupId as string
 			}
 		});
 
 		return redirect(303, '/');
 	},
-	inviteMember: async ({ request, params }) => {
+	inviteMember: async ({ request }) => {
+		const raw_data = await request.formData();
+		const groupId = raw_data.get('groupId');
+
+		if (!groupId) {
+			return fail(400, {
+				error: 'Group ID is required'
+			});
+		}
 		const inviteMemberForm = await superValidate(
-			request,
+			raw_data,
 			zod(
 				z.object({
 					email: z.string().email()
@@ -97,7 +130,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 
 		await inviteByEmailInvitesGroupIdEmailPost({
 			path: {
-				group_id: params.groupId
+				group_id: groupId as string
 			},
 			body: {
 				email: inviteMemberForm.data.email
@@ -108,7 +141,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 
 		const { data: updatedGroup } = await readGroupGroupsGroupIdGet({
 			path: {
-				group_id: params.groupId
+				group_id: groupId as string
 			}
 		});
 
@@ -117,10 +150,18 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			group: updatedGroup
 		};
 	},
-	generateInviteLink: async ({ params }) => {
+	generateInviteLink: async ({ request }) => {
+		const raw_data = await request.formData();
+		const groupId = raw_data.get('groupId');
+
+		if (!groupId) {
+			return fail(400, {
+				error: 'Group ID is required'
+			});
+		}
 		const { data: inviteData } = await generateInviteLinkInvitesGroupIdGeneratePost({
 			path: {
-				group_id: params.groupId
+				group_id: groupId as string
 			}
 		});
 
@@ -132,7 +173,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 
 		const { data: updatedGroup } = await readGroupGroupsGroupIdGet({
 			path: {
-				group_id: params.groupId
+				group_id: groupId as string
 			}
 		});
 
@@ -141,9 +182,16 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			invite: inviteData
 		};
 	},
-	cancelInvite: async ({ request, params }) => {
-		const data = await request.formData();
-		const inviteToken = data.get('inviteToken')?.toString();
+	cancelInvite: async ({ request }) => {
+		const raw_data = await request.formData();
+		const groupId = raw_data.get('groupId');
+
+		if (!groupId) {
+			return fail(400, {
+				error: 'Group ID is required'
+			});
+		}
+		const inviteToken = raw_data.get('inviteToken')?.toString();
 
 		if (!inviteToken) {
 			return fail(400, {
@@ -167,7 +215,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 
 		const { data: updatedGroup } = await readGroupGroupsGroupIdGet({
 			path: {
-				group_id: params.groupId
+				group_id: groupId as string
 			}
 		});
 
@@ -175,9 +223,16 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			group: updatedGroup
 		};
 	},
-	removeMember: async ({ request, params }) => {
-		const data = await request.formData();
-		const userId = data.get('userId')?.toString();
+	removeMember: async ({ request }) => {
+		const raw_data = await request.formData();
+		const groupId = raw_data.get('groupId');
+		const userId = raw_data.get('userId')?.toString();
+
+		if (!groupId) {
+			return fail(400, {
+				error: 'Group ID is required'
+			});
+		}
 
 		if (!userId) {
 			return fail(400, {
@@ -187,7 +242,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 
 		const { data: updatedGroup } = await deleteUserFromGroupGroupsGroupIdUsersUserIdDelete({
 			path: {
-				group_id: params.groupId,
+				group_id: groupId as string,
 				user_id: userId
 			}
 		}).catch(() => {

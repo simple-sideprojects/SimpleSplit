@@ -10,20 +10,21 @@
 
 	const { data } = $props<{ data: PageData }>();
 
-	const { form, errors, enhance, submit, message, constraints, submitting } = superForm(data.form, {
+	const { form, errors, enhance, message, constraints, submitting } = superForm(data.form, {
 		resetForm: false,
-		onResult: ({ result }) => {
+		onResult: async ({ result, cancel }) => {
 			if (result.type !== 'success'){
 				return;
 			}
-			console.log('result', result);
 
-			if (browser && result.data?.token) {
+			if (result.data && result.data.token) {
 				// Login-Funktion im Store aufrufen
 				clientSideLogin(result.data.token);
 
 				// Zur Hauptseite weiterleiten
-				goto('/');
+				await goto('/');
+			}else{
+				cancel();
 			}
 		}
 	});
@@ -64,6 +65,7 @@
 							name="email"
 							id="email"
 							autocomplete="email"
+							tabindex="0"
 							required
 							bind:value={$form.email}
 							class="w-full rounded border px-3 py-1.5 text-base text-gray-900 placeholder:text-gray-400 sm:text-sm/6 {$errors.email
@@ -82,7 +84,7 @@
 					<div class="flex items-center justify-between">
 						<label for="password" class="block text-sm/6 font-medium text-gray-900">Password</label>
 						<div class="text-sm">
-							<a href="#" class="font-semibold text-blue-600 hover:text-blue-800">
+							<a href="#" class="font-semibold text-blue-600 hover:text-blue-800" tabindex="-1">
 								Forgot password?
 							</a>
 						</div>
@@ -93,6 +95,7 @@
 							name="password"
 							id="password"
 							autocomplete="current-password"
+							tabindex="0"
 							required
 							bind:value={$form.password}
 							class="w-full rounded border px-3 py-1.5 text-base text-gray-900 placeholder:text-gray-400 sm:text-sm/6 {$errors.password
@@ -110,6 +113,7 @@
 					<button
 						type="submit"
 						disabled={$submitting}
+						tabindex="0"
 						class="flex w-full cursor-pointer items-center justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
 					>
 						{#if $submitting}

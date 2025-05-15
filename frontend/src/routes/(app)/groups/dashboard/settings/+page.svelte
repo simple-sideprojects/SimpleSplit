@@ -1,18 +1,29 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { enhance } from '$app/forms';
+	import { browser, building } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { superForm } from 'sveltekit-superforms/client';
+	import type { Group } from '$lib/client';
 	import IconCopy from '~icons/tabler/copy';
 	import IconLink from '~icons/tabler/link';
 	import IconTrash from '~icons/tabler/trash';
 	import IconUserPlus from '~icons/tabler/user-plus';
 	import IconX from '~icons/tabler/x';
+	import { page } from '$app/state';
+	import { superForm } from '$lib/shared/form/super-form.js';
+	import { groupsStore } from '$lib/shared/stores/groups.store.js';
 
+	//Handle provided data
 	let { data } = $props();
+	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
+	let group: Group | null = $derived(data.group ?? (groupId ? $groupsStore[groupId] : null) ?? null);
+	let memberToRemove = $state<string | null>(null);
+	let showDeleteConfirm = $state(false);
+	let deleteConfirmation = $state('');
+	let isDeletingGroup = $state(false);
+	let isRemovingMember = $state(false);
+	let isCancelingInvite = $state(false);
 
+	//Invite Member Form
 	const {
 		form: inviteMemberForm,
 		enhance: enhanceInvite,
@@ -20,9 +31,13 @@
 		errors: inviteMemberErrors
 	} = superForm(data.inviteMemberForm, {
 		resetForm: true,
+		onSubmit: ({ formData }) => {
+			formData.set('groupId', groupId as string);
+		},
 		onResult: ({ result }) => {
 			if (result.type === 'success') {
 				if (result.data?.group) {
+					$groupsStore[result.data.group.id] = result.data.group;
 					data.group = result.data.group;
 				}
 
@@ -33,19 +48,77 @@
 		}
 	});
 
-	let memberToRemove = $state<string | null>(null);
-	let showDeleteConfirm = $state(false);
-	let deleteConfirmation = $state('');
-	let isDeletingGroup = $state(false);
-	let isRemovingMember = $state(false);
-	let isCancelingInvite = $state(false);
-
-	onMount(() => {
-		if (!data.group) {
-			goto('/');
+	//Delete Group Form
+	const {
+		enhance: enhanceGroupDelete
+	} = superForm({}, {
+		onSubmit: ({formData}) => {
+			formData.set('groupId', groupId as string);
+			isDeletingGroup = true;
+			return async () => {
+				toast.success('Group deleted successfully');
+				await goto('/groups/dashboard/');
+			};
 		}
 	});
 
+	//Cancel Invite Form
+	const {
+		enhance: enhanceCancelInvite
+	} = superForm({}, {
+		onSubmit: ({formData}) => {
+			formData.set('groupId', groupId as string);
+			isCancelingInvite = true;
+
+			return async ({ update, result }) => {
+				await update();
+				isCancelingInvite = false;
+
+				if (result.type === 'success') {
+					toast.success('Invitation canceled');
+				}
+			};
+		}
+	});
+
+	//Generate Invite Link Form
+	const {
+		enhance: enhanceGenerateInviteLink
+	} = superForm({}, {
+		onSubmit: ({formData}) => {
+			formData.set('groupId', groupId as string);
+			return async ({ result, update }) => {
+				if (result.type === 'success' && browser && result.data?.invite) {
+					const invite = result.data.invite as { token: string };
+					const link = `${document.location.origin}/groups/invite?token=${invite.token}`;
+					copyToClipboard(link);
+					toast.success('Invite link copied to clipboard');
+					await update();
+				}
+			};
+		}
+	});
+
+	//Remove Member Form
+	const {
+		enhance: enhanceRemoveMember
+	} = superForm({}, {
+		onSubmit: ({formData}) => {
+			formData.set('groupId', groupId as string);
+			isRemovingMember = true;
+			return async ({ update, result }) => {
+				await update();
+				isRemovingMember = false;
+				memberToRemove = null;
+
+				if (result.type === 'success') {
+					toast.success('Member removed successfully');
+				}
+			};
+		}
+	});
+
+	//Copy to clipboard
 	function copyToClipboard(text: string) {
 		navigator.clipboard.writeText(text).then(
 			() => {
@@ -56,9 +129,11 @@
 			}
 		);
 	}
+
+	//Mobile App functionality not needed because of prerendering
 </script>
 
-{#if data.group}
+{#if group}
 	<div class="space-y-6">
 		<h1 class="text-xl font-bold">Group Settings</h1>
 
@@ -95,17 +170,7 @@
 					<form
 						action="?/generateInviteLink"
 						method="POST"
-						use:enhance={() => {
-							return async ({ result, update }) => {
-								if (result.type === 'success' && browser && result.data?.invite) {
-									const invite = result.data.invite as { token: string };
-									const link = `${document.location.origin}/groups/invite/${invite.token}`;
-									copyToClipboard(link);
-									toast.success('Invite link copied to clipboard');
-									await update();
-								}
-							};
-						}}
+						use:enhanceGenerateInviteLink
 					>
 						<button
 							type="submit"
@@ -128,7 +193,7 @@
 				<!-- Active Members List -->
 				<h3 class="mt-4 mb-2 text-sm font-medium text-gray-700">Active Members</h3>
 				<div class="space-y-2">
-					{#each data.group.users ?? [] as member (member.id)}
+					{#each group.users ?? [] as member (member.id)}
 						<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
 							<span class="text-sm">
 								{member.username}
@@ -146,10 +211,10 @@
 				</div>
 
 				<!-- Pending Invitations -->
-				{#if data.group.invites && data.group.invites.length > 0}
+				{#if group.invites && group.invites.length > 0}
 					<h3 class="mt-4 mb-2 text-sm font-medium text-gray-700">Pending Invitations</h3>
 					<div class="space-y-2">
-						{#each data.group.invites as invite (invite.id)}
+						{#each group.invites as invite (invite.id)}
 							<div
 								class="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3"
 							>
@@ -161,31 +226,20 @@
 											class="mr-1.5 cursor-pointer text-gray-500 hover:text-gray-700"
 											onclick={() =>
 												copyToClipboard(
-													`${document.location.origin}/groups/invite/${invite.token}`
+													`${document.location.origin}/groups/invite?token=${invite.token}`
 												)}
 										>
 											<IconCopy class="size-4" />
 										</button>
 										<span class="truncate"
-											>{document.location.origin}/groups/invite/{invite.token}</span
+											>{document.location.origin}/groups/invite?token={invite.token}</span
 										>
 									{/if}
 								</div>
 								<form
 									action="?/cancelInvite"
 									method="POST"
-									use:enhance={() => {
-										isCancelingInvite = true;
-
-										return async ({ update, result }) => {
-											await update();
-											isCancelingInvite = false;
-
-											if (result.type === 'success') {
-												toast.success('Invitation canceled');
-											}
-										};
-									}}
+									use:enhanceCancelInvite
 								>
 									<input type="hidden" name="inviteToken" value={invite.token} />
 									<button
@@ -228,18 +282,13 @@
 					<form
 						action="?/deleteGroup"
 						method="POST"
-						use:enhance={() => {
-							isDeletingGroup = true;
-							return async () => {
-								toast.success('Group deleted successfully');
-							};
-						}}
+						use:enhanceGroupDelete
 					>
 						<div class="mb-2 flex flex-col">
 							<label for="confirm" class="text-sm font-medium text-gray-900">Confirm Deletion</label
 							>
 							<span class="mt-0.5 text-xs text-gray-500"
-								>Please type "{data.group.name}" to confirm</span
+								>Please type "{group.name}" to confirm</span
 							>
 						</div>
 						<input
@@ -265,7 +314,7 @@
 							</button>
 							<button
 								type="submit"
-								disabled={isDeletingGroup || deleteConfirmation !== data.group.name}
+								disabled={isDeletingGroup || deleteConfirmation !== group.name}
 								class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 							>
 								<IconTrash class="size-4" />
@@ -319,18 +368,7 @@
 					<form
 						action="?/removeMember"
 						method="POST"
-						use:enhance={() => {
-							isRemovingMember = true;
-							return async ({ update, result }) => {
-								await update();
-								isRemovingMember = false;
-								memberToRemove = null;
-
-								if (result.type === 'success') {
-									toast.success('Member removed successfully');
-								}
-							};
-						}}
+						use:enhanceRemoveMember
 					>
 						<input type="hidden" name="userId" value={memberToRemove} />
 						<div class="sm:flex sm:flex-row-reverse">

@@ -1,27 +1,61 @@
 <script lang="ts">
 	import { TransactionComponent } from '$lib';
+	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller';
+	import { onMount } from 'svelte';
 	import IconArrowDown from '~icons/tabler/arrow-down';
 	import IconArrowUp from '~icons/tabler/arrow-up';
 	import IconChevronDown from '~icons/tabler/chevron-down';
 	import IconClock from '~icons/tabler/clock';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { building } from '$app/environment';
 
+	//Types
 	type Balance = {
 		username: string;
 		balance: number;
 	};
 
+	//Handle provided data
 	let { data } = $props();
+	let balances: Balance[] = $state(data.balances ?? []);
+	let transactions: [] = $state(data.transactions ?? []);
+	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
 
+	//Calculate balances
 	let totalPositive = $derived(
-		data.balances.reduce((acc: number, b: Balance) => (b.balance > 0 ? acc + b.balance : acc), 0)
+		balances.reduce((acc: number, b: Balance) => (b.balance > 0 ? acc + b.balance : acc), 0)
 	);
 	let totalNegative = $derived(
-		data.balances.reduce((acc: number, b: Balance) => (b.balance < 0 ? acc + b.balance : acc), 0)
+		balances.reduce((acc: number, b: Balance) => (b.balance < 0 ? acc + b.balance : acc), 0)
 	);
 
-	function formatAmount(amount: number): string {
-		return (amount / 100).toFixed(2);
-	}
+	//Formatter
+	const AmountFormatter = Intl.NumberFormat('de-DE', {style:'currency',currency:'EUR'});
+
+	//Mobile App functionality
+	onMount(async () => {
+		if(!isCompiledStatic()){
+			return;
+		}
+		if (!groupId) {
+			goto('/groups');
+		}
+
+		const serverData : {
+			balances: Balance[],
+			transactions: []
+		}|null = await onPageLoad(true, true, {
+			groupId: groupId
+		});
+		
+		if(serverData === null){
+			return;
+		}
+
+		balances = serverData.balances;
+		transactions = serverData.transactions;
+	});
 </script>
 
 <div class="space-y-6">
@@ -32,7 +66,7 @@
 				<IconArrowUp class="size-5 text-green-500" />
 				<h2 class="text-base font-semibold text-gray-900">You are owed</h2>
 			</div>
-			<p class="mt-2 text-2xl font-bold text-green-500">€{formatAmount(totalPositive)}</p>
+			<p class="mt-2 text-2xl font-bold text-green-500">{AmountFormatter.format(totalPositive)}</p>
 		</div>
 
 		<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
@@ -40,7 +74,7 @@
 				<IconArrowDown class="size-5 text-red-500" />
 				<h2 class="text-base font-semibold text-gray-900">You owe</h2>
 			</div>
-			<p class="mt-2 text-2xl font-bold text-red-500">€{formatAmount(Math.abs(totalNegative))}</p>
+			<p class="mt-2 text-2xl font-bold text-red-500">{AmountFormatter.format(Math.abs(totalNegative))}</p>
 		</div>
 	</div>
 
@@ -52,7 +86,7 @@
 				<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
 					<span class="font-medium">{balance.username}</span>
 					<span class={balance.balance >= 0 ? 'text-green-500' : 'text-red-500'}>
-						€{formatAmount(balance.balance)}
+						{AmountFormatter.format(balance.balance)}
 					</span>
 				</div>
 			{/each}
