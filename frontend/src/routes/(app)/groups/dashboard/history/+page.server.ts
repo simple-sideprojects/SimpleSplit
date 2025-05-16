@@ -135,5 +135,22 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 				error: error instanceof Error ? error.message : 'Failed to delete transaction'
 			});
 		}
+	},
+	transactions: async ({ request, fetch }) => {
+		const formData = await request.formData();
+		const groupId = formData.get('groupId');
+
+		if (!groupId) {
+			throw redirect(303, '/groups');
+		}
+
+		if(!formData.has('page') || !formData.has('limit')){
+			return fail(400, { error: 'Missing required fields' });
+		}
+
+		const page = parseInt(formData.get('page') as string);
+		const limit = parseInt(formData.get('limit') as string);
+
+		return getPageData(fetch, page, limit, groupId as string);
 	}
 };

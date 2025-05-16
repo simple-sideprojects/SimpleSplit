@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/public';
-import type { UpdateTransactionBody } from '$lib/interfaces/transactions';
+import type { ITransaction, UpdateTransactionBody } from '$lib/interfaces/transactions';
 import { http, HttpResponse } from 'msw';
+import { bypassOrMock } from '../helpers/bypass-request';
 
 const mockTransactions: ITransaction[] = [
 	{
@@ -40,14 +41,14 @@ export const getTransactionsMock = http.get(
 		const end = start + limit;
 		const paginatedTransactions = mockTransactions.slice(start, end);
 
-		return HttpResponse.json(paginatedTransactions);
+		return bypassOrMock(request, HttpResponse.json(paginatedTransactions));
 	}
 );
 
 export const getTotalTransactionsMock = http.get(
 	`${env.PUBLIC_BACKEND_URL}/api/groups/:groupId/transactions/total`,
 	() => {
-		return HttpResponse.json(mockTransactions.length);
+		return bypassOrMock(request, HttpResponse.json(mockTransactions.length));
 	}
 );
 
@@ -65,7 +66,7 @@ export const updateTransactionMock = http.put(
 		transaction.description = body.description;
 		transaction.amount = body.amount;
 
-		return HttpResponse.json(transaction);
+		return bypassOrMock(request, HttpResponse.json(transaction));
 	}
 );
 
@@ -80,6 +81,6 @@ export const deleteTransactionMock = http.delete(
 		}
 
 		mockTransactions.splice(index, 1);
-		return new HttpResponse(null, { status: 204 });
+		return bypassOrMock(request, new HttpResponse(null, { status: 204 }));
 	}
 );

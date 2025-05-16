@@ -26,7 +26,7 @@ export function createCustomRequestForFormAction(input: Parameters<SubmitFunctio
             pathname += '/';
         }
 
-        const url = new URL(PUBLIC_FRONTEND_URL + pathname + input.action.search);
+        const url = new URL(authStore.getAuthData().frontend_url + pathname + input.action.search);
 
         xhr.open('POST', url, true);
 
@@ -40,7 +40,7 @@ export function createCustomRequestForFormAction(input: Parameters<SubmitFunctio
         ) as Record<string, string>;
 
         //Add the groupId to the data if it is a group dashboard page
-        if(pathname.includes('/groups/dashboard')){
+        if(data['groupId'] === undefined && pathname.includes('/groups/dashboard')){
             const groupId = page.url.searchParams.get('groupId');
             if(groupId){
                 data['groupId'] = groupId;
@@ -69,14 +69,15 @@ function beforeDataLoad(protectedRoute = true){
     }
 }
 
-async function triggerAction(action: string, data?: Record<string, any>, pathname?: string){
+export async function triggerAction(action: string, data?: Record<string, any>, pathname?: string){
     let pathname_ = pathname ?? page.url.pathname;
     //Add a trailing slash to the pathname if it doesn't have one
     if (!pathname_.endsWith('/')){
         pathname_ += '/';
     }
 
-    const actionUrl = `${PUBLIC_FRONTEND_URL}${pathname_}?/${action}`;
+    const actionUrl = `${authStore.getAuthData().frontend_url}${pathname_}?/${action}`;
+
     const formData = new URLSearchParams();
 
     //Add passed data to the form data
@@ -84,6 +85,14 @@ async function triggerAction(action: string, data?: Record<string, any>, pathnam
         Object.entries(data).forEach(([key, value]) => {
             formData.append(key, value);
         });
+    }
+
+    //Add the groupId to the data if it is a group dashboard page
+    if(!formData.has('groupId') && pathname_.includes('/groups/dashboard')){
+        const groupId = page.url.searchParams.get('groupId');
+        if(groupId){
+            formData.append('groupId', groupId);
+        }
     }
 
     //Send the form data to the action URL

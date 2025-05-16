@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { clientSideLogin } from '$lib/shared/stores/auth.store';
-	import { browser } from '$app/environment';
-	import { onPageLoad } from '$lib/shared/app/controller';
 	import type { PageData } from './$types';
-	import { onMount } from 'svelte';
 	import { superForm } from '$lib/shared/form/super-form';
 	import IconLoader from '~icons/tabler/loader';
+	import IconChevronDown from '~icons/tabler/chevron-down';
+	import IconChevronUp from '~icons/tabler/chevron-up';
+	import IconPlus from '~icons/tabler/plus';
+	import { authStore } from '$lib/shared/stores/auth.store';
+	import { PUBLIC_FRONTEND_URL, PUBLIC_FRONTEND_URL_CHANGABLE } from '$env/static/public';
 
 	const { data } = $props<{ data: PageData }>();
 
@@ -29,10 +31,34 @@
 		}
 	});
 
-	onMount(async () => {
-		await onPageLoad(false, false);
-	});
+	// Popover umschalten
+	let showPopover = $state(false);
+	let server_input_error = $state(false);
+	let server_input_error_message = $state('');
+	
+	function togglePopover(event: Event) {
+		event.preventDefault();
+		event.stopPropagation();
+		showPopover = !showPopover;
+	}
+	
+	// Klick außerhalb des Popovers schließt ihn
+	function handleClickOutside(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		const popover = document.getElementById('server-popover');
+		const link = document.getElementById('server-link');
+		
+		if (popover && link && !popover.contains(target) && !link.contains(target)) {
+			showPopover = false;
+		}
+	}
+
+	let SERVER_HOST = $derived(new URL($authStore.frontend_url || PUBLIC_FRONTEND_URL));
+	let server_input = $state('');
+	
 </script>
+
+<svelte:window onclick={handleClickOutside} />
 
 <div class="flex h-screen items-center justify-center">
 	<div
@@ -124,13 +150,111 @@
 						{/if}
 					</button>
 				</div>
+				<p class="text-center text-sm/6 text-gray-500">
+					Not a member?
+					<a href="/auth/register" class="font-semibold text-blue-600 hover:text-blue-500"
+						>Register here</a
+					>
+				</p>
+				{#if PUBLIC_FRONTEND_URL_CHANGABLE === 'on'}
+					<p class="mt-4 mb-0 text-center text-sm/6 text-gray-500">
+						Zugriff auf:
+						<span class="relative">
+							<a 
+								id="server-link"
+								class="font-semibold text-blue-600 hover:text-blue-500 cursor-pointer inline-flex items-center" 
+								href="#" 
+								onclick={togglePopover}
+							>
+								{SERVER_HOST.hostname}{#if SERVER_HOST.port !== ''}:{SERVER_HOST.port}{/if}
+								{#if showPopover}
+									<IconChevronUp class="text-gray-500 size-4 inline-flex ml-1" />
+								{:else}
+									<IconChevronDown class="text-gray-500 size-4 inline-flex ml-1" />
+								{/if}
+							</a>
+						</span>
+					</p>
+				{/if}
+				{#if PUBLIC_FRONTEND_URL_CHANGABLE == 'on' && showPopover}
+					<div 
+						id="server-popover" 
+						class="absolute z-50 mt-2 left-1/2 transform -translate-x-1/2 w-64 rounded-lg border border-gray-200 bg-white shadow-lg"
+					>
+						<div class="p-3">
+							<h3 class="font-medium text-sm">Server-Auswahl</h3>
+							<p class="text-xs text-gray-500 mt-1">Wähle eine Server-Instanz für den Zugriff</p>
+						</div>
+
+						{#if $authStore.frontend_url !== PUBLIC_FRONTEND_URL}
+							<div class="max-h-48 overflow-y-auto pb-3">
+								<button
+									class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between cursor-pointer" onclick={() => {
+										$authStore.frontend_url = PUBLIC_FRONTEND_URL;
+										showPopover = false;
+									}}
+								>
+									<div>
+										<div class="font-medium text-sm">{PUBLIC_FRONTEND_URL}</div>
+										<div class="text-xs text-gray-500">SimpleSplit (default)</div>
+									</div>
+								</button>
+							</div>
+						{/if}
+						{#if server_input_error}
+							<div class="rounded-md bg-red-50 p-4">
+								<div class="flex">
+									<div class="text-sm text-red-700">{server_input_error_message}</div>
+								</div>
+							</div>
+						{/if}
+						<div class="p-3 pt-0">
+							<div class="space-y-2">
+								<div>
+									<input
+										type="url"
+										placeholder="Server URL (eg. https://example.com)"
+										bind:value={server_input}
+										class="w-full rounded-lg border border-gray-200 p-1.5 text-sm"
+									/>
+								</div>
+								<button
+									type="button"
+									class="w-full rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 flex items-center justify-center gap-1"
+									onclick={(e) => {
+										e.preventDefault();
+										try {
+											//Validate URL
+											let server_input_url = new URL(server_input);
+											server_input_error = false;
+											let new_frontend_url = server_input_url.toString();
+											if(new_frontend_url.endsWith('/')){
+												new_frontend_url = new_frontend_url.slice(0, -1);
+											}
+											$authStore.frontend_url = new_frontend_url;
+											server_input = '';
+											showPopover = false;
+										} catch (error) {
+											if(server_input == ''){
+												server_input_error_message = 'Server URL is required';
+											}else if(!server_input.includes('http://') && !server_input.includes('https://')){
+												server_input_error_message = 'Missing Schema (http:// or https://)';
+											}else{
+												server_input_error_message = 'Failed to validate URL';
+											}
+											server_input_error = true;
+										}
+										return server_input_error;
+									}}
+								>
+									<IconPlus class="size-4" />
+									Server ändern
+								</button>
+							</div>
+						</div>
+					</div>
+				{/if}
 			</form>
-			<p class="mt-10 text-center text-sm/6 text-gray-500">
-				Not a member?
-				<a href="/auth/register" class="font-semibold text-blue-600 hover:text-blue-500"
-					>Register here</a
-				>
-			</p>
 		</div>
 	</div>
 </div>
