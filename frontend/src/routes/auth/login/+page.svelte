@@ -9,6 +9,7 @@
 	import IconPlus from '~icons/tabler/plus';
 	import { authStore } from '$lib/shared/stores/auth.store';
 	import { PUBLIC_FRONTEND_URL, PUBLIC_FRONTEND_URL_CHANGABLE } from '$env/static/public';
+	import { isCompiledStatic } from '$lib/shared/app/controller';
 
 	const { data } = $props<{ data: PageData }>();
 
@@ -30,6 +31,9 @@
 			}
 		}
 	});
+
+	// Server Switcher
+	const supportsServerSwitcher = isCompiledStatic() && PUBLIC_FRONTEND_URL_CHANGABLE === 'on';
 
 	// Popover umschalten
 	let showPopover = $state(false);
@@ -156,7 +160,7 @@
 						>Register here</a
 					>
 				</p>
-				{#if PUBLIC_FRONTEND_URL_CHANGABLE === 'on'}
+				{#if supportsServerSwitcher}
 					<p class="mt-4 mb-0 text-center text-sm/6 text-gray-500">
 						Zugriff auf:
 						<span class="relative">
@@ -176,7 +180,7 @@
 						</span>
 					</p>
 				{/if}
-				{#if PUBLIC_FRONTEND_URL_CHANGABLE == 'on' && showPopover}
+				{#if supportsServerSwitcher && showPopover}
 					<div 
 						id="server-popover" 
 						class="absolute z-50 mt-2 left-1/2 transform -translate-x-1/2 w-64 rounded-lg border border-gray-200 bg-white shadow-lg"
