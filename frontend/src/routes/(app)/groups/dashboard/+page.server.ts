@@ -4,10 +4,10 @@ import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
 import { getGroupLayoutData } from '$lib/server/layout-data';
 import type { Actions, PageServerLoad } from './$types';
-import { redirect } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { readGroupTransactionsGroupsGroupIdTransactionsGet } from '$lib/client';
 
-async function getPageData(fetch: Fetch, groupId: string) {
+async function getPageData(fetch: Fetch, groupId: string, cookies: Cookies) {
 	const [balanceRes, recentRes] = await Promise.all([
 		fetch(`${env.PUBLIC_BACKEND_URL}/groups/${groupId}/balance`),
         readGroupTransactionsGroupsGroupIdTransactionsGet({
@@ -17,6 +17,18 @@ async function getPageData(fetch: Fetch, groupId: string) {
         })
 	]);
 
+	if (!balanceRes.ok || recentRes.error) {
+		if(balanceRes.status === 401){
+			cookies.delete('auth_token', { path: '/' });
+			throw redirect(302, '/auth/login');
+		}
+		console.log(balanceRes);
+		console.log(recentRes);
+		throw error(500, {
+			message: 'Failed to fetch balance or recent transactions'
+		});
+	}
+
 	const [balances, transactions] = await Promise.all([balanceRes.json(), recentRes.data]);
 
 	return {
@@ -25,7 +37,7 @@ async function getPageData(fetch: Fetch, groupId: string) {
 	};
 };
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, url, cookies }) => {
 	if (building){
 		return {
 			balances: [],
@@ -39,7 +51,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 		throw redirect(303, '/groups');
 	}
 
-	return getPageData(fetch, groupId);
+	return getPageData(fetch, groupId, cookies);
 };
 
 export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
@@ -52,7 +64,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 		}
 		return getGroupLayoutData(groupId as string, request);
 	},
-	data: async ({ fetch, request }) => {
+	data: async ({ fetch, request, cookies }) => {
 		const data = await request.formData();
 		const groupId = data.get('groupId');
 
@@ -60,6 +72,6 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 			throw redirect(303, '/groups');
 		}
 
-		return getPageData(fetch, groupId as string);
+		return getPageData(fetch, groupId as string, cookies);
 	}
 };

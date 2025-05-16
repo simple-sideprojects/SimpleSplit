@@ -23,6 +23,7 @@
 	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
 
 	//Calculate balances
+	console.log('balances', balances);
 	let totalPositive = $derived(
 		balances.reduce((acc: number, b: Balance) => (b.balance > 0 ? acc + b.balance : acc), 0)
 	);

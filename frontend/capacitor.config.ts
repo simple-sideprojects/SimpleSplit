@@ -11,6 +11,9 @@ const config: CapacitorConfig = {
 		},
 		CapacitorHttp: {
 			enabled: true
+		},
+		CapacitorCookies: {
+		  	enabled: true,
 		}
 	},
 	// remove server section before making production build

@@ -39,14 +39,6 @@ export function createCustomRequestForFormAction(input: Parameters<SubmitFunctio
             input.formData.entries()
         ) as Record<string, string>;
 
-        //Add the groupId to the data if it is a group dashboard page
-        if(data['groupId'] === undefined && pathname.includes('/groups/dashboard')){
-            const groupId = page.url.searchParams.get('groupId');
-            if(groupId){
-                data['groupId'] = groupId;
-            }
-        }
-
         xhr.send(new URLSearchParams(data).toString());
     });
 }
@@ -88,6 +80,7 @@ export async function triggerAction(action: string, data?: Record<string, any>, 
     }
 
     //Add the groupId to the data if it is a group dashboard page
+    console.log(formData.has('groupId'), pathname_.includes('/groups/dashboard'));
     if(!formData.has('groupId') && pathname_.includes('/groups/dashboard')){
         const groupId = page.url.searchParams.get('groupId');
         if(groupId){

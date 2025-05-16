@@ -24,8 +24,8 @@ async function getPageData(fetch: Fetch, cookies: Cookies) {
 		})
 	]);
 
-	if (!balanceRes.ok || !recentRes.ok) {
-		if(balanceRes.status === 401 || recentRes.status === 401){
+	if (!balanceRes.ok || recentRes.error) {
+		if(balanceRes.status === 401){
 			cookies.delete('auth_token', { path: '/' });
 			throw redirect(302, '/auth/login');
 		}
