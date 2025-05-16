@@ -117,13 +117,13 @@ export const addGroupMemberMock = http.post(
 		}
 
 		group.members.push(body.username);
-		return HttpResponse.json(group);
+		return bypassOrMock(request, HttpResponse.json(group));
 	}
 );
 
 export const removeGroupMemberMock = http.delete(
 	`${env.PUBLIC_BACKEND_URL}/groups/:groupId/members/:username`,
-	({ params }) => {
+	async ({ params, request }) => {
 		const group = groups.find((g) => g.id === Number(params.groupId));
 		if (!group) {
 			return new HttpResponse(null, { status: 404 });
@@ -146,14 +146,14 @@ export const removeGroupMemberMock = http.delete(
 		}
 
 		group.members.splice(memberIndex, 1);
-		return HttpResponse.json(group);
+		return bypassOrMock(request, HttpResponse.json(group));
 	}
 );
 
 export const recentByGroupMock = http.get(
 	`${env.PUBLIC_BACKEND_URL}/groups/:groupId/recent`,
-	() => {
-		return HttpResponse.json([
+	async ({ request }) => {
+		return bypassOrMock(request, HttpResponse.json([
 			{
 				id: 1,
 				from: 'Max Mustermann',
@@ -178,6 +178,6 @@ export const recentByGroupMock = http.get(
 				description: 'Group gift for Lisa',
 				date: '2024-03-12T14:20:00Z'
 			}
-		]);
+		]));
 	}
 );

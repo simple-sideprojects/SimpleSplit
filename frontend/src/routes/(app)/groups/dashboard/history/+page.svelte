@@ -2,7 +2,7 @@
 	import { env } from '$env/dynamic/public';
 	import { EditTransactionDialog, Pagination, TransactionComponent } from '$lib';
 	import type { ITransaction } from '$lib/interfaces';
-	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
+	import { isCompiledStatic, onPageLoad, triggerAction } from '$lib/shared/app/controller.js';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -25,25 +25,28 @@
 		isLoading = true;
 		error = null;
 
-		try {
-			const [transactionsRes, totalRes] = await Promise.all([
-				fetch(
-					`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions?page=${page}&limit=${limit}`
-				),
-				fetch(`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/total`)
-			]);
+		const serverData: {
+			transactions: ITransaction[],
+			total: number,
+			page: number,
+			limit: number,
+			totalPages: number
+		}|null = await triggerAction('transactions', {
+			page: page,
+			limit: limit
+		});
 
-			if (!transactionsRes.ok || !totalRes.ok) {
-				throw new Error('Failed to fetch transactions');
-			}
-
-			transactions = await transactionsRes.json();
-			totalTransactions = await totalRes.json();
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'An error occurred';
-		} finally {
+		if(serverData === null){
+			error = 'Failed to fetch transactions';
 			isLoading = false;
+			return;
 		}
+
+		transactions = serverData.transactions;
+		totalTransactions = serverData.total;
+		currentPage = serverData.page;
+		itemsPerPage = serverData.limit;
+		isLoading = false;
 	}
 
 	async function handleEdit(transaction: ITransaction) {
@@ -56,22 +59,16 @@
 			return;
 		}
 
-		try {
-			const response = await fetch(
-				`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/${transaction.id}`,
-				{
-					method: 'DELETE'
-				}
-			);
+		const serverData = await triggerAction('delete', {
+			id: transaction.id
+		});
 
-			if (!response.ok) {
-				throw new Error('Failed to delete transaction');
-			}
-
-			await fetchTransactions(currentPage, itemsPerPage);
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to delete transaction';
+		if(serverData === null){
+			error = 'Failed to delete transaction';
+			return;
 		}
+
+		await fetchTransactions(currentPage, itemsPerPage);
 	}
 
 	$effect(() => {

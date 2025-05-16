@@ -1,8 +1,9 @@
 import { env } from '$env/dynamic/public';
 import { http, HttpResponse } from 'msw';
+import { bypassOrMock } from '../helpers/bypass-request';
 
-export const recentMock = http.get(`${env.PUBLIC_BACKEND_URL}/recent`, () => {
-	return HttpResponse.json([
+export const recentMock = http.get(`${env.PUBLIC_BACKEND_URL}/recent`, async ({ request }) => {
+	return bypassOrMock(request, HttpResponse.json([
 		{
 			id: 1,
 			from: 'Max Mustermann',
@@ -43,5 +44,5 @@ export const recentMock = http.get(`${env.PUBLIC_BACKEND_URL}/recent`, () => {
 			description: 'Concert tickets',
 			date: '2024-03-08T09:15:00Z'
 		}
-	]);
+	]));
 });
