@@ -10,6 +10,7 @@
 	import IconLogout from '~icons/tabler/logout';
 	import IconTrash from '~icons/tabler/trash';
 	import type { PageData } from './$types.js';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
@@ -93,13 +94,15 @@
 		if(!isCompiledStatic()){
 			return;
 		}
-		const serverData : {
+		const serverData : ActionResult<{
 			userData: User,
-		}|null = await onPageLoad(true, true);
-		if(serverData === null){
+		}> = await onPageLoad(true, {
+			userData: userData
+		});
+		if(serverData.type !== 'success' || !serverData.data){
 			return;
 		}
-		$authStore.user = serverData.userData;
+		$authStore.user = serverData.data.userData;
 	});
 </script>
 

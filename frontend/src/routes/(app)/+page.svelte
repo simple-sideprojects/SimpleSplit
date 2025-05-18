@@ -11,6 +11,7 @@
 	import IconChevronDown from '~icons/tabler/chevron-down';
 	import IconClock from '~icons/tabler/clock';
 	import type { PageData } from './$types';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
@@ -47,16 +48,17 @@
 		if(!isCompiledStatic()){
 			return;
 		}
-		const serverData : {
+		const serverResponse : ActionResult<{
 			balances: Balance[],
 			transactions: TransactionRead[]
-		}|null = await onPageLoad(true, true);
-		if(serverData === null){
+		}> = await onPageLoad(true);
+
+		if(serverResponse.type !== 'success' || !serverResponse.data){
 			return;
 		}
 
-		balancesStore.setBalances(serverData.balances);
-		transactionsStore.setTransactions(serverData.transactions);
+		balancesStore.setBalances(serverResponse.data.balances);
+		transactionsStore.setTransactions(serverResponse.data.transactions);
 	});
 </script>
 

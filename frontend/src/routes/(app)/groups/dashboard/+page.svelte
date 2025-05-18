@@ -14,6 +14,7 @@
 	import { balancesStore } from '$lib/shared/stores/balances.store.js';
 	import { transactionsStore } from '$lib/shared/stores/transactions.store.js';
 	import type { PageData } from './$types';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
@@ -41,19 +42,19 @@
 			goto('/groups');
 		}
 
-		const serverData : {
+		const serverResponse : ActionResult<{
 			balances: Balance[],
-			transactions: []
-		}|null = await onPageLoad(true, true, {
+			transactions: TransactionRead[]
+		}> = await onPageLoad(true, {
 			groupId: groupId
 		});
 		
-		if(serverData === null){
+		if(serverResponse.type !== 'success' || !serverResponse.data){
 			return;
 		}
 
-		balancesStore.setBalances(serverData.balances);
-		transactionsStore.setTransactions(serverData.transactions);
+		balancesStore.setBalances(serverResponse.data.balances);
+		transactionsStore.setTransactions(serverResponse.data.transactions);
 	});
 </script>
 

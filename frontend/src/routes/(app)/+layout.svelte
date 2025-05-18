@@ -2,10 +2,9 @@
 	import { afterNavigate, invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
-	import type { Group } from '$lib/client';
 	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
 	import { authStore, type User } from '$lib/shared/stores/auth.store.js';
-	import { groupsStore, type GroupList } from '$lib/shared/stores/groups.store.js';
+	import { groupsStore, type Group } from '$lib/shared/stores/groups.store.js';
 	import { onMount } from 'svelte';
 	import IconDashboard from '~icons/tabler/dashboard';
 	import IconPlus from '~icons/tabler/plus';
@@ -13,6 +12,7 @@
 	import IconUser from '~icons/tabler/user';
 	import IconUsers from '~icons/tabler/users';
 	import type { PageData } from './$types';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
 	let { data, children } = $props<{ data: PageData }>();
@@ -50,17 +50,17 @@
 			return;
 		}
 
-		const serverData : {
+		const serverResponse : ActionResult<{
 			user: User|null,
 			groups: Group[]
-		}|null = await onLayoutLoad('/', true, true);
+		}> = await onLayoutLoad('/', true);
 
-		if(serverData === null){
+		if(serverResponse.type !== 'success' || !serverResponse.data){
 			return;
 		}
 
-		$authStore.user = serverData.user;
-		groupsStore.setGroups(serverData.groups);
+		$authStore.user = serverResponse.data.user;
+		groupsStore.setGroups(serverResponse.data.groups);
 	});
 </script>
 

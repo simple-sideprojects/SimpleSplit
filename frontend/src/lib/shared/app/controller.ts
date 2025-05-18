@@ -1,5 +1,5 @@
 import { authStore, clientSideLogout } from "$lib/shared/stores/auth.store";
-import { type SubmitFunction } from "@sveltejs/kit";
+import { type ActionResult, type SubmitFunction } from "@sveltejs/kit";
 import { building } from "$app/environment";
 import { goto } from "$app/navigation";
 import { PUBLIC_ADAPTER, PUBLIC_FRONTEND_URL } from '$env/static/public';
@@ -61,7 +61,7 @@ function beforeDataLoad(protectedRoute = true){
     }
 }
 
-export async function triggerAction(action: string, data?: Record<string, any>, pathname?: string){
+export async function triggerAction(action: string, data?: Record<string, any>, pathname?: string): Promise<ActionResult<any, any>> {
     let pathname_ = pathname ?? page.url.pathname;
     //Add a trailing slash to the pathname if it doesn't have one
     if (!pathname_.endsWith('/')){
@@ -80,7 +80,6 @@ export async function triggerAction(action: string, data?: Record<string, any>, 
     }
 
     //Add the groupId to the data if it is a group dashboard page
-    console.log(formData.has('groupId'), pathname_.includes('/groups/dashboard'));
     if(!formData.has('groupId') && pathname_.includes('/groups/dashboard')){
         const groupId = page.url.searchParams.get('groupId');
         if(groupId){
@@ -101,7 +100,10 @@ export async function triggerAction(action: string, data?: Record<string, any>, 
     });
 
     if(!response.ok){
-        return null;
+        return {
+            type: 'error',
+            error: 'Failed to trigger action'
+        } as ActionResult;
     }
     
     const responseText = await response.text();
@@ -113,35 +115,23 @@ export async function triggerAction(action: string, data?: Record<string, any>, 
             await clientSideLogout();
         }
         await goto(responseData.location);
-        return null;
-    }
-
-    if(responseData.type !== 'success'){
-        return null;
+        return responseData;
     }
 
     //Deserialize the response data
-    return responseData.data;
+    return responseData;
 }
 
-export async function onLayoutLoad(pathname: string, requestData = true, protectedRoute = true, data?: Record<string, any>): Promise<any>{
+export async function onLayoutLoad(pathname: string, protectedRoute = true, data?: Record<string, any>): Promise<ActionResult<any, any>>{
     beforeDataLoad(protectedRoute);
 
     //Request data normally in the +page.server.ts load function
-    if(requestData){
-        // Construct the action URL
-        return await triggerAction('data_layout', data, pathname);
-    }
-    return null;
+    return await triggerAction('data_layout', data, pathname);
 }
 
-export async function onPageLoad(requestData = true, protectedRoute = true, data?: Record<string, any>): Promise<any>{
+export async function onPageLoad(protectedRoute = true, data?: Record<string, any>): Promise<ActionResult<any, any>>{
     beforeDataLoad(protectedRoute);
 
     //Request data normally in the +page.server.ts load function
-    if(requestData){
-        // Construct the action URL
-        return await triggerAction('data', data);
-    }
-    return null;
+    return await triggerAction('data', data);
 }

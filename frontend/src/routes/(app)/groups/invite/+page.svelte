@@ -17,7 +17,7 @@
             goto("/groups");
         }
         
-		await onPageLoad(true, true, {
+		await onPageLoad(true, {
             token
         });
     });
