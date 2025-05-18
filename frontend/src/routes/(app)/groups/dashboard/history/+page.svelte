@@ -7,9 +7,10 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { building } from '$app/environment';
-
+	import type { PageData } from './$types';
+	
 	//Handle provided data
-	let { data } = $props();
+	let { data } = $props<{ data: PageData }>();
 	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
 	let transactions = $state<ITransaction[]>(data.transactions ?? []);
 	let totalTransactions = $state(data.total ?? 0);

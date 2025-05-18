@@ -10,60 +10,32 @@ import { isCompiledStatic } from '$lib/shared/app/controller';
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { z } from 'zod';
 import type { PageServerLoad } from './$types';
-
-const passwordFormSchema = z
-	.object({
-		old_password: z.string().min(1, 'Current password is required'),
-		new_password: z.string().min(8, 'New password must be at least 8 characters long'),
-		confirmPassword: z.string().min(8, 'Confirm password must be at least 8 characters long')
-	})
-	.refine((data) => data.new_password === data.confirmPassword, {
-		message: 'Passwords do not match',
-		path: ['confirmPassword']
-	});
-
-const deleteAccountSchema = z.object({
-	deleteConfirmation: z.string().min(1, 'Confirmation is required')
-});
+import { deleteAccountSchema, passwordFormSchema } from '$lib/shared/form/validators';
 
 async function getPageData() {
 	const { data: userData, error } = await readUsersMeAccountGet();
+	const validators = {
+		usernameForm: await superValidate(zod(zUserInfoUpdate)),
+		passwordForm: await superValidate(zod(passwordFormSchema)),
+		deleteAccountForm: await superValidate(zod(deleteAccountSchema))
+	}
 
 	if (error || !userData) {
 		console.error('Error fetching user data:', error);
 
-		return {
-			userData: null,
-			usernameForm: await superValidate(zod(zUserInfoUpdate)),
-			passwordForm: await superValidate(zod(passwordFormSchema)),
-			deleteAccountForm: await superValidate(zod(deleteAccountSchema))
-		};
+		return validators;
 	}
-
-	const usernameForm = await superValidate(
-		{
-			username: userData.username
-		},
-		zod(zUserInfoUpdate)
-	);
-
-	const passwordForm = await superValidate(zod(passwordFormSchema));
-	const deleteAccountForm = await superValidate(zod(deleteAccountSchema));
 
 	return {
 		userData,
-		usernameForm,
-		passwordForm,
-		deleteAccountForm
+		...validators
 	};
 };
 
 export const load: PageServerLoad = async () => {
 	if (building){
 		return {
-			userData: null,
 			usernameForm: await superValidate(zod(zUserInfoUpdate)),
 			passwordForm: await superValidate(zod(passwordFormSchema)),
 			deleteAccountForm: await superValidate(zod(deleteAccountSchema))

@@ -9,7 +9,8 @@ import { browser } from '$app/environment';
  * @returns Ein Svelte-Store, der automatisch den Wert in Preferences speichert
  */
 export function createPersistentStore<T>(key: string, initialValue: T): Writable<T> & { 
-  get: () => T
+  get: () => T,
+  clear: () => void
 } {
   // Interner Wert
   let storeValue: T = initialValue;
@@ -58,6 +59,15 @@ export function createPersistentStore<T>(key: string, initialValue: T): Writable
     },
     
     // Hilfsmethode, um den aktuellen Wert zu erhalten
-    get: () => storeValue
+    get: () => storeValue,
+
+    // Hilfsmethode, um den Store zu löschen
+    clear: () => {
+        storeValue = initialValue;
+        set(initialValue);
+        PreferencesStorage.remove(key).catch(error => {
+            console.error(`Fehler beim Löschen des Stores ${key}:`, error);
+        });
+    }
   };
 } 

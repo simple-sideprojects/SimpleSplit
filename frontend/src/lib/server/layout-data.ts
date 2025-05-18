@@ -1,12 +1,19 @@
-import { readGroupGroupsGroupIdGet } from '$lib/client';
+import { readGroupGroupsGroupIdGet, type Group, type UserResponse } from '$lib/client';
 import { zUpdateGroup } from '$lib/client/zod.gen';
 import { error, redirect, type Cookies } from '@sveltejs/kit';
-import { superValidate } from 'sveltekit-superforms';
+import { superValidate, type SuperValidated } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { readGroupsGroupsGet, readUsersMeAccountGet } from '$lib/client';
-import { zTransactionCreate } from '$lib/client/zod.gen';
+import type { z } from 'zod';
 
-export async function getGroupLayoutData(groupId: string, request: Request) {
+export async function getGroupLayoutData(groupId: string|null, request: Request): Promise<{
+	groupData: Group,
+	updateGroupNameForm: SuperValidated<z.infer<typeof zUpdateGroup>>
+}> {
+	if (!groupId) {
+		return redirect(303, '/groups');
+	}
+
 	const updateGroupNameForm = await superValidate(request, zod(zUpdateGroup));
 
 	const groupResponse = await readGroupGroupsGroupIdGet({
@@ -38,7 +45,10 @@ export async function getGroupLayoutData(groupId: string, request: Request) {
 	};
 };
 
-export async function getRootLayoutData(cookies: Cookies) {
+export async function getRootLayoutData(cookies: Cookies): Promise<{
+	user: UserResponse,
+	groups: Group[]
+}> {
 	const userResponse = await readUsersMeAccountGet();
 	const groupsResponse = await readGroupsGroupsGet();
 
@@ -53,13 +63,11 @@ export async function getRootLayoutData(cookies: Cookies) {
 	}
 
 	if (!userResponse.data || !groupsResponse.data) {
-		throw redirect(302, '/');
+		return redirect(302, '/');
 	}
-    const transactionForm = await superValidate(zod(zTransactionCreate));
 
 	return {
 		user: userResponse.data,
-		groups: groupsResponse.data ?? [],
-		transactionForm
+		groups: groupsResponse.data ?? []
 	};
 };

@@ -1,7 +1,10 @@
 import { env } from '$env/dynamic/public';
 import {
     createTransactionTransactionsPost,
-    readTransactionsUserIsParticipantInTransactionsGet
+    readTransactionsUserIsParticipantInTransactionsGet,
+	type Group,
+	type TransactionRead,
+	type UserResponse
 } from '$lib/client';
 import { zTransactionCreate } from '$lib/client/zod.gen';
 import { fail } from '@sveltejs/kit';
@@ -11,10 +14,15 @@ import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
 import { getRootLayoutData } from '$lib/server/layout-data';
 import { error, redirect } from '@sveltejs/kit';
-import type { Cookies } from '@sveltejs/kit';
-import { superValidate } from 'sveltekit-superforms/server';
+import type { ActionFailure, Cookies } from '@sveltejs/kit';
+import { setMessage, superValidate, type SuperValidated } from 'sveltekit-superforms/server';
+import type { Balance } from '$lib/interfaces';
+import type { z } from 'zod';
 
-async function getPageData(fetch: Fetch, cookies: Cookies) {
+async function getPageData(fetch: Fetch, cookies: Cookies): Promise<{
+	balances: Balance[],
+	transactions: TransactionRead[]
+}> {
 	const [balanceRes, recentRes] = await Promise.all([
 		fetch(`${env.PUBLIC_BACKEND_URL}/balance`),
 		readTransactionsUserIsParticipantInTransactionsGet({
@@ -27,16 +35,20 @@ async function getPageData(fetch: Fetch, cookies: Cookies) {
 	if (!balanceRes.ok || recentRes.error) {
 		if(balanceRes.status === 401){
 			cookies.delete('auth_token', { path: '/' });
-			throw redirect(302, '/auth/login');
+			return redirect(302, '/auth/login');
 		}
-		console.log(balanceRes);
-		console.log(recentRes);
-		throw error(500, {
+		return error(500, {
 			message: 'Failed to fetch balance or recent transactions'
 		});
 	}
 
 	const [balances, transactions] = await Promise.all([balanceRes.json(), recentRes.data]);
+
+	if(transactions === undefined){
+		return error(500, {
+			message: 'Failed to fetch transactions'
+		});
+	}
 
 	return {
 		balances,
@@ -44,27 +56,38 @@ async function getPageData(fetch: Fetch, cookies: Cookies) {
 	};
 };
 
-export const load: PageServerLoad = async ({ fetch, cookies }) => {
+export const load: PageServerLoad = async ({ fetch, cookies }): Promise<{
+	balances: Balance[],
+	transactions: TransactionRead[]
+}|{}> => {
+    //If svelte is precompiling, return empty object
 	if (building){
-		return {
-			balances: [],
-			transactions: []
-		};
+		return {};
 	}
 	
 	return getPageData(fetch, cookies);
 };
 
 export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data_layout: async ({ cookies }) => {
+	data_layout: async ({ cookies }): Promise<{
+		user: UserResponse,
+		groups: Group[]
+	}> => {
 		let layout_data = await getRootLayoutData(cookies);
 		return layout_data;
 	},
-	data: async ({ fetch, cookies }) => {
+	data: async ({ fetch, cookies }): Promise<{
+		balances: Balance[],
+		transactions: TransactionRead[]
+	}> => {
 		let page_data = await getPageData(fetch, cookies);
 		return page_data;
 	},
-    createTransaction: async ({ request }) => {
+    createTransaction: async ({ request }): Promise<{
+		form: SuperValidated<z.infer<typeof zTransactionCreate>>
+	}|ActionFailure<{
+		form: SuperValidated<z.infer<typeof zTransactionCreate>>
+	}>> => {
         const form = await superValidate(request, zod(zTransactionCreate));
 
         if (!form.valid) {
@@ -79,6 +102,7 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
         });
 
         if (!response.data) {
+            setMessage(form, 'An unexpected error occurred during transaction creation.');
             return fail(500, { form });
         }
 

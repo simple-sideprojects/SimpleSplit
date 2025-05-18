@@ -9,10 +9,18 @@
 	import IconLock from '~icons/tabler/lock';
 	import IconLogout from '~icons/tabler/logout';
 	import IconTrash from '~icons/tabler/trash';
+	import type { PageData } from './$types.js';
 
 	//Handle provided data
-	let { data } = $props();
-	let userData = $derived<User|null>(data.userData ?? $authStore.user ?? null);
+	let { data } = $props<{ data: PageData }>();
+	let userData: User|null = $derived($authStore.user);
+
+	//Update auth store if it is available through server load()
+	$effect(() => {
+		if(data.userData !== undefined){
+			$authStore.user = data.userData;
+		}
+	});
 
 	//Handle Username Form
 	const {
@@ -27,6 +35,16 @@
 			}
 		}
 	});
+
+	//Update Username Form
+	$effect(() => {
+		if(userData){
+			usernameForm.update((formData) => {
+				formData.username = userData.username;
+				return formData;
+			})
+		}
+	})
 
 	//Handle Password Form
 	const {
@@ -122,7 +140,6 @@
 							type="text"
 							name="username"
 							id="username"
-							value={userData?.username}
 							required
 							class="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
 						/>

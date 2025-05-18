@@ -14,22 +14,24 @@
 	import { superForm } from '$lib/shared/form/super-form.js';
 	import { toast } from 'svelte-sonner';
 	import { invalidate } from '$app/navigation';
+	import type { PageData } from './$types';
 
 	//Handle provided data
-	let { data, children } = $props();
+	let { data, children } = $props<{ data: PageData }>();
 	const groupId = $derived(building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string);
-	let group: Group|null = $derived(data.group ?? (groupId ? $groupsStore[groupId] : null) ?? null);
+	let group: Group|null = $derived(groupId ? $groupsStore[groupId] : null);
+
+	//Update group store if it is available through server load()
+	$effect(() => {
+		if(data.group !== undefined){
+			$groupsStore[data.group.id] = data.group;
+		}
+	});
 
 	// Derived from URL parameters
 	/*$effect(() => {
 		// Invalidate page data to force a reload
 		invalidate(`app:groupDashboard:${groupId}`);
-	});*/
-	// Update groups when groupsStore changes
-	/*$effect(() => {
-		if(groupId){
-			group = $groupsStore[groupId] ?? null;
-		}
 	});*/
 
 	//Update Group Name Form

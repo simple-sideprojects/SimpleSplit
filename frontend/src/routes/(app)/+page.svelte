@@ -1,22 +1,35 @@
 <script lang="ts">
 	import { TransactionComponent } from '$lib';
+	import type { TransactionRead } from '$lib/client/types.gen.js';
+	import type { Balance } from '$lib/interfaces';
 	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
+	import { balancesStore } from '$lib/shared/stores/balances.store.js';
+	import { transactionsStore } from '$lib/shared/stores/transactions.store.js';
 	import { onMount } from 'svelte';
 	import IconArrowDown from '~icons/tabler/arrow-down';
 	import IconArrowUp from '~icons/tabler/arrow-up';
 	import IconChevronDown from '~icons/tabler/chevron-down';
 	import IconClock from '~icons/tabler/clock';
-
-	//Types
-	type Balance = {
-		username: string;
-		balance: number;
-	};
+	import type { PageData } from './$types';
 
 	//Handle provided data
-	let { data } = $props();
-	let balances: Balance[] = $state(data.balances ?? []);
-	let transactions: [] = $state(data.transactions ?? []);
+	let { data } = $props<{ data: PageData }>();
+	let balances: Balance[] = $derived(Object.values($balancesStore));
+	let transactions: TransactionRead[] = $derived(Object.values($transactionsStore));
+
+	//Update balances store if it is available through server load()
+	$effect(() => {
+		if(data.balances !== undefined){
+			balancesStore.setBalances(data.balances);
+		}
+	});
+
+	//Update transactions store if it is available through server load()
+	$effect(() => {
+		if(data.transactions !== undefined){
+			transactionsStore.setTransactions(data.transactions);
+		}
+	});
 
 	//Calculate balances
 	let totalPositive = $derived(
@@ -36,14 +49,14 @@
 		}
 		const serverData : {
 			balances: Balance[],
-			transactions: []
+			transactions: TransactionRead[]
 		}|null = await onPageLoad(true, true);
 		if(serverData === null){
 			return;
 		}
 
-		balances = serverData.balances;
-		transactions = serverData.transactions;
+		balancesStore.setBalances(serverData.balances);
+		transactionsStore.setTransactions(serverData.transactions);
 	});
 </script>
 

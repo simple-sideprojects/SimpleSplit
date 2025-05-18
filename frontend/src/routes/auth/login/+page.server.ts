@@ -1,36 +1,44 @@
-import { loginAuthLoginPost } from '$lib/client/sdk.gen';
-import { fail, redirect, type Actions } from '@sveltejs/kit';
+import { loginAuthLoginPost, readUsersMeAccountGet } from '$lib/client/sdk.gen';
+import { fail, type ActionFailure, type Actions } from '@sveltejs/kit';
 import { zod } from 'sveltekit-superforms/adapters';
-import { message, superValidate } from 'sveltekit-superforms/server';
-import { z } from 'zod';
-import type { PageServerLoad } from './$types';
+import { setMessage, superValidate, type SuperValidated } from 'sveltekit-superforms/server';
 import { isCompiledStatic } from '$lib/shared/app/controller';
+import { zEmailPasswordLogin } from '$lib/shared/form/validators';
+import type { UserResponse } from '$lib/client';
+import type { z } from 'zod';
 import { building } from '$app/environment';
-
-const zEmailPasswordLogin = z.object({
-	email: z.string(),
-	password: z.string()
-});
+import type { PageServerLoad } from './$types';
 
 async function getPageData() {
-	const form = await superValidate(zod(zEmailPasswordLogin));
-	return { form };
+	const loginForm = await superValidate(zod(zEmailPasswordLogin));
+	return { loginForm };
 };
 
 export const load: PageServerLoad = async () => {
 	if (building){
-		//This data is static and can be used for static builds
-		return getPageData();
+		//If svelte is precompiling, return only the validator
+		return {
+			loginForm: await superValidate(zod(zEmailPasswordLogin))
+		};
 	}
 	
 	return getPageData();
 };
 
+
 export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data: async () => {
+	data: async (): Promise<{
+		loginForm: SuperValidated<z.infer<typeof zEmailPasswordLogin>>
+	}> => {
 		return getPageData();
 	},
-	login: async ({ request, cookies }) => {
+	login: async ({ request, cookies }): Promise<{
+		token: string,
+		user: UserResponse,
+		form: SuperValidated<z.infer<typeof zEmailPasswordLogin>>
+	}|ActionFailure<{
+		form: SuperValidated<z.infer<typeof zEmailPasswordLogin>>
+	}>> => {
 		const form = await superValidate(request, zod(zEmailPasswordLogin));
 
 		if (!form.valid) {
@@ -54,16 +62,20 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 				sameSite: 'strict'
 			});
 
+			const userResponse = await readUsersMeAccountGet();
+			if(userResponse.data === undefined){
+				setMessage(form, 'An unexpected error occurred during registration.');
+				return fail(500, { form });
+			}
+
 			return {
 				token: loginResponse.data.access_token,
+				user: userResponse.data,
 				form
 			}
 		} catch (error) {
-			console.error('Login error:', error);
-
-			return message(form, 'Invalid email or password', {
-				status: 401
-			});
+			setMessage(form, 'Invalid email or password');
+			return fail(401, { form });
 		}
 	}
 };

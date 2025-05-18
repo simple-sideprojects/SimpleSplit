@@ -1,6 +1,11 @@
-import { browser } from '$app/environment';
-import type { Group } from '$lib/client';
+import type { Group as BasicGroup, TransactionRead } from '$lib/client';
+import type { Balance } from '$lib/interfaces/balance';
 import { createPersistentStore } from '../app/persistentStore';
+
+export interface Group extends BasicGroup{
+	balances: Balance[]|undefined;
+	transactions: TransactionRead[]|undefined;
+}
 
 export interface GroupList {
     [key: string]: Group;
@@ -29,6 +34,30 @@ function createGroupsStore() {
 				[group.id]: group
 			};
 		}),
+		setGroupBalances: (id: string, balances: Balance[]) => store.update((state) => {
+			if(!state[id]) return state;
+			return {
+				...state,
+				[id]: { ...state[id], balances: balances.reduce((acc, balance) => {
+					if(balance.username) {
+						acc[balance.username] = balance;
+					}
+					return acc;
+				}, {} as Balance[]) }
+			};
+		}),
+		setGroupTransactions: (id: string, transactions: TransactionRead[]) => store.update((state) => {
+			if(!state[id]) return state;
+			return {
+				...state,
+				[id]: { ...state[id], transactions: transactions.reduce((acc, transaction) => {
+					if(transaction.id) {
+						acc[transaction.id] = transaction;
+					}
+					return acc;
+				}, {} as TransactionRead[]) }
+			};
+		}),
 		removeGroup: (id: string) => store.update((state) => {
 			const newState = { ...state };
 			if(id in newState) {
@@ -36,13 +65,9 @@ function createGroupsStore() {
 			}
 			return newState;
 		}),
-		getGroup: (id: string) => store.get()[id]
+		getGroup: (id: string) => store.get()[id],
+		clear: () => store.clear
 	};
 }
 
 export const groupsStore = createGroupsStore();
-
-export function cacheGroups(groups: Group[]): void {
-    if (!browser) return;
-    groupsStore.setGroups(groups);
-}

@@ -25,6 +25,7 @@ async function getPageData(fetch: Fetch, page: number, limit: number, groupId: s
 };
 
 export const load: PageServerLoad = async ({ fetch, url }) => {
+	//If svelte is precompiling, return nothing
 	if (building){
 		return {
 			groupId: null,

@@ -12,21 +12,26 @@
 	import IconSettings from '~icons/tabler/settings';
 	import IconUser from '~icons/tabler/user';
 	import IconUsers from '~icons/tabler/users';
+	import type { PageData } from './$types';
 
 	//Handle provided data
-	let { data, children } = $props();
-	let groups: Group[] = $derived(data.groups ?? Object.values($groupsStore) ?? []);
-	let user: User|null = $derived(data.user ?? $authStore.user ?? null);
+	let { data, children } = $props<{ data: PageData }>();
+	let groups: Group[] = $derived(Object.values($groupsStore));
+	let user: User|null = $derived($authStore.user);
 
-	// Update groups when groupsStore changes
-	/*$effect(() => {
-		groups = Object.values($groupsStore);
+	//Update groups store if it is available through server load()
+	$effect(() => {
+		if(data.groups !== undefined){
+			groupsStore.setGroups(data.groups);
+		}
 	});
 
-	// Update user when authStore changes
+	//Update user store if it is available through server load()
 	$effect(() => {
-		user = $authStore.user;
-	});*/
+		if(data.user !== undefined){
+			$authStore.user = data.user;
+		}
+	});
 
 	//ScrollToTop
 	let mainElement: HTMLElement;
@@ -55,12 +60,7 @@
 		}
 
 		$authStore.user = serverData.user;
-		$groupsStore = groups.reduce((acc: GroupList, group) => {
-            if(group.id) {
-                acc[group.id] = group;
-            }
-            return acc;
-		}, {} as GroupList);
+		groupsStore.setGroups(serverData.groups);
 	});
 </script>
 
@@ -164,7 +164,6 @@
 
 		{#if page.url.pathname !== '/account'}
 			<AddTransactionButton
-				transactionForm={data.transactionForm}
 				groups={data.groups}
 				user={data.user}
 			/>

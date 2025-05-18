@@ -2,10 +2,11 @@
 	import IconPlus from '~icons/tabler/plus';
 	import type { Group } from '$lib/client';
 	import { groupsStore } from '$lib/shared/stores/groups.store.js';
+	import type { PageData } from './$types';
 	
 	//Handle provided data
-	let { data } = $props();
-	let groups: Group[] = $derived(data.groups ?? Object.values($groupsStore) ?? []);
+	let { data } = $props<{ data: PageData }>();
+	let groups: Group[] = $derived(Object.values($groupsStore));
 </script>
 
 <div class="mx-auto w-full max-w-4xl">
