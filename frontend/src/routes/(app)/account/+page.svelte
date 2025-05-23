@@ -94,15 +94,15 @@
 		if(!isCompiledStatic()){
 			return;
 		}
-		const serverData : ActionResult<{
+		const serverResponse : ActionResult<{
 			userData: User,
 		}> = await onPageLoad(true, {
 			userData: userData
 		});
-		if(serverData.type !== 'success' || !serverData.data){
+		if(serverResponse.type !== 'success' || !serverResponse.data){
 			return;
 		}
-		$authStore.user = serverData.data.userData;
+		$authStore.user = serverResponse.data.userData;
 	});
 </script>
 
