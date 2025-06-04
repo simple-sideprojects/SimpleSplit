@@ -3,20 +3,26 @@
 	import { authStore } from "$lib/shared/stores/auth.store";
 	import { onMount } from "svelte";
 	import { fade } from "svelte/transition";
+	import { Network } from "@capacitor/network";
 
     let visible = true;
 
     onMount(() => {
-        setTimeout(() => {
-            visible = false;
-            setTimeout(() => {
-                if(!$authStore.authenticated){
-                    goto('/auth/login');
-                }else{
-                    //Maybe prefetch new data from server already here?
-                    goto('/');
-                }
-            }, 400);
+        setTimeout(async () => {
+            Network.getStatus().then((status) => {
+                visible = false;
+                setTimeout(() => {
+                    if($authStore.authenticated){
+                        goto('/');
+                    }else{
+                        if(!status.connected){
+                            goto('/offline');
+                        }else{
+                            goto('/auth/login');
+                        }
+                    }
+                }, 400);
+            });
         }, 1000);
     });
 </script>
