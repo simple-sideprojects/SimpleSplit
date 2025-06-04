@@ -73,7 +73,7 @@ function beforeDataLoad(protectedRoute = true){
 }
 
 function triggerActionRaw(action: string, data?: Record<string, any>, pathname?: string): Promise<Response> {
-    return new Promise<Response>(async (resolve) => {
+    return new Promise<Response>((resolve) => {
         let pathname_ = pathname ?? page.url.pathname;
         //Add a trailing slash to the pathname if it doesn't have one
         if (!pathname_.endsWith('/')){
@@ -100,31 +100,38 @@ function triggerActionRaw(action: string, data?: Record<string, any>, pathname?:
         }
 
         //Check if the device is offline
-        const isOffline = await Network.getStatus();
-
-        if(!isOffline.connected){
+        Network.getStatus().then((status) => {
+            if(!status.connected){
+                resolve(new Response(JSON.stringify({
+                    type: 'error',
+                    error: 'No internet connection'
+                } as ActionResult), {
+                    status: 500
+                }));
+                return;
+            }
+    
+            const request = fetch(actionUrl, {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'content-type': 'application/x-www-form-urlencoded',
+                    'x-sveltekit-action': 'true'
+                },
+                credentials: 'include',
+                body: formData.toString()
+            })
+    
+            //Send the form data to the action URL
+            resolve(request);
+        }).catch(() => {
             resolve(new Response(JSON.stringify({
                 type: 'error',
-                error: 'No internet connection'
+                error: 'Failed to determine network status'
             } as ActionResult), {
                 status: 500
             }));
-            return;
-        }
-
-        const request = fetch(actionUrl, {
-            method: 'POST',
-            headers: {
-                'accept': 'application/json',
-                'content-type': 'application/x-www-form-urlencoded',
-                'x-sveltekit-action': 'true'
-            },
-            credentials: 'include',
-            body: formData.toString()
-        })
-
-        //Send the form data to the action URL
-        resolve(request);
+        });        
     });
 }
 
