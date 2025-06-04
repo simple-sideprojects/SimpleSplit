@@ -96,7 +96,7 @@ export const deleteGroupMock = http.delete(
 export const balanceByGroupMock = http.get(
 	`${env.PUBLIC_BACKEND_URL}/groups/:groupId/balance`,
 	async ({ request }) => {
-		return bypassOrMock(request, HttpResponse.json(groupsBalanceMap.get('1')));
+		return HttpResponse.json(groupsBalanceMap.get('1'));
 	}
 );
 

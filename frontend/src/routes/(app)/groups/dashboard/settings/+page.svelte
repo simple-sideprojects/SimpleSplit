@@ -11,11 +11,12 @@
 	import { page } from '$app/state';
 	import { superForm } from '$lib/shared/form/super-form.js';
 	import { groupsStore } from '$lib/shared/stores/groups.store.js';
+	import type { PageData } from './$types';
 
 	//Handle provided data
-	let { data } = $props();
+	let { data } = $props<{ data: PageData }>();
 	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
-	let group: Group | null = $derived(data.group ?? (groupId ? $groupsStore[groupId] : null) ?? null);
+	let group: Group | null = $derived(groupId ? $groupsStore[groupId] : null);
 	let memberToRemove = $state<string | null>(null);
 	let showDeleteConfirm = $state(false);
 	let deleteConfirmation = $state('');

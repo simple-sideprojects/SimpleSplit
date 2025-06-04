@@ -4,9 +4,9 @@ import type { PageServerLoad, Actions } from './$types';
 import { building } from '$app/environment';
 import { isCompiledStatic } from '$lib/shared/app/controller';
 
-async function getPageData(token: string) {
+async function getPageData(token: string|null) {
 	if (!token) {
-		throw redirect(303, '/groups');
+		return redirect(303, '/groups');
 	}
 
 	const { data: inviteData } = await acceptInviteInvitesAcceptTokenGet({
@@ -14,10 +14,10 @@ async function getPageData(token: string) {
 	});
 
 	if (!inviteData) {
-		throw redirect(303, '/groups');
+		return redirect(303, '/groups');
 	}
 
-	throw redirect(301, '/groups');
+	return redirect(301, '/groups');
 };
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -26,10 +26,6 @@ export const load: PageServerLoad = async ({ url }) => {
 	}
 
 	const token = url.searchParams.get('token');
-
-	if (!token) {
-		throw redirect(303, '/groups');
-	}
 	
 	return getPageData(token);
 };
@@ -38,10 +34,6 @@ export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
 	data: async ({ request }) => {
 		const data = await request.formData();
 		const token = data.get('token');
-
-		if (!token) {
-			throw redirect(303, '/groups');
-		}
 
 		return getPageData(token as string);
 	}

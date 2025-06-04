@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import type { Group } from '$lib/client/types.gen.js';
 	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
 	import { onMount } from 'svelte';
 	import IconCheck from '~icons/tabler/check';
@@ -9,27 +8,30 @@
 	import IconSettings from '~icons/tabler/settings';
 	import IconUsers from '~icons/tabler/users';
 	import IconX from '~icons/tabler/x';
-	import { groupsStore } from '$lib/shared/stores/groups.store.js';
+	import { groupsStore, type Group } from '$lib/shared/stores/groups.store.js';
 	import { building } from '$app/environment';
 	import { superForm } from '$lib/shared/form/super-form.js';
 	import { toast } from 'svelte-sonner';
 	import { invalidate } from '$app/navigation';
+	import type { PageData } from './$types';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
-	let { data, children } = $props();
+	let { data, children } = $props<{ data: PageData }>();
 	const groupId = $derived(building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string);
-	let group: Group|null = $derived(data.group ?? (groupId ? $groupsStore[groupId] : null) ?? null);
+	let group: Group|null = $derived(groupId ? $groupsStore[groupId] : null);
+
+	//Update group store if it is available through server load()
+	$effect(() => {
+		if(data.group !== undefined){
+			$groupsStore[data.group.id] = data.group;
+		}
+	});
 
 	// Derived from URL parameters
 	/*$effect(() => {
 		// Invalidate page data to force a reload
 		invalidate(`app:groupDashboard:${groupId}`);
-	});*/
-	// Update groups when groupsStore changes
-	/*$effect(() => {
-		if(groupId){
-			group = $groupsStore[groupId] ?? null;
-		}
 	});*/
 
 	//Update Group Name Form
@@ -68,23 +70,25 @@
 			return;
 		}
 
-		const serverData : {
+		const serverResponse : ActionResult<{
 			group: Group,
 			updateGroupNameForm: any
-		}|null = await onLayoutLoad('/groups/dashboard/', true, true, {
+		}> = await onLayoutLoad('/groups/dashboard/', true, {
 			groupId
 		});
 
-		if(serverData === null){
+		if(serverResponse.type !== 'success' || !serverResponse.data){
 			return;
 		}
 
+		let group: Group = serverResponse.data.group;
+
 		//Update the group in the store
-		groupsStore.updateGroup(serverData.group);
+		groupsStore.updateGroup(group);
 
 		//Update the data of the form
 		form.update(() => ({
-			name: serverData.group.name
+			name: group.name
 		}))
 	});
 </script>

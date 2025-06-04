@@ -1,15 +1,18 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { onPageLoad } from '$lib/shared/app/controller.js';
 	import { clientSideLogin } from '$lib/shared/stores/auth.store.js';
-	import { onMount } from 'svelte';
 	import { superForm } from '$lib/shared/form/super-form';
 	import IconLoader from '~icons/tabler/loader';
+	import { zUserCreate } from '$lib/client/zod.gen';
+	import { zod } from 'sveltekit-superforms/adapters';
+	import type { PageData } from './$types';
 
-	const { data } = $props();
+	//Get data from server
+	const { data } = $props<{ data: PageData }>();
 
-	const { form, errors, enhance, submit, message, submitting } = superForm(data.form, {
+	//Register Form
+	const { form, errors, enhance, submit, message, submitting } = superForm(data.registerForm, {
 		resetForm: false,
 		onResult: async ({ result }) => {
 			if (result.type !== 'success'){
@@ -18,7 +21,7 @@
 
 			if (browser && result.data?.token) {
 				// Login-Funktion im Store aufrufen
-				clientSideLogin(result.data.token);
+				clientSideLogin(result.data.token, result.data.user);
 
 				// Zur Hauptseite weiterleiten
 				await goto('/');
@@ -28,14 +31,9 @@
 			if (result.type === 'error') {
 				message.set('An error occurred while registering');
 			} else if (result.type === 'exception') {
-				console.error('Form submission exception:', result.error);
 				message.set('An unexpected error occurred while registering');
 			}
 		}
-	});
-
-	onMount(async () => {
-		await onPageLoad(false, false);
 	});
 </script>
 

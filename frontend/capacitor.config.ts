@@ -6,8 +6,14 @@ const config: CapacitorConfig = {
 	webDir: 'build-static',
 	npmClient: 'pnpm',
 	plugins: {
-		"SplashScreen": {
-			"launchShowDuration": 0
+		SplashScreen: {
+			launchShowDuration: 0
+		},
+		CapacitorHttp: {
+			enabled: true
+		},
+		CapacitorCookies: {
+		  	enabled: true,
 		}
 	},
 	// remove server section before making production build

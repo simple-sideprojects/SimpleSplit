@@ -9,17 +9,17 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { building } from '$app/environment';
-
-	//Types
-	type Balance = {
-		username: string;
-		balance: number;
-	};
+	import type { TransactionRead } from '$lib/client/types.gen.js';
+	import type { Balance } from '$lib/interfaces/balance';
+	import { balancesStore } from '$lib/shared/stores/balances.store.js';
+	import { transactionsStore } from '$lib/shared/stores/transactions.store.js';
+	import type { PageData } from './$types';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
-	let { data } = $props();
-	let balances: Balance[] = $state(data.balances ?? []);
-	let transactions: [] = $state(data.transactions ?? []);
+	let { data } = $props<{ data: PageData }>();
+	let balances: Balance[] = $derived(Object.values($balancesStore));
+	let transactions: TransactionRead[] = $derived(Object.values($transactionsStore));
 	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
 
 	//Calculate balances
@@ -42,19 +42,19 @@
 			goto('/groups');
 		}
 
-		const serverData : {
+		const serverResponse : ActionResult<{
 			balances: Balance[],
-			transactions: []
-		}|null = await onPageLoad(true, true, {
+			transactions: TransactionRead[]
+		}> = await onPageLoad(true, {
 			groupId: groupId
 		});
 		
-		if(serverData === null){
+		if(serverResponse.type !== 'success' || !serverResponse.data){
 			return;
 		}
 
-		balances = serverData.balances;
-		transactions = serverData.transactions;
+		balancesStore.setBalances(serverResponse.data.balances);
+		transactionsStore.setTransactions(serverResponse.data.transactions);
 	});
 </script>
 
@@ -82,7 +82,7 @@
 	<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
 		<h2 class="mb-4 text-lg font-semibold">Individual Balances</h2>
 		<div class="space-y-3">
-			{#each data.balances as balance (balance.username)}
+			{#each balances as balance (balance.username)}
 				<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
 					<span class="font-medium">{balance.username}</span>
 					<span class={balance.balance >= 0 ? 'text-green-500' : 'text-red-500'}>
@@ -108,7 +108,7 @@
 		</summary>
 
 		<div class="border-t border-gray-100">
-			{#each data.transactions as transaction (transaction.id)}
+			{#each transactions as transaction (transaction.id)}
 				<div class="border-b border-gray-100 last:border-b-0">
 					<TransactionComponent {transaction} />
 				</div>

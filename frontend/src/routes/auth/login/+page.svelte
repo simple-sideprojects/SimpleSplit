@@ -11,9 +11,11 @@
 	import { PUBLIC_FRONTEND_URL, PUBLIC_FRONTEND_URL_CHANGABLE } from '$env/static/public';
 	import { isCompiledStatic } from '$lib/shared/app/controller';
 
+	//Get data from server
 	const { data } = $props<{ data: PageData }>();
 
-	const { form, errors, enhance, message, constraints, submitting } = superForm(data.form, {
+	//Login Form
+	const { form, errors, enhance, message, constraints, submitting } = superForm(data.loginForm, {
 		resetForm: false,
 		onResult: async ({ result, cancel }) => {
 			if (result.type !== 'success'){
@@ -22,7 +24,7 @@
 
 			if (result.data && result.data.token) {
 				// Login-Funktion im Store aufrufen
-				clientSideLogin(result.data.token);
+				clientSideLogin(result.data.token, result.data.user);
 
 				// Zur Hauptseite weiterleiten
 				await goto('/');
@@ -34,6 +36,8 @@
 
 	// Server Switcher
 	const supportsServerSwitcher = isCompiledStatic() && PUBLIC_FRONTEND_URL_CHANGABLE === 'on';
+	let SERVER_HOST = $derived(new URL($authStore.frontend_url || PUBLIC_FRONTEND_URL));
+	let server_input = $state('');
 
 	// Popover umschalten
 	let showPopover = $state(false);
@@ -56,10 +60,6 @@
 			showPopover = false;
 		}
 	}
-
-	let SERVER_HOST = $derived(new URL($authStore.frontend_url || PUBLIC_FRONTEND_URL));
-	let server_input = $state('');
-	
 </script>
 
 <svelte:window onclick={handleClickOutside} />

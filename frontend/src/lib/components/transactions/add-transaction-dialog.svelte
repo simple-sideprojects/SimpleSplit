@@ -4,12 +4,14 @@
 		TransactionParticipantCreate,
 		TransactionType
 	} from '$lib/client/types.gen';
+	import { zTransactionCreate } from '$lib/client/zod.gen';
 	import { toast } from 'svelte-sonner';
+	import { zod } from 'sveltekit-superforms/adapters';
 	import { superForm } from 'sveltekit-superforms/client';
 	import IconLoader from '~icons/tabler/loader';
 	import IconX from '~icons/tabler/x';
 
-	let { groups, form, openDialog = $bindable(), user } = $props();
+	let { groups, openDialog = $bindable(), user } = $props();
 
 	let dialog: HTMLDialogElement;
 	let loading = $state(false);
@@ -27,7 +29,8 @@
 		enhance,
 		submitting,
 		reset
-	} = superForm(form, {
+	} = superForm({}, {
+		validators: zod(zTransactionCreate),
 		resetForm: true,
 		dataType: 'json',
 		onResult: ({ result }) => {

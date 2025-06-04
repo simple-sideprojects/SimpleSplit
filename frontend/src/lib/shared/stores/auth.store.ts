@@ -1,8 +1,9 @@
-import { persist, createLocalStorage } from "@macfja/svelte-persistent-store"
-import { writable } from "svelte/store"
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { PUBLIC_FRONTEND_URL } from "$env/static/public";
+import { createPersistentStore } from '../app/persistentStore';
+import { groupsStore } from './groups.store';
+import { transactionsStore } from './transactions.store';
 
 export type User = {
     username: string,
@@ -17,45 +18,37 @@ type AuthStoreType = {
 };
 
 function createAuthStore() {
-	const { subscribe, update, set } = persist(writable<AuthStoreType>({
-        authenticated: false,
-        token: null,
-        user: null,
-        frontend_url: PUBLIC_FRONTEND_URL
-    }), createLocalStorage(), "auth");
-
-	let authData: AuthStoreType = {
+    const initialValue: AuthStoreType = {
         authenticated: false,
         token: null,
         user: null,
         frontend_url: PUBLIC_FRONTEND_URL
     };
-	subscribe((value) => {
-		authData = value;
-	});
-
-	return {
-		subscribe,
-		update,
-		set,
-		getAuthData: () => authData,
-        getUser: () => authData.user,
-        setUser: (user: User|null) => update((state) => ({
+    
+    const store = createPersistentStore<AuthStoreType>("auth", initialValue);
+    
+    return {
+        subscribe: store.subscribe,
+        set: store.set,
+        update: store.update,
+        getAuthData: () => store.get(),
+        getUser: () => store.get().user,
+        setUser: (user: User|null) => store.update((state) => ({
             ...state,
             user: user
         }))
-	};
+    };
 }
 
 export const authStore = createAuthStore();
 
 // Authentifizierungsfunktionen
-export function clientSideLogin(token: string): void {
+export function clientSideLogin(token: string, user: User): void {
     if (!browser) return;
     authStore.update((state) => ({
         authenticated: true,
         token: token,
-        user: null,
+        user: user,
         frontend_url: state.frontend_url
     }));
 }
@@ -68,5 +61,7 @@ export async function clientSideLogout(): Promise<void> {
         user: null,
         frontend_url: state.frontend_url
     }));
+    groupsStore.clear();
+    transactionsStore.clear();
     await goto('/auth/login');
 }

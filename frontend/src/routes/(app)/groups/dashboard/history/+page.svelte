@@ -7,9 +7,11 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { building } from '$app/environment';
-
+	import type { PageData } from './$types';
+	import type { ActionResult } from '@sveltejs/kit';
+	
 	//Handle provided data
-	let { data } = $props();
+	let { data } = $props<{ data: PageData }>();
 	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
 	let transactions = $state<ITransaction[]>(data.transactions ?? []);
 	let totalTransactions = $state(data.total ?? 0);
@@ -21,31 +23,32 @@
 	let openEditDialog = $state<() => void>(() => {});
 
 	//Fetch transactions
+	interface ServerData extends Record<string, unknown>{
+		transactions: ITransaction[],
+		total: number,
+		page: number,
+		limit: number,
+		totalPages: number
+	};
 	async function fetchTransactions(page: number, limit: number) {
 		isLoading = true;
 		error = null;
 
-		const serverData: {
-			transactions: ITransaction[],
-			total: number,
-			page: number,
-			limit: number,
-			totalPages: number
-		}|null = await triggerAction('transactions', {
+		const serverData: ActionResult<ServerData> = await triggerAction('transactions', {
 			page: page,
 			limit: limit
 		});
 
-		if(serverData === null){
+		if(serverData.type !== 'success' || !serverData.data){
 			error = 'Failed to fetch transactions';
 			isLoading = false;
 			return;
 		}
 
-		transactions = serverData.transactions;
-		totalTransactions = serverData.total;
-		currentPage = serverData.page;
-		itemsPerPage = serverData.limit;
+		transactions = serverData.data.transactions;
+		totalTransactions = serverData.data.total;
+		currentPage = serverData.data.page;
+		itemsPerPage = serverData.data.limit;
 		isLoading = false;
 	}
 
@@ -59,11 +62,11 @@
 			return;
 		}
 
-		const serverData = await triggerAction('delete', {
+		const serverData: ActionResult<any, any> = await triggerAction('delete', {
 			id: transaction.id
 		});
 
-		if(serverData === null){
+		if(serverData.type !== 'success'){
 			error = 'Failed to delete transaction';
 			return;
 		}
@@ -94,24 +97,18 @@
 			goto('/groups');
 		}
 
-		const serverData : {
-			transactions: ITransaction[],
-			total: number,
-			page: number,
-			limit: number,
-			totalPages: number
-		}|null = await onPageLoad(true, true, {
+		const serverResponse : ActionResult<ServerData> = await onPageLoad(true, {
 			groupId: groupId
 		});
 
-		if(serverData === null){
+		if(serverResponse.type !== 'success' || !serverResponse.data){
 			return;
 		}
 
-		transactions = serverData.transactions;
-		totalTransactions = serverData.total;
-		currentPage = serverData.page;
-		itemsPerPage = serverData.limit;
+		transactions = serverResponse.data.transactions;
+		totalTransactions = serverResponse.data.total;
+		currentPage = serverResponse.data.page;
+		itemsPerPage = serverResponse.data.limit;
 	});
 </script>
 

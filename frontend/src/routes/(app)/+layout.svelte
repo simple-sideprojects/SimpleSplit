@@ -2,31 +2,36 @@
 	import { afterNavigate, invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
-	import type { Group } from '$lib/client';
 	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
 	import { authStore, type User } from '$lib/shared/stores/auth.store.js';
-	import { groupsStore, type GroupList } from '$lib/shared/stores/groups.store.js';
+	import { groupsStore, type Group } from '$lib/shared/stores/groups.store.js';
 	import { onMount } from 'svelte';
 	import IconDashboard from '~icons/tabler/dashboard';
 	import IconPlus from '~icons/tabler/plus';
 	import IconSettings from '~icons/tabler/settings';
 	import IconUser from '~icons/tabler/user';
 	import IconUsers from '~icons/tabler/users';
+	import type { PageData } from './$types';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
-	let { data, children } = $props();
-	let groups: Group[] = $derived(data.groups ?? Object.values($groupsStore) ?? []);
-	let user: User|null = $derived(data.user ?? $authStore.user ?? null);
+	let { data, children } = $props<{ data: PageData }>();
+	let groups: Group[] = $derived(Object.values($groupsStore));
+	let user: User|null = $derived($authStore.user);
 
-	// Update groups when groupsStore changes
-	/*$effect(() => {
-		groups = Object.values($groupsStore);
+	//Update groups store if it is available through server load()
+	$effect(() => {
+		if(data.groups !== undefined){
+			groupsStore.setGroups(data.groups);
+		}
 	});
 
-	// Update user when authStore changes
+	//Update user store if it is available through server load()
 	$effect(() => {
-		user = $authStore.user;
-	});*/
+		if(data.user !== undefined){
+			$authStore.user = data.user;
+		}
+	});
 
 	//ScrollToTop
 	let mainElement: HTMLElement;
@@ -45,22 +50,17 @@
 			return;
 		}
 
-		const serverData : {
+		const serverResponse : ActionResult<{
 			user: User|null,
 			groups: Group[]
-		}|null = await onLayoutLoad('/', true, true);
+		}> = await onLayoutLoad('/', true);
 
-		if(serverData === null){
+		if(serverResponse.type !== 'success' || !serverResponse.data){
 			return;
 		}
 
-		$authStore.user = serverData.user;
-		$groupsStore = groups.reduce((acc: GroupList, group) => {
-            if(group.id) {
-                acc[group.id] = group;
-            }
-            return acc;
-		}, {} as GroupList);
+		$authStore.user = serverResponse.data.user;
+		groupsStore.setGroups(serverResponse.data.groups);
 	});
 </script>
 
@@ -164,7 +164,6 @@
 
 		{#if page.url.pathname !== '/account'}
 			<AddTransactionButton
-				transactionForm={data.transactionForm}
 				groups={data.groups}
 				user={data.user}
 			/>

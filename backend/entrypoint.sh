@@ -5,5 +5,5 @@ set -e
 alembic upgrade head
 
 # Start FastAPI app
-exec fastapi run app/main.py --no-server-header
-# exec uvicorn main:app --host 0.0.0.0 --port 8000
+exec fastapi run app/main.py
+# exec uvicorn main:app --host 0.0.0.0 --port 8000 --no-server-header

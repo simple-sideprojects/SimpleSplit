@@ -25,11 +25,10 @@ async function getPageData() {
 }
 
 export const load: PageServerLoad = async ({ params }) => {
+	//If svelte is precompiling, return only the validator
 	if (building){
-		const inviteMemberForm = await superValidate(zod(zGroupInviteCreate));
-
 		return {
-			inviteMemberForm: inviteMemberForm
+			inviteMemberForm: await superValidate(zod(zGroupInviteCreate));
 		};
 	}
 	
