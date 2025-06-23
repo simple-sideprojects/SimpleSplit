@@ -18,7 +18,7 @@
 	const { form, errors, enhance, message, constraints, submitting } = superForm(data.loginForm, {
 		resetForm: false,
 		onResult: async ({ result, cancel }) => {
-			if (result.type !== 'success'){
+			if (result.type !== 'success') {
 				return;
 			}
 
@@ -28,7 +28,7 @@
 
 				// Zur Hauptseite weiterleiten
 				await goto('/');
-			}else{
+			} else {
 				cancel();
 			}
 		}
@@ -43,19 +43,19 @@
 	let showPopover = $state(false);
 	let server_input_error = $state(false);
 	let server_input_error_message = $state('');
-	
+
 	function togglePopover(event: Event) {
 		event.preventDefault();
 		event.stopPropagation();
 		showPopover = !showPopover;
 	}
-	
+
 	// Klick außerhalb des Popovers schließt ihn
 	function handleClickOutside(event: MouseEvent) {
 		const target = event.target as HTMLElement;
 		const popover = document.getElementById('server-popover');
 		const link = document.getElementById('server-link');
-		
+
 		if (popover && link && !popover.contains(target) && !link.contains(target)) {
 			showPopover = false;
 		}
@@ -102,7 +102,7 @@
 								? 'border-red-500'
 								: 'border-gray-300'}"
 							aria-invalid={$errors.email ? 'true' : 'false'}
-						    {...$constraints.email}
+							{...$constraints.email}
 						/>
 						{#if $errors.email}
 							<p class="mt-1 text-sm text-red-600">This is not a valid email address</p>
@@ -164,42 +164,43 @@
 					<p class="mt-4 mb-0 text-center text-sm/6 text-gray-500">
 						Zugriff auf:
 						<span class="relative">
-							<a 
+							<a
 								id="server-link"
-								class="font-semibold text-blue-600 hover:text-blue-500 cursor-pointer inline-flex items-center" 
-								href="#" 
+								class="inline-flex cursor-pointer items-center font-semibold text-blue-600 hover:text-blue-500"
+								href="#"
 								onclick={togglePopover}
 							>
 								{SERVER_HOST.hostname}{#if SERVER_HOST.port !== ''}:{SERVER_HOST.port}{/if}
 								{#if showPopover}
-									<IconChevronUp class="text-gray-500 size-4 inline-flex ml-1" />
+									<IconChevronUp class="ml-1 inline-flex size-4 text-gray-500" />
 								{:else}
-									<IconChevronDown class="text-gray-500 size-4 inline-flex ml-1" />
+									<IconChevronDown class="ml-1 inline-flex size-4 text-gray-500" />
 								{/if}
 							</a>
 						</span>
 					</p>
 				{/if}
 				{#if supportsServerSwitcher && showPopover}
-					<div 
-						id="server-popover" 
-						class="absolute z-50 mt-2 left-1/2 transform -translate-x-1/2 w-64 rounded-lg border border-gray-200 bg-white shadow-lg"
+					<div
+						id="server-popover"
+						class="absolute left-1/2 z-50 mt-2 w-64 -translate-x-1/2 transform rounded-lg border border-gray-200 bg-white shadow-lg"
 					>
 						<div class="p-3">
-							<h3 class="font-medium text-sm">Server-Auswahl</h3>
-							<p class="text-xs text-gray-500 mt-1">Wähle eine Server-Instanz für den Zugriff</p>
+							<h3 class="text-sm font-medium">Server-Auswahl</h3>
+							<p class="mt-1 text-xs text-gray-500">Wähle eine Server-Instanz für den Zugriff</p>
 						</div>
 
 						{#if $authStore.frontend_url !== PUBLIC_FRONTEND_URL}
 							<div class="max-h-48 overflow-y-auto pb-3">
 								<button
-									class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between cursor-pointer" onclick={() => {
+									class="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left hover:bg-gray-50"
+									onclick={() => {
 										$authStore.frontend_url = PUBLIC_FRONTEND_URL;
 										showPopover = false;
 									}}
 								>
 									<div>
-										<div class="font-medium text-sm">{PUBLIC_FRONTEND_URL}</div>
+										<div class="text-sm font-medium">{PUBLIC_FRONTEND_URL}</div>
 										<div class="text-xs text-gray-500">SimpleSplit (default)</div>
 									</div>
 								</button>
@@ -224,7 +225,7 @@
 								</div>
 								<button
 									type="button"
-									class="w-full rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 flex items-center justify-center gap-1"
+									class="flex w-full items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
 									onclick={(e) => {
 										e.preventDefault();
 										try {
@@ -232,18 +233,21 @@
 											let server_input_url = new URL(server_input);
 											server_input_error = false;
 											let new_frontend_url = server_input_url.toString();
-											if(new_frontend_url.endsWith('/')){
+											if (new_frontend_url.endsWith('/')) {
 												new_frontend_url = new_frontend_url.slice(0, -1);
 											}
 											$authStore.frontend_url = new_frontend_url;
 											server_input = '';
 											showPopover = false;
 										} catch (error) {
-											if(server_input == ''){
+											if (server_input == '') {
 												server_input_error_message = 'Server URL is required';
-											}else if(!server_input.includes('http://') && !server_input.includes('https://')){
+											} else if (
+												!server_input.includes('http://') &&
+												!server_input.includes('https://')
+											) {
 												server_input_error_message = 'Missing Schema (http:// or https://)';
-											}else{
+											} else {
 												server_input_error_message = 'Failed to validate URL';
 											}
 											server_input_error = true;

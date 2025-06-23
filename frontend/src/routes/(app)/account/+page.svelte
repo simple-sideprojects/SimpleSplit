@@ -14,11 +14,11 @@
 
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
-	let userData: User|null = $derived($authStore.user);
+	let userData: User | null = $derived($authStore.user);
 
 	//Update auth store if it is available through server load()
 	$effect(() => {
-		if(data.userData !== undefined){
+		if (data.userData !== undefined) {
 			$authStore.user = data.userData;
 		}
 	});
@@ -39,13 +39,13 @@
 
 	//Update Username Form
 	$effect(() => {
-		if(userData){
+		if (userData) {
 			usernameForm.update((formData) => {
 				formData.username = userData.username;
 				return formData;
-			})
+			});
 		}
-	})
+	});
 
 	//Handle Password Form
 	const {
@@ -78,28 +78,29 @@
 	});
 
 	//Sign Out Form
-	const {
-		enhance: enhanceSignOut
-	} = superForm({}, {
-		onResult: async ({ result }) => {
-			if (result.type === 'success') {
-				toast.success('Signed out successfully');
-				await clientSideLogout();
+	const { enhance: enhanceSignOut } = superForm(
+		{},
+		{
+			onResult: async ({ result }) => {
+				if (result.type === 'success') {
+					toast.success('Signed out successfully');
+					await clientSideLogout();
+				}
 			}
 		}
-	});
-	
+	);
+
 	//Mobile App functionality
 	onMount(async () => {
-		if(!isCompiledStatic()){
+		if (!isCompiledStatic()) {
 			return;
 		}
-		const serverResponse : ActionResult<{
-			userData: User,
+		const serverResponse: ActionResult<{
+			userData: User;
 		}> = await onPageLoad(true, {
 			userData: userData
 		});
-		if(serverResponse.type !== 'success' || !serverResponse.data){
+		if (serverResponse.type !== 'success' || !serverResponse.data) {
 			return;
 		}
 		$authStore.user = serverResponse.data.userData;

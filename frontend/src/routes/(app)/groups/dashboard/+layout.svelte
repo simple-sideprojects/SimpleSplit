@@ -18,12 +18,16 @@
 
 	//Handle provided data
 	let { data, children } = $props<{ data: PageData }>();
-	const groupId = $derived(building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string);
-	let group: Group|null = $derived(groupId ? $groupsStore[groupId] : null);
+	const groupId = $derived(
+		building || !page.url.searchParams.has('groupId')
+			? null
+			: (page.url.searchParams.get('groupId') as string)
+	);
+	let group: Group | null = $derived(groupId ? $groupsStore[groupId] : null);
 
 	//Update group store if it is available through server load()
 	$effect(() => {
-		if(data.group !== undefined){
+		if (data.group !== undefined) {
 			$groupsStore[data.group.id] = data.group;
 		}
 	});
@@ -35,13 +39,10 @@
 	});*/
 
 	//Update Group Name Form
-	const { 
-		form, 
-		enhance: enhanceUpdateGroupName
-	} = superForm(data.updateGroupNameForm, {
+	const { form, enhance: enhanceUpdateGroupName } = superForm(data.updateGroupNameForm, {
 		onResult: ({ result }) => {
 			if (result.type === 'success' && result.data && result.data.group) {
-				if(groupId){
+				if (groupId) {
 					$groupsStore[groupId] = result.data.group;
 					data.group = result.data.group;
 				}
@@ -66,18 +67,18 @@
 
 	//Mobile App functionality
 	onMount(async () => {
-		if(!isCompiledStatic()){
+		if (!isCompiledStatic()) {
 			return;
 		}
 
-		const serverResponse : ActionResult<{
-			group: Group,
-			updateGroupNameForm: any
+		const serverResponse: ActionResult<{
+			group: Group;
+			updateGroupNameForm: any;
 		}> = await onLayoutLoad('/groups/dashboard/', true, {
 			groupId
 		});
 
-		if(serverResponse.type !== 'success' || !serverResponse.data){
+		if (serverResponse.type !== 'success' || !serverResponse.data) {
 			return;
 		}
 
@@ -89,7 +90,7 @@
 		//Update the data of the form
 		form.update(() => ({
 			name: group.name
-		}))
+		}));
 	});
 </script>
 
@@ -141,7 +142,8 @@
 				<nav class="-mb-px flex gap-6" aria-label="Group navigation">
 					<a
 						href="/groups/dashboard?groupId={groupId}"
-						class="inline-flex shrink-0 items-center gap-2 border-b-2 px-3 pb-2 text-sm font-medium {pathType === 'dashboard'
+						class="inline-flex shrink-0 items-center gap-2 border-b-2 px-3 pb-2 text-sm font-medium {pathType ===
+						'dashboard'
 							? 'border-gray-500 text-gray-800'
 							: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
 						aria-current={pathType === 'dashboard' ? 'page' : undefined}
@@ -151,7 +153,8 @@
 					</a>
 					<a
 						href="/groups/dashboard/history?groupId={groupId}"
-						class="inline-flex shrink-0 items-center gap-2 border-b-2 px-3 pb-2 text-sm font-medium {pathType === 'history'
+						class="inline-flex shrink-0 items-center gap-2 border-b-2 px-3 pb-2 text-sm font-medium {pathType ===
+						'history'
 							? 'border-gray-500 text-gray-800'
 							: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
 						aria-current={pathType === 'history' ? 'page' : undefined}
@@ -161,7 +164,8 @@
 					</a>
 					<a
 						href="/groups/dashboard/settings?groupId={groupId}"
-						class="inline-flex shrink-0 items-center gap-2 border-b-2 px-3 pb-2 text-sm font-medium {pathType === 'settings'
+						class="inline-flex shrink-0 items-center gap-2 border-b-2 px-3 pb-2 text-sm font-medium {pathType ===
+						'settings'
 							? 'border-gray-500 text-gray-800'
 							: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
 						aria-current={pathType === 'settings' ? 'page' : undefined}

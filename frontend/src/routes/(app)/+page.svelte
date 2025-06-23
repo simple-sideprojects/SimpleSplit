@@ -20,14 +20,14 @@
 
 	//Update balances store if it is available through server load()
 	$effect(() => {
-		if(data.balances !== undefined){
+		if (data.balances !== undefined) {
 			balancesStore.setBalances(data.balances);
 		}
 	});
 
 	//Update transactions store if it is available through server load()
 	$effect(() => {
-		if(data.transactions !== undefined){
+		if (data.transactions !== undefined) {
 			transactionsStore.setTransactions(data.transactions);
 		}
 	});
@@ -41,19 +41,19 @@
 	);
 
 	//Formatter
-	const AmountFormatter = Intl.NumberFormat('de-DE', {style:'currency',currency:'EUR'});
+	const AmountFormatter = Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
 	//Mobile App functionality
 	onMount(async () => {
-		if(!isCompiledStatic()){
+		if (!isCompiledStatic()) {
 			return;
 		}
-		const serverResponse : ActionResult<{
-			balances: Balance[],
-			transactions: TransactionRead[]
+		const serverResponse: ActionResult<{
+			balances: Balance[];
+			transactions: TransactionRead[];
 		}> = await onPageLoad(true);
 
-		if(serverResponse.type !== 'success' || !serverResponse.data){
+		if (serverResponse.type !== 'success' || !serverResponse.data) {
 			return;
 		}
 
@@ -80,7 +80,9 @@
 				<IconArrowDown class="size-5 text-red-500" />
 				<h2 class="text-base font-semibold text-gray-900">You owe</h2>
 			</div>
-			<p class="mt-2 text-2xl font-bold text-red-500">{AmountFormatter.format(Math.abs(totalNegative))}</p>
+			<p class="mt-2 text-2xl font-bold text-red-500">
+				{AmountFormatter.format(Math.abs(totalNegative))}
+			</p>
 		</div>
 	</div>
 

@@ -7,7 +7,7 @@ import { zUpdateGroup } from '$lib/client/zod.gen';
 
 export const load: LayoutServerLoad = async ({ request, url }) => {
 	//If svelte is precompiling, return only the validator
-	if (building){
+	if (building) {
 		return {
 			updateGroupNameForm: await superValidate(zod(zUpdateGroup))
 		};

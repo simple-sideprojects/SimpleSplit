@@ -15,7 +15,7 @@
 	const { form, errors, enhance, submit, message, submitting } = superForm(data.registerForm, {
 		resetForm: false,
 		onResult: async ({ result }) => {
-			if (result.type !== 'success'){
+			if (result.type !== 'success') {
 				return;
 			}
 

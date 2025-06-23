@@ -15,7 +15,10 @@
 
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
-	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
+	const groupId =
+		building || !page.url.searchParams.has('groupId')
+			? null
+			: (page.url.searchParams.get('groupId') as string);
 	let group: Group | null = $derived(groupId ? $groupsStore[groupId] : null);
 	let memberToRemove = $state<string | null>(null);
 	let showDeleteConfirm = $state(false);
@@ -50,74 +53,78 @@
 	});
 
 	//Delete Group Form
-	const {
-		enhance: enhanceGroupDelete
-	} = superForm({}, {
-		onSubmit: ({formData}) => {
-			formData.set('groupId', groupId as string);
-			isDeletingGroup = true;
-			return async () => {
-				toast.success('Group deleted successfully');
-				await goto('/groups/dashboard/');
-			};
+	const { enhance: enhanceGroupDelete } = superForm(
+		{},
+		{
+			onSubmit: ({ formData }) => {
+				formData.set('groupId', groupId as string);
+				isDeletingGroup = true;
+				return async () => {
+					toast.success('Group deleted successfully');
+					await goto('/groups/dashboard/');
+				};
+			}
 		}
-	});
+	);
 
 	//Cancel Invite Form
-	const {
-		enhance: enhanceCancelInvite
-	} = superForm({}, {
-		onSubmit: ({formData}) => {
-			formData.set('groupId', groupId as string);
-			isCancelingInvite = true;
+	const { enhance: enhanceCancelInvite } = superForm(
+		{},
+		{
+			onSubmit: ({ formData }) => {
+				formData.set('groupId', groupId as string);
+				isCancelingInvite = true;
 
-			return async ({ update, result }) => {
-				await update();
-				isCancelingInvite = false;
+				return async ({ update, result }) => {
+					await update();
+					isCancelingInvite = false;
 
-				if (result.type === 'success') {
-					toast.success('Invitation canceled');
-				}
-			};
+					if (result.type === 'success') {
+						toast.success('Invitation canceled');
+					}
+				};
+			}
 		}
-	});
+	);
 
 	//Generate Invite Link Form
-	const {
-		enhance: enhanceGenerateInviteLink
-	} = superForm({}, {
-		onSubmit: ({formData}) => {
-			formData.set('groupId', groupId as string);
-			return async ({ result, update }) => {
-				if (result.type === 'success' && browser && result.data?.invite) {
-					const invite = result.data.invite as { token: string };
-					const link = `${document.location.origin}/groups/invite?token=${invite.token}`;
-					copyToClipboard(link);
-					toast.success('Invite link copied to clipboard');
-					await update();
-				}
-			};
+	const { enhance: enhanceGenerateInviteLink } = superForm(
+		{},
+		{
+			onSubmit: ({ formData }) => {
+				formData.set('groupId', groupId as string);
+				return async ({ result, update }) => {
+					if (result.type === 'success' && browser && result.data?.invite) {
+						const invite = result.data.invite as { token: string };
+						const link = `${document.location.origin}/groups/invite?token=${invite.token}`;
+						copyToClipboard(link);
+						toast.success('Invite link copied to clipboard');
+						await update();
+					}
+				};
+			}
 		}
-	});
+	);
 
 	//Remove Member Form
-	const {
-		enhance: enhanceRemoveMember
-	} = superForm({}, {
-		onSubmit: ({formData}) => {
-			formData.set('groupId', groupId as string);
-			isRemovingMember = true;
-			return async ({ update, result }) => {
-				await update();
-				isRemovingMember = false;
-				memberToRemove = null;
+	const { enhance: enhanceRemoveMember } = superForm(
+		{},
+		{
+			onSubmit: ({ formData }) => {
+				formData.set('groupId', groupId as string);
+				isRemovingMember = true;
+				return async ({ update, result }) => {
+					await update();
+					isRemovingMember = false;
+					memberToRemove = null;
 
-				if (result.type === 'success') {
-					toast.success('Member removed successfully');
-				}
-			};
+					if (result.type === 'success') {
+						toast.success('Member removed successfully');
+					}
+				};
+			}
 		}
-	});
+	);
 
 	//Copy to clipboard
 	function copyToClipboard(text: string) {
@@ -168,11 +175,7 @@
 						</button>
 					</form>
 
-					<form
-						action="?/generateInviteLink"
-						method="POST"
-						use:enhanceGenerateInviteLink
-					>
+					<form action="?/generateInviteLink" method="POST" use:enhanceGenerateInviteLink>
 						<button
 							type="submit"
 							class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
@@ -237,11 +240,7 @@
 										>
 									{/if}
 								</div>
-								<form
-									action="?/cancelInvite"
-									method="POST"
-									use:enhanceCancelInvite
-								>
+								<form action="?/cancelInvite" method="POST" use:enhanceCancelInvite>
 									<input type="hidden" name="inviteToken" value={invite.token} />
 									<button
 										type="submit"
@@ -280,16 +279,11 @@
 						</button>
 					</div>
 				{:else}
-					<form
-						action="?/deleteGroup"
-						method="POST"
-						use:enhanceGroupDelete
-					>
+					<form action="?/deleteGroup" method="POST" use:enhanceGroupDelete>
 						<div class="mb-2 flex flex-col">
 							<label for="confirm" class="text-sm font-medium text-gray-900">Confirm Deletion</label
 							>
-							<span class="mt-0.5 text-xs text-gray-500"
-								>Please type "{group.name}" to confirm</span
+							<span class="mt-0.5 text-xs text-gray-500">Please type "{group.name}" to confirm</span
 							>
 						</div>
 						<input
@@ -366,11 +360,7 @@
 				</div>
 
 				<div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-					<form
-						action="?/removeMember"
-						method="POST"
-						use:enhanceRemoveMember
-					>
+					<form action="?/removeMember" method="POST" use:enhanceRemoveMember>
 						<input type="hidden" name="userId" value={memberToRemove} />
 						<div class="sm:flex sm:flex-row-reverse">
 							<button

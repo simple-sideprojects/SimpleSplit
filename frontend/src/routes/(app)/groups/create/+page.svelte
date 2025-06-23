@@ -12,12 +12,7 @@
 	<h1 class="text-2xl font-bold">Create New Group</h1>
 
 	<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
-		<form
-			class="space-y-6"
-			action="?/createGroup"
-			method="POST"
-			use:enhance
-		>
+		<form class="space-y-6" action="?/createGroup" method="POST" use:enhance>
 			<div class="space-y-1">
 				<div class="mb-3 flex flex-col">
 					<label for="name" class="text-base font-medium text-gray-900">Group Name</label>

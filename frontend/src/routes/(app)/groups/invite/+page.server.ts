@@ -4,7 +4,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { building } from '$app/environment';
 import { isCompiledStatic } from '$lib/shared/app/controller';
 
-async function getPageData(token: string|null) {
+async function getPageData(token: string | null) {
 	if (!token) {
 		return redirect(303, '/groups');
 	}
@@ -18,23 +18,25 @@ async function getPageData(token: string|null) {
 	}
 
 	return redirect(301, '/groups');
-};
+}
 
 export const load: PageServerLoad = async ({ url }) => {
-	if (building){
+	if (building) {
 		return {};
 	}
 
 	const token = url.searchParams.get('token');
-	
+
 	return getPageData(token);
 };
 
-export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data: async ({ request }) => {
-		const data = await request.formData();
-		const token = data.get('token');
+export const actions: Actions | undefined = isCompiledStatic()
+	? undefined
+	: {
+			data: async ({ request }) => {
+				const data = await request.formData();
+				const token = data.get('token');
 
-		return getPageData(token as string);
-	}
-};
+				return getPageData(token as string);
+			}
+		};

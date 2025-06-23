@@ -3,7 +3,7 @@
 	import type { Group } from '$lib/client';
 	import { groupsStore } from '$lib/shared/stores/groups.store.js';
 	import type { PageData } from './$types';
-	
+
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
 	let groups: Group[] = $derived(Object.values($groupsStore));

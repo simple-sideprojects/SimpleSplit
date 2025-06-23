@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/public';
 import {
-    createTransactionTransactionsPost,
-    readTransactionsUserIsParticipantInTransactionsGet,
+	createTransactionTransactionsPost,
+	readTransactionsUserIsParticipantInTransactionsGet,
 	type Group,
 	type TransactionRead,
 	type UserResponse
@@ -19,9 +19,12 @@ import { setMessage, superValidate, type SuperValidated } from 'sveltekit-superf
 import type { Balance } from '$lib/interfaces';
 import type { z } from 'zod';
 
-async function getPageData(fetch: Fetch, cookies: Cookies): Promise<{
-	balances: Balance[],
-	transactions: TransactionRead[]
+async function getPageData(
+	fetch: Fetch,
+	cookies: Cookies
+): Promise<{
+	balances: Balance[];
+	transactions: TransactionRead[];
 }> {
 	const [balanceRes, recentRes] = await Promise.all([
 		fetch(`${env.PUBLIC_BACKEND_URL}/balance`),
@@ -33,7 +36,7 @@ async function getPageData(fetch: Fetch, cookies: Cookies): Promise<{
 	]);
 
 	if (!balanceRes.ok || recentRes.error) {
-		if(balanceRes.status === 401){
+		if (balanceRes.status === 401) {
 			cookies.delete('auth_token', { path: '/' });
 			return redirect(302, '/auth/login');
 		}
@@ -44,7 +47,7 @@ async function getPageData(fetch: Fetch, cookies: Cookies): Promise<{
 
 	const [balances, transactions] = await Promise.all([balanceRes.json(), recentRes.data]);
 
-	if(transactions === undefined){
+	if (transactions === undefined) {
 		return error(500, {
 			message: 'Failed to fetch transactions'
 		});
@@ -54,58 +57,76 @@ async function getPageData(fetch: Fetch, cookies: Cookies): Promise<{
 		balances,
 		transactions
 	};
-};
+}
 
-export const load: PageServerLoad = async ({ fetch, cookies }): Promise<{
-	balances: Balance[],
-	transactions: TransactionRead[]
-}|{}> => {
-    //If svelte is precompiling, return empty object
-	if (building){
+export const load: PageServerLoad = async ({
+	fetch,
+	cookies
+}): Promise<
+	| {
+			balances: Balance[];
+			transactions: TransactionRead[];
+	  }
+	| {}
+> => {
+	//If svelte is precompiling, return empty object
+	if (building) {
 		return {};
 	}
-	
+
 	return getPageData(fetch, cookies);
 };
 
-export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data_layout: async ({ cookies }): Promise<{
-		user: UserResponse,
-		groups: Group[]
-	}> => {
-		let layout_data = await getRootLayoutData(cookies);
-		return layout_data;
-	},
-	data: async ({ fetch, cookies }): Promise<{
-		balances: Balance[],
-		transactions: TransactionRead[]
-	}> => {
-		let page_data = await getPageData(fetch, cookies);
-		return page_data;
-	},
-    createTransaction: async ({ request }): Promise<{
-		form: SuperValidated<z.infer<typeof zTransactionCreate>>
-	}|ActionFailure<{
-		form: SuperValidated<z.infer<typeof zTransactionCreate>>
-	}>> => {
-        const form = await superValidate(request, zod(zTransactionCreate));
+export const actions: Actions | undefined = isCompiledStatic()
+	? undefined
+	: {
+			data_layout: async ({
+				cookies
+			}): Promise<{
+				user: UserResponse;
+				groups: Group[];
+			}> => {
+				const layout_data = await getRootLayoutData(cookies);
+				return layout_data;
+			},
+			data: async ({
+				fetch,
+				cookies
+			}): Promise<{
+				balances: Balance[];
+				transactions: TransactionRead[];
+			}> => {
+				const page_data = await getPageData(fetch, cookies);
+				return page_data;
+			},
+			createTransaction: async ({
+				request
+			}): Promise<
+				| {
+						form: SuperValidated<z.infer<typeof zTransactionCreate>>;
+				  }
+				| ActionFailure<{
+						form: SuperValidated<z.infer<typeof zTransactionCreate>>;
+				  }>
+			> => {
+				const form = await superValidate(request, zod(zTransactionCreate));
 
-        if (!form.valid) {
-            return fail(400, { form });
-        }
+				if (!form.valid) {
+					return fail(400, { form });
+				}
 
-        const response = await createTransactionTransactionsPost({
-            body: form.data,
-            query: {
-                group_id: form.data.group_id
-            }
-        });
+				const response = await createTransactionTransactionsPost({
+					body: form.data,
+					query: {
+						group_id: form.data.group_id
+					}
+				});
 
-        if (!response.data) {
-            setMessage(form, 'An unexpected error occurred during transaction creation.');
-            return fail(500, { form });
-        }
+				if (!response.data) {
+					setMessage(form, 'An unexpected error occurred during transaction creation.');
+					return fail(500, { form });
+				}
 
-        return { form };
-    }
-};
+				return { form };
+			}
+		};

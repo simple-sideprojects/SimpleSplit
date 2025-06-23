@@ -6,9 +6,12 @@ import { zod } from 'sveltekit-superforms/adapters';
 import { readGroupsGroupsGet, readUsersMeAccountGet } from '$lib/client';
 import type { z } from 'zod';
 
-export async function getGroupLayoutData(groupId: string|null, request: Request): Promise<{
-	groupData: Group,
-	updateGroupNameForm: SuperValidated<z.infer<typeof zUpdateGroup>>
+export async function getGroupLayoutData(
+	groupId: string | null,
+	request: Request
+): Promise<{
+	groupData: Group;
+	updateGroupNameForm: SuperValidated<z.infer<typeof zUpdateGroup>>;
 }> {
 	if (!groupId) {
 		return redirect(303, '/groups');
@@ -22,8 +25,8 @@ export async function getGroupLayoutData(groupId: string|null, request: Request)
 		}
 	});
 
-	if(groupResponse.error){
-		if(groupResponse.response.status === 401){
+	if (groupResponse.error) {
+		if (groupResponse.response.status === 401) {
 			return redirect(302, '/auth/login');
 		}
 		return error(500, {
@@ -43,17 +46,17 @@ export async function getGroupLayoutData(groupId: string|null, request: Request)
 		group: groupResponse.data,
 		updateGroupNameForm
 	};
-};
+}
 
 export async function getRootLayoutData(cookies: Cookies): Promise<{
-	user: UserResponse,
-	groups: Group[]
+	user: UserResponse;
+	groups: Group[];
 }> {
 	const userResponse = await readUsersMeAccountGet();
 	const groupsResponse = await readGroupsGroupsGet();
 
-	if(userResponse.error || groupsResponse.error){
-		if(userResponse.response.status === 401 || groupsResponse.response.status === 401){
+	if (userResponse.error || groupsResponse.error) {
+		if (userResponse.response.status === 401 || groupsResponse.response.status === 401) {
 			cookies.delete('auth_token', { path: '/' });
 			return redirect(302, '/auth/login');
 		}
@@ -70,4 +73,4 @@ export async function getRootLayoutData(cookies: Cookies): Promise<{
 		user: userResponse.data,
 		groups: groupsResponse.data ?? []
 	};
-};
+}

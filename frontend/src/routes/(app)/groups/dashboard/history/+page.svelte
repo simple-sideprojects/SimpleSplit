@@ -9,10 +9,13 @@
 	import { building } from '$app/environment';
 	import type { PageData } from './$types';
 	import type { ActionResult } from '@sveltejs/kit';
-	
+
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
-	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
+	const groupId =
+		building || !page.url.searchParams.has('groupId')
+			? null
+			: (page.url.searchParams.get('groupId') as string);
 	let transactions = $state<ITransaction[]>(data.transactions ?? []);
 	let totalTransactions = $state(data.total ?? 0);
 	let currentPage = $state(data.page ?? 1);
@@ -23,13 +26,13 @@
 	let openEditDialog = $state<() => void>(() => {});
 
 	//Fetch transactions
-	interface ServerData extends Record<string, unknown>{
-		transactions: ITransaction[],
-		total: number,
-		page: number,
-		limit: number,
-		totalPages: number
-	};
+	interface ServerData extends Record<string, unknown> {
+		transactions: ITransaction[];
+		total: number;
+		page: number;
+		limit: number;
+		totalPages: number;
+	}
 	async function fetchTransactions(page: number, limit: number) {
 		isLoading = true;
 		error = null;
@@ -39,7 +42,7 @@
 			limit: limit
 		});
 
-		if(serverData.type !== 'success' || !serverData.data){
+		if (serverData.type !== 'success' || !serverData.data) {
 			error = 'Failed to fetch transactions';
 			isLoading = false;
 			return;
@@ -66,7 +69,7 @@
 			id: transaction.id
 		});
 
-		if(serverData.type !== 'success'){
+		if (serverData.type !== 'success') {
 			error = 'Failed to delete transaction';
 			return;
 		}
@@ -89,7 +92,7 @@
 
 	//Mobile App functionality
 	onMount(async () => {
-		if(!isCompiledStatic()){
+		if (!isCompiledStatic()) {
 			return;
 		}
 
@@ -97,11 +100,11 @@
 			goto('/groups');
 		}
 
-		const serverResponse : ActionResult<ServerData> = await onPageLoad(true, {
+		const serverResponse: ActionResult<ServerData> = await onPageLoad(true, {
 			groupId: groupId
 		});
 
-		if(serverResponse.type !== 'success' || !serverResponse.data){
+		if (serverResponse.type !== 'success' || !serverResponse.data) {
 			return;
 		}
 

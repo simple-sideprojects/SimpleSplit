@@ -5,6 +5,7 @@ Diese Stores nutzen Capacitor Preferences, um Daten zwischen Sessions zu speiche
 ## Verfügbare Stores
 
 ### AuthStore
+
 Verwaltet Authentifizierungsinformationen wie Token und Benutzer.
 
 ```typescript
@@ -15,13 +16,14 @@ const user = authStore.getUser();
 const authData = authStore.getAuthData();
 
 // Einloggen
-clientSideLogin("token123");
+clientSideLogin('token123');
 
 // Ausloggen (löscht auch andere Caches)
 await clientSideLogout();
 ```
 
 ### GroupsStore
+
 Verwaltet Gruppen-Informationen.
 
 ```typescript
@@ -31,7 +33,7 @@ import { groupsStore, cacheGroups } from '$lib/shared/stores/groups.store';
 const groups = groupsStore.getGroups();
 
 // Eine spezifische Gruppe abrufen
-const group = groupsStore.getGroup("group-id");
+const group = groupsStore.getGroup('group-id');
 
 // Gruppen cachen
 cacheGroups(groupsArray);
@@ -41,25 +43,30 @@ groupsStore.clear();
 ```
 
 ### TransactionsStore
+
 Verwaltet Transaktions-Informationen.
 
 ```typescript
-import { transactionsStore, cacheTransactions, clearGroupTransactions } from '$lib/shared/stores/transactions.store';
+import {
+	transactionsStore,
+	cacheTransactions,
+	clearGroupTransactions
+} from '$lib/shared/stores/transactions.store';
 
 // Alle Transaktionen abrufen
 const transactions = transactionsStore.getTransactions();
 
 // Eine spezifische Transaktion abrufen
-const transaction = transactionsStore.getTransaction("transaction-id");
+const transaction = transactionsStore.getTransaction('transaction-id');
 
 // Transaktionen für eine bestimmte Gruppe abrufen
-const groupTransactions = transactionsStore.getTransactionsByGroupId("group-id");
+const groupTransactions = transactionsStore.getTransactionsByGroupId('group-id');
 
 // Transaktionen cachen
 cacheTransactions(transactionsArray);
 
 // Transaktionen für eine bestimmte Gruppe löschen
-clearGroupTransactions("group-id");
+clearGroupTransactions('group-id');
 
 // Cache komplett leeren
 transactionsStore.clear();
@@ -71,4 +78,4 @@ Die Stores sind automatisch mit Capacitor Preferences verbunden und synchronisie
 
 - `$storeVariable` für reaktive Bindung in Svelte-Komponenten
 - Store-Methoden für spezifischen Zugriff
-- Alle Änderungen werden automatisch persistiert 
+- Alle Änderungen werden automatisch persistiert

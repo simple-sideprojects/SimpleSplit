@@ -29,108 +29,111 @@
 		enhance,
 		submitting,
 		reset
-	} = superForm({}, {
-		validators: zod(zTransactionCreate),
-		resetForm: true,
-		dataType: 'json',
-		onResult: ({ result }) => {
-			if (result.type === 'success') {
-				toast.success('Transaction added successfully');
-				closeDialog();
-			} else if (result.type === 'error') {
-				toast.error('Failed to add transaction');
-			}
-		},
-		onSubmit: ({ jsonData, cancel }) => {
-			// Data validation check
-			if (!selectedGroup || !$transactionForm.payer_id || selectedParticipants.size === 0) {
-				toast.error('Please fill in all required fields');
-				return cancel();
-			}
+	} = superForm(
+		{},
+		{
+			validators: zod(zTransactionCreate),
+			resetForm: true,
+			dataType: 'json',
+			onResult: ({ result }) => {
+				if (result.type === 'success') {
+					toast.success('Transaction added successfully');
+					closeDialog();
+				} else if (result.type === 'error') {
+					toast.error('Failed to add transaction');
+				}
+			},
+			onSubmit: ({ jsonData, cancel }) => {
+				// Data validation check
+				if (!selectedGroup || !$transactionForm.payer_id || selectedParticipants.size === 0) {
+					toast.error('Please fill in all required fields');
+					return cancel();
+				}
 
-			// Convert amount from euros to cents
-			const amountInCents = Math.round(parseFloat($transactionForm.amount || '0') * 100);
+				// Convert amount from euros to cents
+				const amountInCents = Math.round(parseFloat($transactionForm.amount || '0') * 100);
 
-			// Validate participants based on split type
-			participantsError = null;
-			const participants: TransactionParticipantCreate[] = [];
+				// Validate participants based on split type
+				participantsError = null;
+				const participants: TransactionParticipantCreate[] = [];
 
-			if (selectedParticipants.size > 0) {
-				if (splitType === 'EVEN') {
-					const amountPerPerson = Math.round(amountInCents / selectedParticipants.size);
-					for (const userId of selectedParticipants) {
-						participants.push({
-							debtor_id: userId,
-							amount_owed: amountPerPerson
-						});
-					}
-				} else if (splitType === 'AMOUNT') {
-					let totalAmount = 0;
-					// First pass to calculate total amount
-					for (const userId of selectedParticipants) {
-						const userAmount = parseFloat(participantAmounts.get(userId) || '0');
-						if (isNaN(userAmount)) {
-							participantsError = `Please enter a valid amount for all participants`;
+				if (selectedParticipants.size > 0) {
+					if (splitType === 'EVEN') {
+						const amountPerPerson = Math.round(amountInCents / selectedParticipants.size);
+						for (const userId of selectedParticipants) {
+							participants.push({
+								debtor_id: userId,
+								amount_owed: amountPerPerson
+							});
+						}
+					} else if (splitType === 'AMOUNT') {
+						let totalAmount = 0;
+						// First pass to calculate total amount
+						for (const userId of selectedParticipants) {
+							const userAmount = parseFloat(participantAmounts.get(userId) || '0');
+							if (isNaN(userAmount)) {
+								participantsError = `Please enter a valid amount for all participants`;
+								return cancel();
+							}
+							totalAmount += Math.round(userAmount * 100);
+						}
+
+						if (totalAmount !== amountInCents) {
+							participantsError = `Total amounts (${(totalAmount / 100).toFixed(2)}€) don't match transaction amount (${(amountInCents / 100).toFixed(2)}€)`;
 							return cancel();
 						}
-						totalAmount += Math.round(userAmount * 100);
-					}
 
-					if (totalAmount !== amountInCents) {
-						participantsError = `Total amounts (${(totalAmount / 100).toFixed(2)}€) don't match transaction amount (${(amountInCents / 100).toFixed(2)}€)`;
-						return cancel();
-					}
+						// Second pass to create participants
+						for (const userId of selectedParticipants) {
+							const userAmount = parseFloat(participantAmounts.get(userId) || '0');
+							participants.push({
+								debtor_id: userId,
+								amount_owed: Math.round(userAmount * 100)
+							});
+						}
+					} else if (splitType === 'PERCENTAGE') {
+						let totalPercentage = 0;
+						// First pass to validate percentages
+						for (const userId of selectedParticipants) {
+							const percentage = parseFloat(participantAmounts.get(userId) || '0');
+							if (isNaN(percentage)) {
+								participantsError = `Please enter a valid percentage for all participants`;
+								return cancel();
+							}
+							totalPercentage += percentage;
+						}
 
-					// Second pass to create participants
-					for (const userId of selectedParticipants) {
-						const userAmount = parseFloat(participantAmounts.get(userId) || '0');
-						participants.push({
-							debtor_id: userId,
-							amount_owed: Math.round(userAmount * 100)
-						});
-					}
-				} else if (splitType === 'PERCENTAGE') {
-					let totalPercentage = 0;
-					// First pass to validate percentages
-					for (const userId of selectedParticipants) {
-						const percentage = parseFloat(participantAmounts.get(userId) || '0');
-						if (isNaN(percentage)) {
-							participantsError = `Please enter a valid percentage for all participants`;
+						if (Math.abs(totalPercentage - 100) > 0.01) {
+							participantsError = `Total percentage (${totalPercentage.toFixed(2)}%) doesn't add up to 100%`;
 							return cancel();
 						}
-						totalPercentage += percentage;
-					}
 
-					if (Math.abs(totalPercentage - 100) > 0.01) {
-						participantsError = `Total percentage (${totalPercentage.toFixed(2)}%) doesn't add up to 100%`;
-						return cancel();
-					}
-
-					// Second pass to create participants
-					for (const userId of selectedParticipants) {
-						const percentage = parseFloat(participantAmounts.get(userId) || '0');
-						const calculatedAmount = Math.round((percentage / 100) * amountInCents);
-						participants.push({
-							debtor_id: userId,
-							amount_owed: calculatedAmount
-						});
+						// Second pass to create participants
+						for (const userId of selectedParticipants) {
+							const percentage = parseFloat(participantAmounts.get(userId) || '0');
+							const calculatedAmount = Math.round((percentage / 100) * amountInCents);
+							participants.push({
+								debtor_id: userId,
+								amount_owed: calculatedAmount
+							});
+						}
 					}
 				}
+
+				const formData: TransactionCreate = {
+					group_id: selectedGroup,
+					payer_id: $transactionForm.payer_id,
+					title: $transactionForm.title,
+					amount: amountInCents,
+					purchased_on: purchasedDate ? new Date(purchasedDate).toISOString() : undefined,
+					transaction_type: splitType,
+					participants: participants
+				};
+
+				jsonData(formData);
 			}
-
-			const formData: TransactionCreate = {
-				group_id: selectedGroup,
-				payer_id: $transactionForm.payer_id,
-				title: $transactionForm.title,
-				amount: amountInCents,
-				purchased_on: purchasedDate ? new Date(purchasedDate).toISOString() : undefined,
-				transaction_type: splitType,
-				participants: participants
-			};
-
-			jsonData(formData);
 		}
-	});
+	);
 
 	$effect(() => {
 		if (selectedGroup) {

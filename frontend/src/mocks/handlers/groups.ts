@@ -153,31 +153,34 @@ export const removeGroupMemberMock = http.delete(
 export const recentByGroupMock = http.get(
 	`${env.PUBLIC_BACKEND_URL}/groups/:groupId/recent`,
 	async ({ request }) => {
-		return bypassOrMock(request, HttpResponse.json([
-			{
-				id: 1,
-				from: 'Max Mustermann',
-				to: ['Anna Schmidt', 'Thomas Weber'],
-				amount: 3600, // 36.00
-				description: 'Dinner at Italian Restaurant',
-				date: '2024-03-15T19:30:00Z'
-			},
-			{
-				id: 2,
-				from: 'Lisa Meyer',
-				to: ['Max Mustermann'],
-				amount: 2500, // 25.00
-				description: 'Movie tickets',
-				date: '2024-03-14T20:00:00Z'
-			},
-			{
-				id: 3,
-				from: 'Thomas Weber',
-				to: ['Max Mustermann', 'Anna Schmidt', 'Michael Bauer'],
-				amount: 9000, // 90.00
-				description: 'Group gift for Lisa',
-				date: '2024-03-12T14:20:00Z'
-			}
-		]));
+		return bypassOrMock(
+			request,
+			HttpResponse.json([
+				{
+					id: 1,
+					from: 'Max Mustermann',
+					to: ['Anna Schmidt', 'Thomas Weber'],
+					amount: 3600, // 36.00
+					description: 'Dinner at Italian Restaurant',
+					date: '2024-03-15T19:30:00Z'
+				},
+				{
+					id: 2,
+					from: 'Lisa Meyer',
+					to: ['Max Mustermann'],
+					amount: 2500, // 25.00
+					description: 'Movie tickets',
+					date: '2024-03-14T20:00:00Z'
+				},
+				{
+					id: 3,
+					from: 'Thomas Weber',
+					to: ['Max Mustermann', 'Anna Schmidt', 'Michael Bauer'],
+					amount: 9000, // 90.00
+					description: 'Group gift for Lisa',
+					date: '2024-03-12T14:20:00Z'
+				}
+			])
+		);
 	}
 );

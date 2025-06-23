@@ -17,18 +17,18 @@
 	//Handle provided data
 	let { data, children } = $props<{ data: PageData }>();
 	let groups: Group[] = $derived(Object.values($groupsStore));
-	let user: User|null = $derived($authStore.user);
+	let user: User | null = $derived($authStore.user);
 
 	//Update groups store if it is available through server load()
 	$effect(() => {
-		if(data.groups !== undefined){
+		if (data.groups !== undefined) {
 			groupsStore.setGroups(data.groups);
 		}
 	});
 
 	//Update user store if it is available through server load()
 	$effect(() => {
-		if(data.user !== undefined){
+		if (data.user !== undefined) {
 			$authStore.user = data.user;
 		}
 	});
@@ -41,21 +41,23 @@
 
 	//Check if the current page is a group page
 	function isGroupPage(groupId: string): boolean {
-		return page.url.pathname == '/groups/dashboard/' && page.url.searchParams.get('groupId') == groupId;
+		return (
+			page.url.pathname == '/groups/dashboard/' && page.url.searchParams.get('groupId') == groupId
+		);
 	}
 
 	//Mobile App functionality
 	onMount(async () => {
-		if(!isCompiledStatic()){
+		if (!isCompiledStatic()) {
 			return;
 		}
 
-		const serverResponse : ActionResult<{
-			user: User|null,
-			groups: Group[]
+		const serverResponse: ActionResult<{
+			user: User | null;
+			groups: Group[];
 		}> = await onLayoutLoad('/', true);
 
-		if(serverResponse.type !== 'success' || !serverResponse.data){
+		if (serverResponse.type !== 'success' || !serverResponse.data) {
 			return;
 		}
 
@@ -113,7 +115,8 @@
 								onclick={() => {
 									invalidate(`/groups/dashboard/?groupId=${group.id}`);
 								}}
-								class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium {group.id !== undefined &&isGroupPage(group.id)
+								class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium {group.id !==
+									undefined && isGroupPage(group.id)
 									? 'bg-gray-100 text-gray-700'
 									: 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}"
 							>
@@ -163,10 +166,7 @@
 		{@render children()}
 
 		{#if page.url.pathname !== '/account'}
-			<AddTransactionButton
-				groups={data.groups}
-				user={data.user}
-			/>
+			<AddTransactionButton groups={data.groups} user={data.user} />
 		{/if}
 	</main>
 

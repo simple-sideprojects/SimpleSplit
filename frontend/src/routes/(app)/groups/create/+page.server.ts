@@ -11,49 +11,57 @@ import { zCreateGroup } from '$lib/shared/form/validators';
 
 async function getPageData(request: Request) {
 	const groupCreateForm = await superValidate(request, zod(zCreateGroup));
-	
+
 	return {
 		groupCreateForm
 	};
-};
+}
 
 export const load: PageServerLoad = async ({ request }) => {
 	//If svelte is precompiling, return only the validator
-	if (building){
+	if (building) {
 		return {
 			groupCreateForm: await superValidate(request, zod(zCreateGroup))
 		};
 	}
-	
+
 	return getPageData(request);
 };
 
-export const actions: Actions|undefined = isCompiledStatic() ? undefined : {
-	data: async ({ request }): Promise<{
-		groupCreateForm: SuperValidated<z.infer<typeof zCreateGroup>>
-	}> => {
-		return getPageData(request);
-	},
-	createGroup: async ({ request }): Promise<ActionFailure<{
-		form: SuperValidated<z.infer<typeof zCreateGroup>>
-	}>> => {
-		const form = await superValidate(request, zod(zCreateGroup));
+export const actions: Actions | undefined = isCompiledStatic()
+	? undefined
+	: {
+			data: async ({
+				request
+			}): Promise<{
+				groupCreateForm: SuperValidated<z.infer<typeof zCreateGroup>>;
+			}> => {
+				return getPageData(request);
+			},
+			createGroup: async ({
+				request
+			}): Promise<
+				ActionFailure<{
+					form: SuperValidated<z.infer<typeof zCreateGroup>>;
+				}>
+			> => {
+				const form = await superValidate(request, zod(zCreateGroup));
 
-		if (!form.valid) {
-			setError(form, 'name', 'Name is required');
-			return fail(400, { form });
-		}
+				if (!form.valid) {
+					setError(form, 'name', 'Name is required');
+					return fail(400, { form });
+				}
 
-		const response = await createGroupGroupsPost({
-			body: {
-				name: form.data.name
+				const response = await createGroupGroupsPost({
+					body: {
+						name: form.data.name
+					}
+				});
+
+				if (response.error) {
+					return fail(400, { form });
+				}
+
+				redirect(303, `/groups/dashboard/?groupId=${response.data.id}`);
 			}
-		});
-
-		if (response.error) {
-			return fail(400, { form });
-		}
-
-		redirect(303, `/groups/dashboard/?groupId=${response.data.id}`);
-	}
-};
+		};

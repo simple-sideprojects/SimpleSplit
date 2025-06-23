@@ -10,7 +10,7 @@ import { cors } from './lib/server/hooks/cors';
 const handleParaglide: Handle = i18n.handle();
 
 export const handleAuth: Handle = ({ event, resolve }) => {
-	if(building){
+	if (building) {
 		return resolve(event);
 	}
 	const token = event.cookies.get('auth_token');
@@ -19,7 +19,7 @@ export const handleAuth: Handle = ({ event, resolve }) => {
 			request.headers.set('Authorization', `Bearer ${token}`);
 			return request;
 		});
-		if(event.route.id?.includes('auth')){
+		if (event.route.id?.includes('auth')) {
 			throw redirect(303, '/');
 		}
 	} else if (!event.route.id?.includes('auth')) {
@@ -29,9 +29,14 @@ export const handleAuth: Handle = ({ event, resolve }) => {
 	return resolve(event);
 };
 
-const allowedOrigins = ["http://localhost:3000", "http://localhost:4173", "http://localhost:5173"]
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:4173', 'http://localhost:5173'];
 
-export const handle = sequence(cors(allowedOrigins), csrf([], allowedOrigins), handleParaglide, handleAuth);
+export const handle = sequence(
+	cors(allowedOrigins),
+	csrf([], allowedOrigins),
+	handleParaglide,
+	handleAuth
+);
 
 if (dev) {
 	const { server } = await import('./mocks/server');

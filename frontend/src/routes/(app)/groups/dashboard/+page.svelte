@@ -20,7 +20,10 @@
 	let { data } = $props<{ data: PageData }>();
 	let balances: Balance[] = $derived(Object.values($balancesStore));
 	let transactions: TransactionRead[] = $derived(Object.values($transactionsStore));
-	const groupId = building || !page.url.searchParams.has('groupId') ? null : page.url.searchParams.get('groupId') as string;
+	const groupId =
+		building || !page.url.searchParams.has('groupId')
+			? null
+			: (page.url.searchParams.get('groupId') as string);
 
 	//Calculate balances
 	let totalPositive = $derived(
@@ -31,25 +34,25 @@
 	);
 
 	//Formatter
-	const AmountFormatter = Intl.NumberFormat('de-DE', {style:'currency',currency:'EUR'});
+	const AmountFormatter = Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
 	//Mobile App functionality
 	onMount(async () => {
-		if(!isCompiledStatic()){
+		if (!isCompiledStatic()) {
 			return;
 		}
 		if (!groupId) {
 			goto('/groups');
 		}
 
-		const serverResponse : ActionResult<{
-			balances: Balance[],
-			transactions: TransactionRead[]
+		const serverResponse: ActionResult<{
+			balances: Balance[];
+			transactions: TransactionRead[];
 		}> = await onPageLoad(true, {
 			groupId: groupId
 		});
-		
-		if(serverResponse.type !== 'success' || !serverResponse.data){
+
+		if (serverResponse.type !== 'success' || !serverResponse.data) {
 			return;
 		}
 
@@ -74,7 +77,9 @@
 				<IconArrowDown class="size-5 text-red-500" />
 				<h2 class="text-base font-semibold text-gray-900">You owe</h2>
 			</div>
-			<p class="mt-2 text-2xl font-bold text-red-500">{AmountFormatter.format(Math.abs(totalNegative))}</p>
+			<p class="mt-2 text-2xl font-bold text-red-500">
+				{AmountFormatter.format(Math.abs(totalNegative))}
+			</p>
 		</div>
 	</div>
 
