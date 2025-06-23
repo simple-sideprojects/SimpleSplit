@@ -10,12 +10,23 @@ alwaysApply: true
 - Component-specific logic/state machines: `src/lib/components/**/*.svelte.ts`
 - Routes/Pages: `src/routes/**/*.svelte`
 - Route load functions: `src/routes/**/+page.ts`, `src/routes/**/+layout.ts`
+- Server-side route handlers: `src/routes/**/+page.server.ts`, `src/routes/**/+layout.server.ts`
 - API handlers: `src/routes/**/+server.ts`
 - Shared interfaces/types: `src/lib/interfaces/**/*.ts`
 - Shared utilities/helpers: `src/lib/utils/**/*.ts` (Create if needed)
+- Generated API client: `src/lib/client/` (auto-generated from OpenAPI)
+- App-wide shared logic: `src/lib/shared/app/`
+- Form utilities: `src/lib/shared/form/`
+- State stores: `src/lib/shared/stores/`
 - Static assets: `static/`
 - Mock Service Worker handlers: `src/mocks/handlers/**/*.ts`
 - Paraglide messages: `messages/**/*.json`
+
+**Mobile-Specific Structure:**
+- Mobile build output: `build-static/` (for Capacitor)
+- Android project: `android/`
+- iOS project: `ios/`
+- Mobile build scripts: `build-static.sh`, `build-node.sh`
 
 **Naming Conventions:**
 - Component files: lowercase-with-hyphens (e.g., `auth-form.svelte`)
@@ -25,11 +36,19 @@ alwaysApply: true
 **Routing:**
 - Use SvelteKit's file-based routing system ([src/routes](mdc:src/routes)).
 - Implement error handling using `+error.svelte` files.
+- Group related routes using layout groups: `(app)/`, `auth/`
 
 **Configuration:**
 - SvelteKit config: [svelte.config.js](mdc:svelte.config.js)
+- Capacitor config: [capacitor.config.ts](mdc:capacitor.config.ts)
 - Vite config: [vite.config.ts](mdc:vite.config.ts)
 - TypeScript config: [tsconfig.json](mdc:tsconfig.json)
 - ESLint config: [eslint.config.js](mdc:eslint.config.js)
 - Prettier config: [.prettierrc](mdc:.prettierrc)
 - OpenAPI-TS config: [openapi-ts.config.ts](mdc:openapi-ts.config.ts)
+- Package manager: [package.json](mdc:package.json) with pnpm
+
+**Build Artifacts:**
+- Node.js build: `build-node/`
+- Static build (for mobile): `build-static/`
+- Test reports: `playwright-report/`, `test-results/`

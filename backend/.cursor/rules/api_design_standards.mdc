@@ -1,0 +1,39 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# API Design Standards
+
+## Router Organization
+- All API endpoints must be organized into logical routers in [`app/routers/`](mdc:app/routers)
+- Each router should have a clear prefix and appropriate tags
+- Use dependency injection for authentication: `dependencies=[Depends(oauth2_scheme)]`
+- Example pattern from [`app/routers/groups.py`](mdc:app/routers/groups.py)
+
+## Response Models
+- Always define response models using Pydantic/SQLModel
+- Use appropriate HTTP status codes in decorators: `status_code=status.HTTP_201_CREATED`
+- Return consistent response formats across endpoints
+- Example: `response_model=UserResponse` from [`app/routers/account.py`](mdc:app/routers/account.py)
+
+## Request/Response Patterns
+- **GET endpoints**: Use query parameters for filtering (`skip`, `limit`, `group_id`)
+- **POST endpoints**: Always validate input with Pydantic models
+- **PUT endpoints**: Use `model_dump(exclude_unset=True)` for partial updates
+- **DELETE endpoints**: Return appropriate status codes (204 for successful deletion)
+
+## Error Handling
+- Use `HTTPException` with appropriate status codes
+- Provide clear, user-friendly error messages
+- Standard patterns:
+  - `404` for "Not found"
+  - `400` for "Bad request" 
+  - `401` for "Unauthorized"
+  - `403` for "Forbidden"
+
+## Mobile API Considerations
+- Design stateless endpoints suitable for mobile consumption
+- Use JWT tokens for authentication as shown in [`app/routers/auth.py`](mdc:app/routers/auth.py)
+- Return consistent JSON structures
+- Include pagination for list endpoints (`skip`, `limit` parameters)

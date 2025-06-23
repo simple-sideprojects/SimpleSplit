@@ -1,0 +1,65 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Code Organization & Structure
+
+## Service Layer Pattern
+- Business logic belongs in service classes in [`app/services/`](mdc:app/services)
+- Services should be stateless with static methods
+- Example: [`app/services/auth.py`](mdc:app/services/auth.py) - `AuthService` class
+- Services handle complex operations like authentication, email sending, etc.
+
+## Router Structure
+- Keep route handlers thin - delegate to services for complex logic
+- One router per domain/entity (auth, groups, transactions, etc.)
+- Use consistent naming: `router = APIRouter(prefix="/entity", tags=["entity"])`
+- Include routers in main app via [`app/main.py`](mdc:app/main.py)
+
+## Dependency Injection Patterns
+- Use FastAPI's dependency injection system
+- Common dependencies:
+  - `session: SessionDep` for database access
+  - `token: str = Depends(oauth2_scheme)` for authentication
+  - `settings: Settings = Depends(get_settings)` for configuration
+  - Custom dependencies like `is_user_in_group` middleware
+
+## Configuration Management
+- All settings in [`app/config.py`](mdc:app/config.py) using Pydantic Settings
+- Use `@lru_cache` for settings singleton pattern
+- Load from environment variables via `.env` file
+- Never hardcode configuration values
+
+## Import Organization
+- Group imports: standard library, third-party, local imports
+- Use absolute imports from `app.` package
+- Example pattern from router files:
+  ```python
+  from fastapi import APIRouter, Depends
+  from app.database.database import SessionDep
+  from app.services.auth import AuthService
+  ```
+
+## Model Organization
+- Separate models by domain in [`app/database/models/`](mdc:app/database/models)
+- Use model inheritance and mixins for common fields
+- Keep database models separate from API models (request/response)
+- Export models through [`__init__.py`](mdc:app/database/models/__init__.py) for clean imports
+
+## Middleware Pattern
+- Custom middleware in [`app/middleware/`](mdc:app/middleware)
+- Use dependency injection pattern: `Annotated[Type, Depends(middleware_func)]`
+- Example: [`is_user_group.py`](mdc:app/middleware/is_user_group.py) for authorization checks
+
+## File Naming Conventions
+- Use snake_case for file names
+- Use descriptive names that match the domain (e.g., `transaction_participant.py`)
+- Group related functionality in same file
+- Keep files focused on single responsibility
+
+## Type Annotations
+- Use Python type hints throughout the codebase
+- Use `Annotated` for complex dependency injection
+- Import types: `from typing import Annotated, List`
+- Use UUID type for ID fields: `from uuid import UUID`

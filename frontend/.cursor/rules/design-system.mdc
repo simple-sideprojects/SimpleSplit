@@ -1,0 +1,119 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Design System Guidelines
+
+**Color Palette:**
+- **Primary**: Blue (`blue-600`, `blue-700`, `blue-800` for buttons and links)
+- **Success**: Green (`green-500` for positive balances, success states)
+- **Danger**: Red (`red-500`, `red-600`, `red-700` for errors, negative balances, destructive actions)
+- **Neutral**: Gray scale (`gray-50` to `gray-900` for backgrounds, text, borders)
+- **Active States**: Blue (`blue-50`, `blue-100` for selected/active states)
+
+**Typography:**
+- **Headings**: Use system font stack with appropriate font weights
+  - `text-2xl font-bold` for page titles (h1)
+  - `text-lg font-semibold` for section headers (h2)
+  - `text-base font-medium` for subsection headers (h3)
+- **Body Text**: 
+  - `text-sm` for regular body text
+  - `text-xs` for secondary/helper text
+  - `text-gray-900` for primary text
+  - `text-gray-500` for secondary text
+  - `text-gray-700` for medium emphasis text
+
+**Spacing System:**
+- Use consistent spacing scale: `gap-2`, `gap-3`, `gap-4`, `gap-6`, `gap-8`
+- Page-level spacing: `space-y-6` for main content sections
+- Component spacing: `p-4`, `px-4 py-3` for card padding
+- Form spacing: `space-y-4` for form fields, `space-y-6` for form sections
+
+**Component Patterns:**
+
+**Cards and Containers:**
+```html
+<!-- Standard card -->
+<div class="rounded-lg border border-gray-100 bg-white shadow-sm">
+  <div class="border-b border-gray-200 px-4 py-3">
+    <h2 class="text-base font-medium text-gray-900">Title</h2>
+    <p class="mt-0.5 text-sm text-gray-500">Description</p>
+  </div>
+  <div class="p-4">
+    <!-- Content -->
+  </div>
+</div>
+```
+
+**Buttons:**
+```html
+<!-- Primary button -->
+<button class="flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50">
+
+<!-- Secondary button -->
+<button class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none">
+
+<!-- Destructive button -->
+<button class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none">
+```
+
+**Form Inputs:**
+```html
+<!-- Standard input -->
+<input class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm">
+
+<!-- Error state input -->
+<input class="w-full rounded border px-3 py-1.5 text-gray-900 placeholder:text-gray-400 border-red-500">
+
+<!-- Readonly input -->
+<input class="rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-gray-600 sm:text-sm" readonly>
+```
+
+**Navigation:**
+```html
+<!-- Active navigation item -->
+<a class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700">
+
+<!-- Inactive navigation item -->
+<a class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+```
+
+**Layout Patterns:**
+- **Page Layout**: `space-y-6` for main content sections
+- **Grid Layouts**: `grid grid-cols-1 gap-4 sm:grid-cols-2` for responsive grids
+- **Flex Layouts**: `flex items-center justify-between` for horizontal arrangements
+- **Mobile Navigation**: Fixed bottom navigation with `z-50 h-16 border-t border-gray-200 bg-white`
+
+**State Indicators:**
+- **Loading**: Use `disabled:opacity-50` with loading spinners
+- **Success**: Green colors (`text-green-500`, `bg-green-50`)
+- **Error**: Red colors (`text-red-600`, `bg-red-50`, `border-red-500`)
+- **Warning**: Appropriate orange/yellow colors for warnings
+
+**Icons:**
+- Use [Tabler Icons](mdc:https:/tabler-icons.io) via `~icons/tabler/` imports
+- Standard icon size: `size-4` for inline icons, `size-5` for navigation icons, `size-6` for larger contexts
+- Icon colors should match text color context
+
+**Responsive Design:**
+- Mobile-first approach with `sm:` breakpoints for desktop enhancements
+- Hide desktop elements on mobile: `hidden sm:flex`
+- Show mobile elements only: `sm:hidden`
+- Responsive grids: `grid-cols-1 sm:grid-cols-2`
+
+**Animation and Transitions:**
+- Loading states: `animate-spin` for spinners
+- Hover states: Use `hover:` variants for interactive feedback
+- Focus states: Always include `focus:ring-2 focus:ring-*-500 focus:ring-offset-2 focus:outline-none`
+
+**Accessibility Integration:**
+- Use semantic color combinations that meet WCAG contrast requirements
+- Ensure all interactive elements have proper focus states
+- Use appropriate text sizing for readability
+- Maintain consistent visual hierarchy
+
+**Brand Elements:**
+- Logo: Use `simple-sideprojects.webp` consistently
+- App name: "Simple/Split" with consistent styling
+- Maintain clean, minimal aesthetic with subtle shadows and borders

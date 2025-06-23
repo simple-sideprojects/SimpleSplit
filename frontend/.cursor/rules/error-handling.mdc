@@ -1,0 +1,73 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Error Handling Guidelines
+
+**Error Handling Patterns:**
+- Use try-catch blocks for async operations and API calls
+- Create specific error types for different error categories
+- Handle errors at the appropriate level (component vs. global)
+- Use SvelteKit's error handling mechanisms (`+error.svelte` files)
+- Implement graceful degradation for non-critical features
+
+**API Error Handling:**
+- Use generated client types from [src/lib/client/types.gen.ts](mdc:src/lib/client/types.gen.ts)
+- Handle HTTP status codes appropriately (4xx client errors, 5xx server errors)
+- Implement retry logic for transient failures
+- Provide meaningful error messages to users
+- Log detailed error information for debugging
+
+**Form Error Handling:**
+- Use [Superforms](mdc:https:/superforms.rocks) for consistent form validation and error display
+- Display field-level errors inline with form inputs
+- Show general form errors prominently
+- Preserve user input on validation errors
+- Example pattern in [src/routes/auth/login/+page.svelte](mdc:src/routes/auth/login/+page.svelte)
+
+**Logging Standards:**
+- **Development**: Use `console.log`, `console.error`, `console.warn` for debugging
+- **Production**: Avoid console.log in production code
+- **Mobile**: Be mindful that console logs may not be easily accessible
+- Use structured logging with context information
+- Log errors with relevant metadata (user ID, action, timestamp)
+
+**User-Facing Error Messages:**
+- Provide clear, actionable error messages
+- Avoid technical jargon in user-facing messages
+- Use consistent error styling with Tailwind classes:
+  - `bg-red-50 p-4` for error backgrounds
+  - `text-red-700` for error text
+  - `border-red-500` for error input borders
+- Show loading states during error recovery attempts
+
+**Mobile-Specific Error Handling:**
+- Handle network connectivity errors using `@capacitor/network`
+- Show appropriate offline messages when network is unavailable
+- Store failed actions for retry when connectivity returns
+- Example implementation in [src/lib/shared/app/controller.ts](mdc:src/lib/shared/app/controller.ts)
+
+**Error Boundaries:**
+- Use `+error.svelte` files for route-level error handling
+- Implement fallback UI components for error states
+- Provide recovery options where possible (reload, retry, go back)
+- Log unexpected errors for monitoring and debugging
+
+**Validation Patterns:**
+- Use Zod or similar for runtime validation
+- Validate on both client and server sides
+- Handle validation errors consistently across forms
+- Example validation utilities in [src/lib/shared/form/validators.ts](mdc:src/lib/shared/form/validators.ts)
+
+**Error Recovery:**
+- Implement optimistic updates with rollback on failure
+- Provide retry mechanisms for failed operations
+- Cache data to enable offline functionality
+- Show progress indicators during recovery attempts
+
+**Security Considerations:**
+- Never expose sensitive information in error messages
+- Log security-related errors without revealing system details
+- Sanitize error messages before displaying to users
+- Use generic error messages for authentication failures

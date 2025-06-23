@@ -1,0 +1,97 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# SimpleSplit Development Guidelines Overview
+
+This directory contains comprehensive development guidelines for the SimpleSplit application, a cross-platform expense splitting app built with SvelteKit, Capacitor, and modern web technologies.
+
+## 📋 Rule Categories
+
+### Core Development Rules
+- **[Implementation Guidelines](mdc:.cursor/rules/implementation.mdc)** - Core technology stack, deployment strategies, and general principles
+- **[Code Quality Standards](mdc:.cursor/rules/code-quality-standards.mdc)** - Linting, formatting, TypeScript, and Svelte 5 best practices
+- **[Project Structure](mdc:.cursor/rules/project-structure.mdc)** - File organization, naming conventions, and build artifacts
+
+### UI/UX and Design
+- **[Design System](mdc:.cursor/rules/design-system.mdc)** - Color palette, typography, component patterns, and brand elements
+- **[Accessibility Guidelines](mdc:.cursor/rules/accessibility-guidelines.mdc)** - WCAG compliance, semantic HTML, keyboard navigation, and inclusive design
+
+### Technical Implementation
+- **[API Integration](mdc:.cursor/rules/api-integration.mdc)** - OpenAPI usage, type safety, TanStack Query patterns, and mobile considerations
+- **[Error Handling](mdc:.cursor/rules/error-handling.mdc)** - Error patterns, logging, user feedback, and mobile error handling
+- **[Performance Optimization](mdc:.cursor/rules/performance-optimization.mdc)** - Svelte 5 performance, bundle optimization, and mobile performance
+
+### Quality Assurance
+- **[Testing Guidelines](mdc:.cursor/rules/testing.mdc)** - Vitest, Playwright, MSW mocking, and mobile testing workflows
+- **[Security Guidelines](mdc:.cursor/rules/security-guidelines.mdc)** - Authentication, validation, XSS prevention, and mobile security
+
+## 🎯 Key Technologies
+
+**Frontend Stack:**
+- SvelteKit with Svelte 5 runes
+- TypeScript with strict mode
+- Tailwind CSS with design system
+- TanStack Query for data fetching
+- Superforms for form handling
+
+**Mobile Development:**
+- Capacitor for iOS and Android
+- Static adapter for mobile builds
+- Native platform integration
+- Offline-first considerations
+
+**Development Tools:**
+- ESLint and Prettier for code quality
+- Vitest for unit testing
+- Playwright for E2E testing
+- MSW for API mocking
+- OpenAPI-TS for type-safe API clients
+
+## 🚀 Quick Start Checklist
+
+When working on SimpleSplit, ensure you:
+
+1. **Follow the design system** - Use consistent colors, typography, and component patterns
+2. **Maintain type safety** - Use generated API types and avoid `any`
+3. **Handle errors gracefully** - Implement proper error boundaries and user feedback
+4. **Consider mobile first** - Test responsive design and Capacitor functionality
+5. **Optimize performance** - Use Svelte 5 patterns and efficient data fetching
+6. **Ensure accessibility** - Test with screen readers and keyboard navigation
+7. **Write tests** - Include unit tests and E2E scenarios
+8. **Secure by default** - Validate inputs and handle authentication properly
+
+## 📱 Platform-Specific Notes
+
+**Web Deployment:**
+- Use `pnpm build:node` for Node.js servers
+- Use `pnpm build:static` for static hosting
+
+**Mobile Deployment:**
+- Use `pnpm build:capacitor` for mobile apps
+- Test on actual devices through native IDEs
+- Handle offline scenarios gracefully
+
+## 🔧 Development Commands
+
+```bash
+# Development
+pnpm dev                    # Start dev server
+pnpm generate:api          # Regenerate API client
+
+# Testing
+pnpm test                  # Run unit tests
+pnpm test:ui               # Run E2E tests with UI
+
+# Code Quality
+pnpm lint                  # Check code quality
+pnpm lint:fix              # Fix linting issues
+
+# Building
+pnpm build                 # Default build (Node.js)
+pnpm build:static          # Static build
+pnpm build:capacitor       # Mobile build
+```
+These guidelines ensure consistent, high-quality development across the SimpleSplit codebase while maintaining excellent user experience on both web and mobile platforms.
+

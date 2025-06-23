@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Performance Optimization Guidelines
+
+**Svelte 5 Performance:**
+- Use `$derived` for computed values instead of recreating objects in templates
+- Implement `$effect.tracking()` to minimize effect dependencies
+- Use `{key}` blocks to control component re-rendering
+- Avoid creating functions, objects, or arrays directly in templates
+- Clean up event listeners and subscriptions in `$effect` cleanup
+
+**Bundle and Loading Optimization:**
+- Use dynamic imports for code splitting: `import('./HeavyComponent.svelte')`
+- Implement route-based code splitting in SvelteKit
+- Use `IntersectionObserver` for lazy loading images and content
+- Implement proper pagination with TanStack Query infinite queries
+- Cache static data using stores in [src/lib/shared/stores/](mdc:src/lib/shared/stores)
+
+**Mobile-Specific Performance:**
+- Optimize for slower mobile CPUs and limited memory
+- Implement touch-friendly interactions with proper debouncing
+- Minimize layout shifts and reflows
+- Consider reduced motion preferences
+- Use Capacitor Preferences efficiently: [src/lib/shared/app/preferences.ts](mdc:src/lib/shared/app/preferences.ts)
+
+**State and Memory Management:**
+- Use local component state (`$state`) when possible instead of global stores
+- Implement efficient store updates to minimize reactivity cascades
+- Debounce frequent state updates and form validation
+- Profile memory usage and avoid circular references
+- Use weak references where appropriate
+
+**Asset and Network Optimization:**
+- Use appropriate image formats (WebP, AVIF) with fallbacks
+- Implement responsive images with `srcset` and `sizes`
+- Lazy load images below the fold
+- Minimize HTTP requests through bundling
+- Use CDN for static assets and implement proper caching headers
+
+**Monitoring and Measurement:**
+- Use Lighthouse for performance auditing
+- Implement Web Vitals monitoring (LCP, FID, CLS)
+- Profile component rendering with browser dev tools
+- Monitor bundle sizes and track performance regressions
+- Profile performance on actual mobile devices, not just emulators

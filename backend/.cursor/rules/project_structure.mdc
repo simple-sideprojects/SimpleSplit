@@ -3,17 +3,53 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Project Structure
+# SimpleSplit Backend - Project Structure
 
-This is a FastAPI backend application.
+This is a **FastAPI backend application** for SimpleSplit, a group expense splitting mobile application.
+
+## Application Overview
+SimpleSplit allows users to create groups, track shared expenses, and split costs among group members. Users can invite others via email or shareable links, manage transactions, and track who owes what.
+
+## Project Structure
 
 - **Main Application:** The main FastAPI application instance and entry point is defined in [`app/main.py`](mdc:app/main.py).
-- **Configuration:** Application settings, including database connection details and secrets, are managed via Pydantic settings in [`app/config.py`](mdc:app/config.py) and loaded from the [`.env`](mdc:.env) file. An example environment file is provided in [`.env.example`](mdc:.env.example).
-- **Database:**
-    - Database session management and engine creation are handled in [`app/database/database.py`](mdc:app/database/database.py).
-    - Database models (using SQLModel) are defined within the [`app/database/models/`](mdc:app/database/models) directory.
-- **API Routers:** API endpoints are organized into routers located in the [`app/routers/`](mdc:app/routers) directory. These are included in the main app in [`app/main.py`](mdc:app/main.py).
-- **Services:** Business logic is encapsulated in service layers found in the [`app/services/`](mdc:app/services) directory.
-- **Middleware:** Custom middleware is located in [`app/middleware/`](mdc:app/middleware).
+- **Configuration:** Application settings, including database connection details and secrets, are managed via Pydantic settings in [`app/config.py`](mdc:app/config.py) and loaded from the [`.env`](mdc:.env) file.
+
+### Database
+- **Session Management:** Database session management and engine creation are handled in [`app/database/database.py`](mdc:app/database/database.py).
+- **Models:** Database models (using SQLModel) are defined within the [`app/database/models/`](mdc:app/database/models) directory:
+  - [`user.py`](mdc:app/database/models/user.py) - User authentication and profile management
+  - [`group.py`](mdc:app/database/models/group.py) - Group creation and management
+  - [`transaction.py`](mdc:app/database/models/transaction.py) - Expense transactions
+  - [`transaction_participant.py`](mdc:app/database/models/transaction_participant.py) - Who owes what in each transaction
+  - [`invite.py`](mdc:app/database/models/invite.py) - Group invitation system
+  - [`users_groups.py`](mdc:app/database/models/users_groups.py) - Many-to-many relationship between users and groups
+
+### API Endpoints
+API endpoints are organized into routers located in the [`app/routers/`](mdc:app/routers) directory:
+- [`auth.py`](mdc:app/routers/auth.py) - User registration, login, email verification
+- [`account.py`](mdc:app/routers/account.py) - User profile management and account operations
+- [`groups.py`](mdc:app/routers/groups.py) - Group CRUD operations and member management
+- [`transactions.py`](mdc:app/routers/transactions.py) - Expense tracking and transaction management
+- [`invites.py`](mdc:app/routers/invites.py) - Group invitation system (email invites and shareable links)
+
+### Business Logic
+- **Services:** Business logic is encapsulated in service layers found in the [`app/services/`](mdc:app/services) directory:
+  - [`auth.py`](mdc:app/services/auth.py) - Authentication, JWT token management, password hashing
+  - [`email.py`](mdc:app/services/email.py) - Email sending for account verification and invitations
+
+### Security & Middleware
+- **Middleware:** Custom middleware is located in [`app/middleware/`](mdc:app/middleware):
+  - [`is_user_group.py`](mdc:app/middleware/is_user_group.py) - Ensures users can only access groups they belong to
+- **Authentication:** JWT-based authentication with bearer tokens suitable for mobile app integration
+
+### Mobile Considerations
+- **API Design:** RESTful API endpoints designed for mobile consumption
+- **Authentication:** Stateless JWT authentication ideal for mobile apps
+- **Error Handling:** Consistent HTTP status codes and error responses for mobile client handling
+- **Database Migrations:** Alembic migrations in [`alembic/`](mdc:alembic) directory for schema evolution
+
+### Development & Deployment
 - **Dependencies:** Python package dependencies are listed in [`requirements.txt`](mdc:requirements.txt).
 - **Containerization:** Docker configuration is defined in [`Dockerfile`](mdc:Dockerfile) and [`docker-compose.yaml`](mdc:docker-compose.yaml).
+- **Database Migrations:** Alembic configuration in [`alembic.ini`](mdc:alembic.ini) with migration files in [`alembic/versions/`](mdc:alembic/versions).

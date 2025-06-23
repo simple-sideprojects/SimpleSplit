@@ -1,0 +1,118 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# API Integration Guidelines
+
+**OpenAPI and Code Generation:**
+- Use [openapi-ts](mdc:https:/heyapi.dev/openapi-ts) with TanStack Query plugin for type-safe API clients
+- Configuration in [openapi-ts.config.ts](mdc:openapi-ts.config.ts)
+- Generated client available in [src/lib/client/](mdc:src/lib/client)
+- Regenerate client when API schema changes: `pnpm generate:api`
+- Always use generated types from [src/lib/client/types.gen.ts](mdc:src/lib/client/types.gen.ts)
+
+**Type Safety Patterns:**
+- Use generated TypeScript types for all API interactions
+- Leverage generated query hooks from [src/lib/client/@tanstack/svelte-query.gen.ts](mdc:src/lib/client/@tanstack/svelte-query.gen.ts)
+- Implement proper error type handling with generated error types
+- Use Zod validation with generated schemas from [src/lib/client/zod.gen.ts](mdc:src/lib/client/zod.gen.ts)
+- Never use `any` type for API responses
+
+**Data Fetching with TanStack Query:**
+- Use generated query hooks for consistent caching and background updates
+- Implement proper query keys for cache invalidation
+- Use infinite queries for paginated data
+- Configure appropriate stale times and cache times
+- Handle loading and error states consistently across components
+
+**Error Handling:**
+- Use generated error types for comprehensive error handling
+- Implement retry logic for transient failures
+- Provide meaningful error messages to users
+- Log API errors with proper context for debugging
+- Follow patterns from [error handling guidelines](mdc:.cursor/rules/error-handling.mdc)
+
+**Form Submissions:**
+- Use [Superforms](mdc:https:/superforms.rocks) with generated schemas for validation
+- Implement optimistic updates for better user experience
+- Handle form submission errors gracefully
+- Use generated mutation functions for type-safe submissions
+- Example implementation in form utilities: [src/lib/shared/form/](mdc:src/lib/shared/form)
+
+**Mobile API Considerations:**
+- Check network connectivity before API calls using `@capacitor/network`
+- Implement offline queue for failed requests
+- Use custom form action handling for static builds via [src/lib/shared/app/controller.ts](mdc:src/lib/shared/app/controller.ts)
+- Handle different network conditions (slow, intermittent)
+- Cache critical data using Capacitor Preferences
+
+**Authentication Integration:**
+- Use generated authentication endpoints from API client
+- Store tokens securely using auth store: [src/lib/shared/stores/auth.store.ts](mdc:src/lib/shared/stores/auth.store.ts)
+- Implement automatic token refresh where possible
+- Handle authentication errors with proper redirects
+- Use bearer token pattern for authenticated requests
+
+**Caching Strategies:**
+- Implement appropriate cache keys based on user context and data dependencies
+- Use background refetching for frequently updated data
+- Implement cache invalidation on mutations
+- Consider using optimistic updates for immediate feedback
+- Cache static reference data for extended periods
+
+**Request/Response Patterns:**
+- Use proper HTTP methods (GET, POST, PUT, DELETE) as defined in OpenAPI
+- Include proper headers (Content-Type, Accept, Authorization)
+- Handle request timeouts appropriately
+- Implement request/response logging for debugging
+- Use proper status code handling
+
+**Data Transformation:**
+- Keep API responses as close to the generated types as possible
+- Implement transformation logic in dedicated utilities
+- Use generated type guards for runtime validation
+- Consider using adapters for legacy API compatibility
+- Maintain consistency between client and server data formats
+
+**Performance Optimization:**
+- Use query prefetching for predictable user flows
+- Implement proper pagination with infinite queries
+- Use field selection or GraphQL for efficient data fetching
+- Bundle related API calls when possible
+- Monitor API response times and optimize slow endpoints
+
+**Testing API Integration:**
+- Use [Mock Service Worker (MSW)](mdc:https:/mswjs.io) for API mocking
+- Mock handlers in [src/mocks/handlers/](mdc:src/mocks/handlers)
+- Ensure mocks align with OpenAPI schema
+- Test error scenarios and edge cases
+- Use generated types in test mocks for consistency
+
+**Environment Configuration:**
+- Use environment variables for API base URLs
+- Configure different endpoints for development, staging, production
+- Handle API versioning appropriately
+- Implement feature flags for gradual API rollouts
+- Validate API configuration on application startup
+
+**Security Considerations:**
+- Never expose API keys or secrets in client code
+- Use HTTPS for all API communications
+- Implement proper CORS handling
+- Validate API responses to prevent injection
+- Follow security guidelines: [security guidelines](mdc:.cursor/rules/security-guidelines.mdc)
+
+**Monitoring and Debugging:**
+- Log API calls with appropriate detail level
+- Implement API health checks
+- Monitor API response times and error rates
+- Use browser dev tools for debugging API interactions
+- Consider implementing request/response interceptors for debugging
+
+**API Documentation and Maintenance:**
+- Keep OpenAPI schema up to date with backend changes
+- Document custom API integration patterns
+- Maintain backward compatibility during API updates
+- Use semantic versioning for API changes
+- Coordinate client updates with API deployments

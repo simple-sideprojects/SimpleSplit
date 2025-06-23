@@ -9,8 +9,26 @@ alwaysApply: true
 - SvelteKit with Svelte 5
 - TypeScript
 - Tailwind CSS
+- Capacitor for mobile development (iOS & Android)
 - Tanstack Query ([openapi-ts plugin](mdc:https:/heyapi.dev/openapi-ts/plugins/tanstack-query))
 - Paraglide for translations
+- Superforms for form handling
+
+**Mobile Development:**
+- Use [Capacitor](mdc:https:/capacitorjs.com) for cross-platform mobile deployment
+- Configuration: [capacitor.config.ts](mdc:capacitor.config.ts)
+- Native mobile directories: `android/` and `ios/`
+- Use Capacitor plugins for native device features:
+  - `@capacitor/preferences` for persistent storage
+  - `@capacitor/network` for network status detection
+- Build for mobile using `pnpm build:capacitor` which creates static build and syncs with native projects
+- Static adapter configuration for mobile in [svelte.config.js](mdc:svelte.config.js)
+
+**Deployment Strategies:**
+- **Web (Node.js)**: Use `pnpm build:node` or `pnpm build` (default)
+- **Web (Static)**: Use `pnpm build:static` for static hosting
+- **Mobile**: Use `pnpm build:capacitor` for mobile app deployment
+- Environment detection via `PUBLIC_ADAPTER` environment variable
 
 **General Principles:**
 - Follow requirements carefully.
@@ -42,6 +60,7 @@ alwaysApply: true
 **UI and Styling:**
 - Use Tailwind CSS for utility-first styling.
 - Use Svelte's built-in transition and animation features.
+- Consider mobile-first responsive design for cross-platform compatibility.
 
 **Component Development:**
 - Implement proper component composition and reusability.
@@ -50,10 +69,13 @@ alwaysApply: true
 
 **State Management:**
 - Use classes for complex state management (state machines) when runes are insufficient.
+- Use Capacitor Preferences for persistent storage across app restarts.
 
 **Performance Optimization:**
 - Implement code splitting using dynamic imports (`import()`).
 - Profile and monitor performance using browser developer tools.
+- Consider mobile performance constraints and optimize accordingly.
 
 **Security:**
 - Prioritize security in all implementations.
+- Handle network connectivity gracefully in mobile environments.

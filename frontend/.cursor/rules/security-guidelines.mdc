@@ -1,0 +1,110 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Security Guidelines
+
+**Authentication and Authorization:**
+- Use secure token-based authentication with proper expiration
+- Store authentication tokens securely using Capacitor Preferences on mobile
+- Implement proper session management with automatic logout
+- Validate user permissions on both client and server sides
+- Example implementation in [src/lib/shared/stores/auth.store.ts](mdc:src/lib/shared/stores/auth.store.ts)
+
+**Input Validation and Sanitization:**
+- Validate all user inputs on both client and server sides
+- Use Zod or similar libraries for runtime type validation
+- Sanitize user-generated content before display
+- Prevent SQL injection through parameterized queries
+- Use form validation utilities in [src/lib/shared/form/validators.ts](mdc:src/lib/shared/form/validators.ts)
+
+**Cross-Site Scripting (XSS) Prevention:**
+- Use Svelte's automatic HTML escaping for dynamic content
+- Avoid using `@html` directive unless absolutely necessary
+- Sanitize any HTML content from external sources
+- Implement Content Security Policy (CSP) headers
+- Validate and sanitize URLs before navigation
+
+**Cross-Site Request Forgery (CSRF) Protection:**
+- SvelteKit CSRF protection is configured in [svelte.config.js](mdc:svelte.config.js)
+- CSRF origin checking is disabled for mobile builds (static adapter)
+- Use proper HTTP methods (GET for safe operations, POST/PUT/DELETE for mutations)
+- Implement additional CSRF tokens for sensitive operations
+
+**Data Protection:**
+- Never log sensitive information (passwords, tokens, PII)
+- Use HTTPS for all API communications
+- Implement proper data encryption for sensitive stored data
+- Follow data minimization principles - only collect necessary data
+- Implement proper data retention and deletion policies
+
+**API Security:**
+- Use generated API client from [src/lib/client/](mdc:src/lib/client) for type safety
+- Implement proper error handling without exposing system details
+- Use rate limiting and throttling for API endpoints
+- Validate API responses before processing
+- Implement proper timeout handling for API calls
+
+**Mobile-Specific Security:**
+- Use Capacitor's secure storage for sensitive data
+- Implement certificate pinning for API communications
+- Handle deep links securely to prevent malicious redirects
+- Validate app integrity and prevent tampering
+- Consider biometric authentication where appropriate
+
+**Environment and Configuration Security:**
+- Never commit secrets, API keys, or credentials to version control
+- Use environment variables for configuration
+- Separate development, staging, and production configurations
+- Implement proper secret management for production deployments
+- Validate environment configuration on application startup
+
+**Network Security:**
+- Implement proper TLS/SSL configuration
+- Use secure communication protocols (HTTPS, WSS)
+- Implement certificate validation in mobile applications
+- Handle network errors securely without exposing system information
+- Example network handling in [src/lib/shared/app/controller.ts](mdc:src/lib/shared/app/controller.ts)
+
+**Error Handling Security:**
+- Never expose stack traces or system information to users
+- Log security-related errors for monitoring
+- Implement proper error boundaries to prevent information leakage
+- Use generic error messages for authentication failures
+- Follow patterns in [error handling guidelines](mdc:.cursor/rules/error-handling.mdc)
+
+**Content Security:**
+- Implement proper file upload validation and restrictions
+- Use virus scanning for uploaded files
+- Validate file types and sizes
+- Store uploaded files securely with proper access controls
+- Implement proper image/media processing security
+
+**Session Security:**
+- Implement proper session timeout mechanisms
+- Use secure session storage (httpOnly cookies, secure flags)
+- Implement session invalidation on logout
+- Monitor for concurrent sessions and suspicious activity
+- Rotate session tokens periodically
+
+**Dependency Security:**
+- Regularly audit dependencies for known vulnerabilities
+- Use `pnpm audit` to check for security issues
+- Keep dependencies updated to latest secure versions
+- Implement Dependabot or similar for automated security updates
+- Review third-party packages before integration
+
+**Security Testing:**
+- Implement security testing in CI/CD pipeline
+- Use static code analysis tools for security issues
+- Perform regular penetration testing
+- Test authentication and authorization flows
+- Validate input handling and error responses
+
+**Compliance and Privacy:**
+- Implement GDPR compliance for EU users
+- Provide clear privacy policies and data handling information
+- Implement data export and deletion capabilities
+- Obtain proper consent for data collection
+- Maintain audit logs for compliance requirements

@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Code Quality Standards
+
+**Linting and Formatting:**
+- Use [ESLint](mdc:eslint.config.js) for TypeScript and Svelte code quality enforcement
+- Use [Prettier](mdc:.prettierrc) for consistent code formatting
+- Configuration includes TypeScript ESLint, Svelte-specific rules, and Prettier integration
+- Run `pnpm lint` to check for issues, `pnpm lint:fix` to auto-fix
+- Generated client code in [src/lib/client/](mdc:src/lib/client) is excluded from linting
+
+**TypeScript Standards:**
+- Use strict TypeScript configuration: [tsconfig.json](mdc:tsconfig.json)
+- Prefer `interface` over `type` for object definitions
+- Use `as const` assertions instead of enums
+- Always type function parameters and return values
+- Use generic types for reusable components and functions
+- Avoid `any` type - use `unknown` or proper typing instead
+
+**Naming Conventions:**
+- **Files**: Use kebab-case (e.g., `user-profile.svelte`, `auth-store.ts`)
+- **Components**: PascalCase when imported (e.g., `UserProfile`, `AuthForm`)
+- **Variables/Functions**: camelCase (e.g., `handleSubmit`, `userProfile`)
+- **Constants**: SCREAMING_SNAKE_CASE (e.g., `API_BASE_URL`, `DEFAULT_TIMEOUT`)
+- **Interfaces**: PascalCase with descriptive names (e.g., `UserProfile`, `ApiResponse`)
+- **Types**: PascalCase, avoid generic names like `Data` or `Info`
+
+**Svelte 5 Best Practices:**
+- Use runes (`$state`, `$derived`, `$effect`) instead of legacy reactive statements
+- Use `$props()` for component props, never use `$$Props`
+- Use `$bindable()` for two-way binding properties
+- Use standard DOM event handlers (`onclick`, `onsubmit`) instead of legacy `on:click`
+- Leverage `$effect.tracking()` for optimized reactivity
+- Use `{key}` blocks to force re-rendering when necessary
+
+**Code Organization:**
+- Group related functionality together
+- Use barrel exports in `index.ts` files for clean imports
+- Keep components focused on single responsibilities
+- Extract complex logic into separate utilities or stores
+- Use consistent import ordering: 
+  1. Svelte/SvelteKit imports
+  2. Third-party libraries
+  3. Internal imports (utilities, stores, components)
+  4. Type-only imports last
+
+**Comments and Documentation:**
+- Write self-documenting code with descriptive names
+- Add comments only for complex business logic or non-obvious implementations
+- Use JSDoc for public API functions and complex interfaces
+- Avoid redundant comments that restate what the code does
+- Update comments when code changes
+
+**Performance Considerations:**
+- Use `$derived` for computed values instead of reactive statements
+- Implement proper key attributes for list items
+- Avoid creating objects/arrays in templates
+- Use `$effect` sparingly and clean up subscriptions
+- Consider lazy loading for heavy components

@@ -1,0 +1,52 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Error Handling Best Practices
+
+## General HTTP Exception Patterns
+- Always use `HTTPException` from FastAPI for API errors
+- Import: `from fastapi import HTTPException, status`
+- Use status code constants: `status.HTTP_404_NOT_FOUND` instead of raw numbers
+- Provide clear, user-friendly error messages
+
+## Resource & Validation Errors
+- **Resource Not Found (404)**:
+  ```python
+  raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+  ```
+- **Bad Request (400)** for validation errors:
+  ```python
+  raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+  ```
+- **Conflict (409)** for business rule violations:
+  ```python
+  raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User is already a member of this group")
+  ```
+
+## Database Error Handling
+- Handle unique constraint violations (e.g., duplicate email registration)
+- Check for null/missing foreign key relationships
+- Validate data exists before operations
+- Example from [`app/routers/invites.py`](mdc:app/routers/invites.py):
+  ```python
+  existing_invite = session.exec(select(GroupInvite).where(...)).first()
+  if existing_invite:
+      raise HTTPException(status_code=400, detail="An invitation has already been sent")
+  ```
+
+## Business Logic Validation
+- Validate business rules before database operations
+- Return specific error messages for different failure scenarios
+- Example patterns:
+  - Check if user exists before inviting: `User not found`
+  - Validate group membership before operations: `User does not belong to this group`
+  - Check permissions before updates: `Only the payer can update the transaction`
+
+## Mobile-Friendly Error Responses
+- Keep error messages concise and actionable
+- Use consistent error response format across all endpoints
+- Avoid exposing internal implementation details
+- Return appropriate HTTP status codes for mobile client handling
+- Structure error responses for easy parsing by mobile apps

@@ -1,0 +1,97 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Accessibility Guidelines
+
+**WCAG 2.1 Compliance:**
+- Target WCAG 2.1 AA compliance as minimum standard
+- Focus on four key principles: Perceivable, Operable, Understandable, Robust
+- Test with screen readers (NVDA, JAWS, VoiceOver)
+- Validate with automated accessibility testing tools
+
+**Semantic HTML:**
+- Use proper HTML elements for their intended purpose
+- Prefer semantic elements over generic `div` and `span`
+- Use headings (`h1`, `h2`, etc.) in logical order
+- Use `button` for interactive elements, not `div` with click handlers
+- Use `nav` for navigation sections with `aria-label`
+
+**ARIA Labels and Attributes:**
+- Add `aria-label` for buttons/links without descriptive text
+- Use `aria-labelledby` to reference descriptive elements
+- Implement `aria-describedby` for additional context
+- Use `aria-current="page"` for current navigation items
+- Example implementation in [src/routes/(app)/groups/dashboard/+layout.svelte](mdc:src/routes/(app)/groups/dashboard/+layout.svelte)
+
+**Form Accessibility:**
+- Associate labels with form controls using `for` and `id` attributes
+- Use `aria-invalid` for form fields with validation errors
+- Provide descriptive error messages with `aria-describedby`
+- Use `required` attribute for mandatory fields
+- Group related form controls with `fieldset` and `legend`
+- Example pattern in [src/routes/auth/register/+page.svelte](mdc:src/routes/auth/register/+page.svelte)
+
+**Keyboard Navigation:**
+- Ensure all interactive elements are keyboard accessible
+- Implement proper tab order with logical flow
+- Use `tabindex="0"` for custom interactive elements
+- Provide visible focus indicators with CSS `:focus-visible`
+- Handle keyboard events for custom components (`Enter`, `Space`, `Escape`)
+- Support arrow key navigation for complex widgets
+
+**Color and Contrast:**
+- Maintain WCAG AA color contrast ratios (4.5:1 for normal text, 3:1 for large text)
+- Don't rely solely on color to convey information
+- Use Tailwind's accessible color combinations
+- Test with color blindness simulators
+- Provide alternative visual cues (icons, patterns, text labels)
+
+**Images and Media:**
+- Provide meaningful `alt` text for informative images
+- Use empty `alt=""` for decorative images
+- Use `role="img"` and `aria-label` for icon fonts or SVGs
+- Provide captions and transcripts for video content
+- Example in [src/routes/(app)/+layout.svelte](mdc:src/routes/(app)/+layout.svelte)
+
+**Mobile Accessibility:**
+- Ensure touch targets are at least 44x44 pixels
+- Provide sufficient spacing between interactive elements
+- Support device orientation changes
+- Test with mobile screen readers (TalkBack, VoiceOver)
+- Consider motor impairments in gesture design
+
+**Navigation Accessibility:**
+- Implement skip links for main content
+- Use consistent navigation patterns
+- Provide breadcrumbs for deep navigation
+- Use `aria-current` to indicate current page/step
+- Example in [src/lib/components/mobile-navigation.svelte](mdc:src/lib/components/mobile-navigation.svelte)
+
+**Interactive Component Patterns:**
+- **Buttons**: Use proper button elements with descriptive text or aria-label
+- **Dialogs**: Implement focus trapping and escape key handling
+- **Dropdowns**: Use appropriate ARIA attributes and keyboard navigation
+- **Tables**: Use proper table headers and captions
+- **Lists**: Use semantic list elements for grouped content
+
+**Loading and Dynamic Content:**
+- Use `aria-live` regions for dynamic content updates
+- Provide loading indicators with appropriate ARIA labels
+- Ensure screen readers announce state changes
+- Use `aria-busy` for loading states
+- Implement proper focus management for dynamic content
+
+**Testing and Validation:**
+- Use automated tools (axe-core, Lighthouse accessibility audit)
+- Perform manual testing with keyboard navigation
+- Test with screen readers across different browsers
+- Validate HTML for semantic correctness
+- Include accessibility testing in CI/CD pipeline
+
+**Progressive Enhancement:**
+- Ensure core functionality works without JavaScript
+- Provide fallbacks for advanced interactions
+- Use feature detection rather than browser detection
+- Maintain accessibility in enhanced experiences

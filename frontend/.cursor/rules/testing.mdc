@@ -12,7 +12,8 @@ alwaysApply: true
 **Mocking:**
 - Use [Mock Service Worker (MSW)](mdc:https:/mswjs.io) for mocking API requests during development and testing.
 - MSW handlers: `src/mocks/handlers/**/*.ts`
-- MSW setup: Check `src/hooks.client.ts` or similar setup files for browser integration if applicable.
+- MSW setup: Browser initialization in [src/hooks.client.ts](mdc:src/hooks.client.ts)
+- MSW service worker: [static/mockServiceWorker.js](mdc:static/mockServiceWorker.js)
 
 **Types of Tests:**
 - **Unit Tests:** Test individual functions, utilities, or components in isolation.
@@ -21,9 +22,33 @@ alwaysApply: true
 - **End-to-End Tests (Playwright):** Use Playwright for testing user flows across the application.
   - Playwright config: [playwright.config.ts](mdc:playwright.config.ts)
   - Playwright tests: `tests/**/*.spec.ts`
+  - Auth helpers: [tests/auth-helpers.ts](mdc:tests/auth-helpers.ts)
+
+**Mobile Testing Considerations:**
+- Test responsive design and mobile-first layouts
+- Test Capacitor plugin functionality when possible
+- Consider network connectivity scenarios (online/offline)
+- Use browser developer tools to simulate mobile devices
+- Manual testing on actual devices through native IDEs
+
+**Development and Testing Workflow:**
+1. Web testing with Playwright: `pnpm test:ui`
+2. Unit/component testing with Vitest: `pnpm test`
+3. Develop and test in browser: `pnpm dev`
+4. Build for mobile: `pnpm build:capacitor`
+5. Sync native projects: `npx cap sync`
+6. Open in native IDE: `npx cap open android` or `npx cap open ios`
+7. Manual testing on device/emulator from native IDE
+
+**Test Scripts:**
+- `pnpm test` - Run unit tests once
+- `pnpm test:unit` - Run unit tests in watch mode
+- `pnpm test:ui` - Run Playwright tests with UI
 
 **Best Practices:**
 - Write clear, concise, and maintainable tests.
 - Aim for good test coverage, focusing on critical paths and complex logic.
 - Keep tests independent and avoid relying on the state of previous tests.
 - Use descriptive test names.
+- Mock external dependencies and API calls using MSW.
+- Test both web and mobile-specific behaviors where applicable.

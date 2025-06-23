@@ -1,0 +1,67 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Authentication & Security Best Practices
+
+## JWT Authentication
+- Use JWT tokens for stateless authentication suitable for mobile apps
+- Token creation pattern from [`app/services/auth.py`](mdc:app/services/auth.py):
+  - Include user data in token payload: `{"user": {"id": str(user.id), "email": user.email, "username": user.username}}`
+  - Set appropriate expiration times using `ACCESS_TOKEN_EXPIRE_MINUTES`
+- Return tokens in format: `{"access_token": token, "token_type": "bearer"}`
+
+## Password Security
+- Always hash passwords using `AuthService.get_password_hash()` before storing
+- Use `AuthService.verify_password()` for login verification
+- Never store plain text passwords in the database
+- Require old password verification for password changes
+
+## Authorization & Middleware
+- Use [`app/middleware/is_user_group.py`](mdc:app/middleware/is_user_group.py) to ensure users can only access groups they belong to
+- Pattern: `db_group: Annotated[Group, Depends(is_user_in_group)]`
+- Always verify user permissions before allowing operations
+- Example from [`app/routers/transactions.py`](mdc:app/routers/transactions.py):
+  ```python
+  if db_group.id != transaction_in.group_id:
+      raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+  ```
+
+## Email Verification
+- Implement email verification for new accounts as shown in [`app/routers/auth.py`](mdc:app/routers/auth.py)
+- Generate secure random tokens: `AuthService.get_random_token()`
+- Check `user.email_verified` before allowing login
+- Send confirmation emails using [`app/services/email.py`](mdc:app/services/email.py)
+
+## Error Handling for Security
+- **Authentication Errors**:
+  ```python
+  raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED,
+      detail="Incorrect email or password",
+      headers={"WWW-Authenticate": "Bearer"}
+  )
+  ```
+- **Authorization Errors**:
+  ```python
+  raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+  ```
+- **Email Verification Required**:
+  ```python
+  raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email not verified")
+  ```
+
+## Route Protection
+- Protected routes must include: `dependencies=[Depends(oauth2_scheme)]`
+- Get current user with: `await AuthService.get_current_user(session, token, settings)`
+- Validate user permissions for resource access before operations
+
+## Mobile Security Considerations
+- Design stateless authentication for mobile apps
+- Use secure token storage practices in mobile clients
+- Implement proper token refresh mechanisms
+- Return consistent error formats for mobile handling
+
+## Security Configuration
+- Store sensitive settings in environment variables via [`

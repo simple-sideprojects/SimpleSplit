@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Database & SQLModel Patterns
+
+## Database Session Management
+- Use `SessionDep` type annotation for dependency injection
+- Pattern: `session: SessionDep` in route functions
+- Session management is handled in [`app/database/database.py`](mdc:app/database/database.py)
+- Always commit and refresh after database operations
+
+## SQLModel Usage
+- All models inherit from `SQLModel` with `table=True`
+- Use UUIDs as primary keys: `id: UUID = Field(default_factory=uuid4, primary_key=True)`
+- Include timestamps: `created_at`, `updated_at` fields
+- Example patterns from [`app/database/models/`](mdc:app/database/models)
+
+## Model Organization
+- Separate models by domain: [`user.py`](mdc:app/database/models/user.py), [`group.py`](mdc:app/database/models/group.py), etc.
+- Create response models (e.g., `UserResponse`) for API serialization
+- Use create models (e.g., `UserCreate`) for input validation
+- Update models (e.g., `UserInfoUpdate`) for partial updates
+
+## Query Patterns
+- Use SQLModel `select()` statements: `select(User).where(User.email == email)`
+- Chain operations: `.order_by()`, `.offset()`, `.limit()` for pagination
+- Use `session.exec(statement).first()` for single records
+- Use `session.exec(statement).all()` for multiple records
+
+## Relationship Patterns
+- Many-to-many relationships use link tables (e.g., [`users_groups.py`](mdc:app/database/models/users_groups.py))
+- Foreign key relationships: `group_id: UUID = Field(foreign_key="group.id")`
+- Access related data through relationships defined in models
+
+## Database Operations
+- **Create**: `session.add(model)`, `session.commit()`, `session.refresh(model)`
+- **Update**: Use `model.sqlmodel_update(data)` for partial updates
+- **Delete**: `session.delete(model)`, `session.commit()`
+- **Bulk Operations**: Use appropriate SQLModel patterns for efficiency
+
+## Migration Management
+- Use Alembic for database migrations
+- Configuration in [`alembic.ini`](mdc:alembic.ini)
+- Migration files in [`alembic/versions/`](mdc:alembic/versions)
+- Generate migrations: `alembic revision --autogenerate -m "description"`
+- Apply migrations: `alembic upgrade head`
