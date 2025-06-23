@@ -1,6 +1,6 @@
 from typing import Annotated, List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import select
 from app import config
 from app.database.database import SessionDep
@@ -17,7 +17,7 @@ router = APIRouter(
 )
 
 
-@router.get("/", tags=["groups"], response_model=list[Group])
+@router.get("/", tags=["groups"], response_model=list[Group], status_code=status.HTTP_200_OK)
 async def read_groups(session: SessionDep, token: Annotated[str, Depends(oauth2_scheme)], settings: Annotated[config.Settings, Depends(config.get_settings)]) -> list[Group]:
     user = await AuthService.get_current_user(session, token, settings)
     statement = select(User).where(User.id == user.id)
@@ -27,7 +27,7 @@ async def read_groups(session: SessionDep, token: Annotated[str, Depends(oauth2_
     return groups
 
 
-@router.get("/{group_id}", tags=["groups"], response_model=GroupWithUsersResponse)
+@router.get("/{group_id}", tags=["groups"], response_model=GroupWithUsersResponse, status_code=status.HTTP_200_OK)
 async def read_group(group_id: UUID, session: SessionDep, token: Annotated[str, Depends(oauth2_scheme)], settings: Annotated[config.Settings, Depends(config.get_settings)]) -> Group:
     user = await AuthService.get_current_user(session, token, settings)
     statement = select(User).where(User.id == user.id)
@@ -36,7 +36,7 @@ async def read_group(group_id: UUID, session: SessionDep, token: Annotated[str, 
     group = next((g for g in user.groups if g.id == group_id), None)
 
     if group is None:
-        raise HTTPException(status_code=404, detail="Group not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
 
     db_group = session.exec(select(Group).where(Group.id == group_id)).first()
     group_response = GroupWithUsersResponse.model_validate(db_group)
@@ -44,7 +44,7 @@ async def read_group(group_id: UUID, session: SessionDep, token: Annotated[str, 
     return group_response
 
 
-@router.get("/{group_id}/transactions", tags=["groups", "transactions"], response_model=List[TransactionRead])
+@router.get("/{group_id}/transactions", tags=["groups", "transactions"], response_model=List[TransactionRead], status_code=status.HTTP_200_OK)
 def read_group_transactions(
     *,
     session: SessionDep,
@@ -58,7 +58,7 @@ def read_group_transactions(
     return transactions
 
 
-@router.post("/", tags=["groups"], response_model=Group)
+@router.post("/", tags=["groups"], response_model=Group, status_code=status.HTTP_201_CREATED)
 async def create_group(group: CreateGroup, session: SessionDep, token: Annotated[str, Depends(oauth2_scheme)], settings: Annotated[config.Settings, Depends(config.get_settings)]) -> Group:
     user = await AuthService.get_current_user(session, token, settings)
     statement = select(User).where(User.id == user.id)
@@ -74,7 +74,7 @@ async def create_group(group: CreateGroup, session: SessionDep, token: Annotated
     return db_group
 
 
-@router.put("/{group_id}", tags=["groups"], response_model=Group)
+@router.put("/{group_id}", tags=["groups"], response_model=Group, status_code=status.HTTP_200_OK)
 async def update_group(
     group: UpdateGroup,
     session: SessionDep,
@@ -90,17 +90,16 @@ async def update_group(
     return db_group
 
 
-@router.delete("/{group_id}", tags=["groups"], response_model=dict)
+@router.delete("/{group_id}", tags=["groups"], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_group(
     session: SessionDep,
     db_group: Annotated[Group, Depends(is_user_in_group)]
 ):
     session.delete(db_group)
     session.commit()
-    return {"message": "Group deleted successfully"}
 
 
-@router.delete("/{group_id}/users/{user_id}", tags=["groups"], response_model=GroupWithUsersResponse)
+@router.delete("/{group_id}/users/{user_id}", tags=["groups"], status_code=status.HTTP_200_OK, response_model=GroupWithUsersResponse)
 async def delete_user_from_group(
     group_id: UUID,
     user_id: UUID,
@@ -109,7 +108,7 @@ async def delete_user_from_group(
 ) -> Group:
     user = next((u for u in db_group.users if u.id == user_id), None)
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     db_group.users.remove(user)
     session.add(db_group)

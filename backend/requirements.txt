@@ -12,3 +12,8 @@ fastapi-sqlalchemy
 pydantic
 alembic
 uvicorn
+
+pytest
+pytest-asyncio
+httpx
+pytest-mock

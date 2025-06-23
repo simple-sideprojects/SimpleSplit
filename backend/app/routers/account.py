@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from app import config
 from app.database.database import SessionDep
 from app.database.models.user import User, UserInfoUpdate, UserResponse, UserUpdatePassword
@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=UserResponse)
+@router.get("/", response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def read_users_me(
     session: SessionDep,
     settings: config.Settings = Depends(config.get_settings),
@@ -27,7 +27,7 @@ async def read_users_me(
     )
 
 
-@router.put("/", response_model=dict)
+@router.put("/", response_model=dict, status_code=status.HTTP_200_OK)
 async def update_user_info(
     user_update: UserInfoUpdate,
     session: SessionDep,
@@ -43,7 +43,7 @@ async def update_user_info(
     return {"message": "User info updated successfully"}
 
 
-@router.put("/password", response_model=dict)
+@router.put("/password", response_model=dict, status_code=status.HTTP_200_OK)
 async def update_password(
     user_update_password: UserUpdatePassword,
     session: SessionDep,
@@ -53,10 +53,10 @@ async def update_password(
     user: User = await AuthService.get_current_user(session, token, settings)
 
     if not user.password:
-        raise HTTPException(status_code=400, detail="Password not set")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password not set")
 
-    if not AuthService.verify_password(user.password, user_update_password.old_password):
-        raise HTTPException(status_code=400, detail="Invalid old password")
+    if not AuthService.verify_password(user_update_password.old_password, user.password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid old password")
 
     user.password = AuthService.get_password_hash(
         user_update_password.new_password)
@@ -68,7 +68,7 @@ async def update_password(
     return {"message": "Password updated successfully"}
 
 
-@router.delete("/", response_model=dict)
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     session: SessionDep,
     settings: config.Settings = Depends(config.get_settings),
@@ -77,4 +77,3 @@ async def delete_user(
     user: User = await AuthService.get_current_user(session, token, settings)
     session.delete(user)
     session.commit()
-    return {"message": "User deleted successfully"}

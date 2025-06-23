@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+
 from app import config
-from app.routers import account
-from .routers import auth, groups, invites, transactions
-from .database.database import create_db_and_tables
+from app.routers import account, auth, groups, invites, transactions
+from app.database.database import create_db_and_tables
 
 
 @asynccontextmanager

@@ -16,7 +16,7 @@ router = APIRouter(
 )
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     user: UserCreate,
     session: SessionDep,
@@ -62,7 +62,7 @@ async def register(
     )
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
 async def login(
     session: SessionDep,
     login_data: OAuth2PasswordRequestForm = Depends(),
@@ -101,7 +101,7 @@ async def login(
     return Token(access_token=access_token, token_type="bearer")
 
 
-@router.post("/confirm-email", response_model=Token)
+@router.post("/confirm-email", response_model=Token, status_code=status.HTTP_200_OK)
 async def confirm_email(
     email_confirmation_request: EmailConfirmationRequest,
     session: SessionDep,

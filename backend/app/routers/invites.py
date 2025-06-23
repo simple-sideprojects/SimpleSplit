@@ -18,7 +18,7 @@ router = APIRouter(
 )
 
 
-@router.get("/my-invites", response_model=list[GroupInviteResponse])
+@router.get("/my-invites", response_model=list[GroupInviteResponse], status_code=status.HTTP_200_OK)
 async def get_my_invites(
     session: SessionDep,
     token: Annotated[str, Depends(oauth2_scheme)],
@@ -41,7 +41,7 @@ async def get_my_invites(
     ]
 
 
-@router.post("/{group_id}/generate", response_model=InvitationTokenResponse)
+@router.post("/{group_id}/generate", response_model=InvitationTokenResponse, status_code=status.HTTP_201_CREATED)
 async def generate_invite_link(
     session: SessionDep,
     db_group: Annotated[Group, Depends(is_user_in_group)]
@@ -60,7 +60,7 @@ async def generate_invite_link(
     return InvitationTokenResponse(token=token)
 
 
-@router.post("/{group_id}/email", response_model=GroupInviteResponse)
+@router.post("/{group_id}/email", response_model=GroupInviteResponse, status_code=status.HTTP_201_CREATED)
 async def invite_by_email(
     invite_data: GroupInviteCreate,
     session: SessionDep,
@@ -131,7 +131,7 @@ async def invite_by_email(
     )
 
 
-@router.get("/accept/{token}", response_model=dict)
+@router.put("/accept/{token}", response_model=dict, status_code=status.HTTP_200_OK)
 async def accept_invite(
     token: str,
     session: SessionDep,
@@ -194,13 +194,13 @@ async def accept_invite(
     return {"message": "Invitation accepted successfully"}
 
 
-@router.delete("/reject/{token}", response_model=dict)
+@router.delete("/reject/{token}", status_code=status.HTTP_204_NO_CONTENT)
 async def reject_invite(
     token: str,
     session: SessionDep,
     token_user: Annotated[str, Depends(oauth2_scheme)],
     settings: Annotated[config.Settings, Depends(config.get_settings)]
-) -> dict:
+):
     user = await AuthService.get_current_user(session, token_user, settings)
 
     invite = session.exec(
@@ -226,5 +226,3 @@ async def reject_invite(
 
     session.delete(invite)
     session.commit()
-
-    return {"message": "Invitation rejected successfully"}

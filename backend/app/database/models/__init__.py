@@ -1,6 +1,6 @@
 from .base import BaseModel
 from .user import User, UserCreate, UserResponse
-from .group import Group, CreateGroup, GroupWithUsersResponse
+from .group import Group, CreateGroup, GroupResponse, GroupWithUsersResponse, UpdateGroup
 from .invite import GroupInvite, GroupInviteCreate, GroupInviteResponse, InvitationTokenResponse
 from .users_groups import UsersGroups
 from .transaction import (
@@ -16,10 +16,18 @@ from .transaction_participant import (
     TransactionParticipantRead,
     TransactionParticipantUpdate,
 )
+from .auth import (
+    EmailPasswordLoginRequest,
+    Token,
+    JWTPayload,
+    UserJWTData,
+    EmailConfirmationRequest,
+)
 
 User.model_rebuild()
 Group.model_rebuild()
 GroupInvite.model_rebuild()
+GroupResponse.model_rebuild()
 GroupWithUsersResponse.model_rebuild()
 Transaction.model_rebuild()
 TransactionParticipant.model_rebuild()
@@ -28,24 +36,38 @@ TransactionRead.model_rebuild()
 
 __all__ = [
     "BaseModel",
+    # User models
     "User",
     "UserCreate",
     "UserResponse",
+    # Group models
     "Group",
     "CreateGroup",
+    "GroupResponse",
     "GroupWithUsersResponse",
+    "UpdateGroup",
+    # Invite models
     "GroupInvite",
     "GroupInviteCreate",
     "GroupInviteResponse",
     "InvitationTokenResponse",
+    # Relationship models
     "UsersGroups",
+    # Transaction models
     "Transaction",
     "TransactionType",
     "TransactionCreate",
     "TransactionRead",
     "TransactionUpdate",
+    # Transaction participant models
     "TransactionParticipant",
     "TransactionParticipantCreate",
     "TransactionParticipantRead",
     "TransactionParticipantUpdate",
+    # Auth models
+    "EmailPasswordLoginRequest",
+    "Token",
+    "JWTPayload",
+    "UserJWTData",
+    "EmailConfirmationRequest",
 ]

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 from sqlmodel import Field, Relationship, SQLModel
+from datetime import datetime
 from .base import BaseModel
 
 if TYPE_CHECKING:
@@ -31,6 +32,8 @@ class TransactionParticipantCreate(SQLModel):
 class TransactionParticipantRead(TransactionParticipantBase):
     id: UUID
     amount_owed: int
+    created_at: datetime
+    updated_at: datetime
     debtor: "User"
 
 

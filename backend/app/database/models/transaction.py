@@ -24,7 +24,7 @@ class TransactionType(str, Enum):
 class TransactionBase(BaseModel):
     amount: int = Field(
         index=True, description="Total amount in smallest currency unit (e.g., cents)")
-    title: str = Field(index=True)
+    title: str
     purchased_on: datetime = Field(
         default=None,
         sa_type=sa.DateTime(timezone=True),

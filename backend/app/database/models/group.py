@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING, Optional, List
-from sqlalchemy import Transaction
 from sqlmodel import Field, Relationship, SQLModel
 from app.database.models.base import BaseModel
 from app.database.models.users_groups import UsersGroups
 from uuid import UUID
+from datetime import datetime
 
 # Import dependent models for type checking only to avoid circular imports
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class Group(BaseModel, table=True):
     __tablename__ = "groups"
-    name: str = Field(index=True)
+    name: str = Field(index=True, min_length=1, max_length=100)
     users: list['User'] = Relationship(  # type: ignore
         back_populates="groups",
         link_model=UsersGroups
@@ -32,15 +32,24 @@ class Group(BaseModel, table=True):
 
 
 class CreateGroup(SQLModel):
-    name: str
+    name: str = Field(min_length=1, max_length=100)
 
 
 class UpdateGroup(SQLModel):
+    name: str = Field(default=None, min_length=1, max_length=100)
+
+
+class GroupResponse(SQLModel):
+    id: UUID
     name: str
+    created_at: datetime
+    updated_at: datetime
 
 
 class GroupWithUsersResponse(SQLModel):
     id: UUID
     name: str
+    created_at: datetime
+    updated_at: datetime
     users: list['UserResponse'] = []
     invites: Optional[list['GroupInviteResponse']] = []

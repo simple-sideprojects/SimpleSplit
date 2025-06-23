@@ -7,6 +7,7 @@ from typing import Annotated, Optional
 from fastapi import Depends, HTTPException, status
 from passlib.context import CryptContext
 from sqlmodel import select
+from uuid import UUID
 from app import config
 from app.database.database import SessionDep
 from app.database.models.auth import JWTPayload
@@ -79,8 +80,9 @@ class AuthService:
             headers={"WWW-Authenticate": "Bearer"},
         )
         jwt_payload = await AuthService.get_jwt_payload(token, settings)
-        statement = select(User).where(
-            User.id == jwt_payload.get("user").get("id"))
+        user_id_str = jwt_payload.get("user").get("id")
+        user_id = UUID(user_id_str)
+        statement = select(User).where(User.id == user_id)
         user = session.exec(statement).first()
         if user is None:
             raise credentials_exception

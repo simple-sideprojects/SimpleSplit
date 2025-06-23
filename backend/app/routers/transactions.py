@@ -3,10 +3,10 @@ from typing import Annotated, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from app import config
-from app.database.database import SessionDep, get_session
+from app.database.database import SessionDep
 from app.database.models import (
     Transaction, TransactionCreate, TransactionRead, TransactionUpdate, User, Group
 )
@@ -18,17 +18,28 @@ from app.services.auth import AuthService, oauth2_scheme
 router = APIRouter(
     prefix="/transactions",
     tags=["transactions"],
+    dependencies=[Depends(oauth2_scheme)],
     responses={404: {"description": "Not found"}},
 )
 
 
 @router.post("/", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
-def create_transaction(
+async def create_transaction(
     transaction_in: TransactionCreate,
     session: SessionDep,
-    db_group: Annotated[Group, Depends(is_user_in_group)],
+    token: Annotated[str, Depends(oauth2_scheme)],
+    settings: Annotated[config.Settings, Depends(config.get_settings)]
 ):
-    if db_group.id != transaction_in.group_id:
+    current_user = await AuthService.get_current_user(session, token, settings)
+    
+    db_group = session.get(Group, transaction_in.group_id)
+    if not db_group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Group not found"
+        )
+    
+    if current_user not in db_group.users:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not have permission to create a transaction in this group"
@@ -62,10 +73,10 @@ def create_transaction(
     return db_transaction
 
 
-@router.get("/", response_model=List[TransactionRead])
+@router.get("/", response_model=List[TransactionRead], status_code=status.HTTP_200_OK)
 async def read_transactions_user_is_participant_in(
     *,
-    session: Session = Depends(get_session),
+    session: SessionDep,
     token_user: Annotated[str, Depends(oauth2_scheme)],
     settings: Annotated[config.Settings, Depends(config.get_settings)],
     skip: int = 0,
@@ -89,13 +100,15 @@ async def read_transactions_user_is_participant_in(
     return transactions
 
 
-@router.get("/{transaction_id}", response_model=TransactionRead)
-def read_transaction(
-    *,
-    session: Session = Depends(get_session),
-    current_user: User = Depends(AuthService.get_current_user),
-    transaction_id: UUID
+@router.get("/{transaction_id}", response_model=TransactionRead, status_code=status.HTTP_200_OK)
+async def read_transaction(
+    transaction_id: UUID,
+    session: SessionDep,
+    token: Annotated[str, Depends(oauth2_scheme)],
+    settings: Annotated[config.Settings, Depends(config.get_settings)]
 ):
+    current_user = await AuthService.get_current_user(session, token, settings)
+    
     transaction = session.get(Transaction, transaction_id)
     if not transaction:
         raise HTTPException(
@@ -111,14 +124,16 @@ def read_transaction(
     return transaction
 
 
-@router.put("/{transaction_id}", response_model=TransactionRead)
-def update_transaction(
-    *,
-    session: Session = Depends(get_session),
-    current_user: User = Depends(AuthService.get_current_user),
+@router.put("/{transaction_id}", response_model=TransactionRead, status_code=status.HTTP_200_OK)
+async def update_transaction(
     transaction_id: UUID,
-    transaction_in: TransactionUpdate
+    transaction_in: TransactionUpdate,
+    session: SessionDep,
+    token: Annotated[str, Depends(oauth2_scheme)],
+    settings: Annotated[config.Settings, Depends(config.get_settings)]
 ):
+    current_user = await AuthService.get_current_user(session, token, settings)
+    
     db_transaction = session.get(Transaction, transaction_id)
     if not db_transaction:
         raise HTTPException(
@@ -140,12 +155,14 @@ def update_transaction(
 
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_transaction(
-    *,
-    session: Session = Depends(get_session),
-    current_user: User = Depends(AuthService.get_current_user),
-    transaction_id: UUID
+async def delete_transaction(
+    transaction_id: UUID,
+    session: SessionDep,
+    token: Annotated[str, Depends(oauth2_scheme)],
+    settings: Annotated[config.Settings, Depends(config.get_settings)]
 ):
+    current_user = await AuthService.get_current_user(session, token, settings)
+    
     transaction = session.get(Transaction, transaction_id)
     if not transaction:
         raise HTTPException(

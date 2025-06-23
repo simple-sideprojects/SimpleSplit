@@ -15,11 +15,11 @@ if TYPE_CHECKING:
 
 class User(BaseModel, table=True):
     __tablename__ = "users"
-    username: str = Field()
-    email: str = Field(index=True)
+    username: str = Field(index=True, min_length=1, max_length=50)
+    email: str = Field(index=True, unique=True, min_length=1, max_length=255)
     email_verified: bool = Field(default=False)
     email_verification_token: int = Field(default=None, nullable=True)
-    password: str = Field(str)
+    password: str = Field(min_length=8)
     groups: list[Group] = Relationship(
         back_populates="users",
         link_model=UsersGroups
@@ -32,22 +32,23 @@ class User(BaseModel, table=True):
 
 class UserCreate(SQLModel):
     email: EmailStr
-    password: str
-    username: str
+    password: str = Field(min_length=8, max_length=32)
+    username: str = Field(min_length=1, max_length=50)
 
 
 class UserResponse(SQLModel):
     id: UUID
     email: EmailStr
     username: str
+    email_verified: bool
     created_at: datetime
     updated_at: datetime
 
 
 class UserInfoUpdate(SQLModel):
-    username: str
+    username: str = Field(min_length=1, max_length=50)
 
 
 class UserUpdatePassword(SQLModel):
-    old_password: str
-    new_password: str
+    old_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8, max_length=32)
