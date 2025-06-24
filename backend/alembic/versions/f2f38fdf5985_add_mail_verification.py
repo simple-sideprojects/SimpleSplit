@@ -1,4 +1,4 @@
-"""v2
+"""add mail verification
 
 Revision ID: f2f38fdf5985
 Revises: 6aa0a9cc6af7
