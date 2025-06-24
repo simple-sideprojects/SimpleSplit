@@ -20,56 +20,12 @@ export const zBodyLoginAuthLoginPost = z.object({
     ]).optional()
 });
 
-export const zBodyUpdateTransactionTransactionsTransactionIdPut = z.object({
-    transaction_in: z.object({
-        amount: z.union([
-            z.number().int(),
-            z.null()
-        ]).optional(),
-        title: z.union([
-            z.string(),
-            z.null()
-        ]).optional(),
-        purchased_on: z.union([
-            z.string().datetime(),
-            z.null()
-        ]).optional(),
-        transaction_type: z.union([
-            z.enum([
-                'EVEN',
-                'AMOUNT',
-                'PERCENTAGE'
-            ]),
-            z.null()
-        ]).optional(),
-        payer_id: z.union([
-            z.string().uuid(),
-            z.null()
-        ]).optional()
-    }),
-    settings: z.object({
-        PROD: z.boolean(),
-        FRONTEND_URL: z.string(),
-        DATABASE_URL: z.string(),
-        SECRET_KEY: z.string(),
-        ALGORITHM: z.string(),
-        ACCESS_TOKEN_EXPIRE_MINUTES: z.number().int(),
-        SMTP_SERVER: z.string(),
-        SMTP_PORT: z.number().int(),
-        SMTP_USER: z.string(),
-        SMTP_PASSWORD: z.string(),
-        SMTP_USE_TLS: z.boolean(),
-        SENDER_EMAIL: z.string(),
-        EMAIL_ACCOUNT_VERIFICATION: z.boolean()
-    })
-});
-
 export const zCreateGroup = z.object({
-    name: z.string()
+    name: z.string().min(1).max(100)
 });
 
 export const zEmailConfirmationRequest = z.object({
-    frontend_url: z.string(),
+    frontend_url: z.string().min(1).max(500),
     token: z.number().int()
 });
 
@@ -77,7 +33,7 @@ export const zGroup = z.object({
     id: z.string().uuid().optional(),
     created_at: z.string().datetime().optional(),
     updated_at: z.string().datetime().optional(),
-    name: z.string()
+    name: z.string().min(1).max(100)
 });
 
 export const zGroupInviteCreate = z.object({
@@ -101,10 +57,13 @@ export const zGroupInviteResponse = z.object({
 export const zGroupWithUsersResponse = z.object({
     id: z.string().uuid(),
     name: z.string(),
+    created_at: z.string().datetime(),
+    updated_at: z.string().datetime(),
     users: z.array(z.object({
         id: z.string().uuid(),
         email: z.string().email(),
         username: z.string(),
+        email_verified: z.boolean(),
         created_at: z.string().datetime(),
         updated_at: z.string().datetime()
     })).optional().default([]),
@@ -124,22 +83,6 @@ export const zHttpValidationError = z.object({
 
 export const zInvitationTokenResponse = z.object({
     token: z.string()
-});
-
-export const zSettings = z.object({
-    PROD: z.boolean(),
-    FRONTEND_URL: z.string(),
-    DATABASE_URL: z.string(),
-    SECRET_KEY: z.string(),
-    ALGORITHM: z.string(),
-    ACCESS_TOKEN_EXPIRE_MINUTES: z.number().int(),
-    SMTP_SERVER: z.string(),
-    SMTP_PORT: z.number().int(),
-    SMTP_USER: z.string(),
-    SMTP_PASSWORD: z.string(),
-    SMTP_USE_TLS: z.boolean(),
-    SENDER_EMAIL: z.string(),
-    EMAIL_ACCOUNT_VERIFICATION: z.boolean()
 });
 
 export const zToken = z.object({
@@ -177,15 +120,17 @@ export const zTransactionParticipantRead = z.object({
     transaction_id: z.string().uuid(),
     debtor_id: z.string().uuid(),
     id: z.string().uuid(),
+    created_at: z.string().datetime(),
+    updated_at: z.string().datetime(),
     debtor: z.object({
         id: z.string().uuid().optional(),
         created_at: z.string().datetime().optional(),
         updated_at: z.string().datetime().optional(),
-        username: z.string(),
-        email: z.string(),
+        username: z.string().min(1).max(50),
+        email: z.string().min(1).max(255),
         email_verified: z.boolean().optional().default(false),
         email_verification_token: z.number().int().optional(),
-        password: z.string().optional()
+        password: z.string().min(8)
     })
 });
 
@@ -208,11 +153,11 @@ export const zTransactionRead = z.object({
         id: z.string().uuid().optional(),
         created_at: z.string().datetime().optional(),
         updated_at: z.string().datetime().optional(),
-        username: z.string(),
-        email: z.string(),
+        username: z.string().min(1).max(50),
+        email: z.string().min(1).max(255),
         email_verified: z.boolean().optional().default(false),
         email_verification_token: z.number().int().optional(),
-        password: z.string().optional()
+        password: z.string().min(8)
     }),
     group: zGroup
 });
@@ -247,41 +192,42 @@ export const zTransactionUpdate = z.object({
 });
 
 export const zUpdateGroup = z.object({
-    name: z.string()
+    name: z.string().min(1).max(100).optional()
 });
 
 export const zUser = z.object({
     id: z.string().uuid().optional(),
     created_at: z.string().datetime().optional(),
     updated_at: z.string().datetime().optional(),
-    username: z.string(),
-    email: z.string(),
+    username: z.string().min(1).max(50),
+    email: z.string().min(1).max(255),
     email_verified: z.boolean().optional().default(false),
     email_verification_token: z.number().int().optional(),
-    password: z.string().optional()
+    password: z.string().min(8)
 });
 
 export const zUserCreate = z.object({
     email: z.string().email(),
-    password: z.string(),
-    username: z.string()
+    password: z.string().min(8).max(32),
+    username: z.string().min(1).max(50)
 });
 
 export const zUserInfoUpdate = z.object({
-    username: z.string()
+    username: z.string().min(1).max(50)
 });
 
 export const zUserResponse = z.object({
     id: z.string().uuid(),
     email: z.string().email(),
     username: z.string(),
+    email_verified: z.boolean(),
     created_at: z.string().datetime(),
     updated_at: z.string().datetime()
 });
 
 export const zUserUpdatePassword = z.object({
-    old_password: z.string(),
-    new_password: z.string()
+    old_password: z.string().min(8),
+    new_password: z.string().min(8).max(32)
 });
 
 export const zValidationError = z.object({
@@ -290,7 +236,7 @@ export const zValidationError = z.object({
     type: z.string()
 });
 
-export const zDeleteUserAccountDeleteResponse = z.object({});
+export const zDeleteUserAccountDeleteResponse = z.void();
 
 export const zReadUsersMeAccountGetResponse = zUserResponse;
 
@@ -308,7 +254,7 @@ export const zReadGroupsGroupsGetResponse = z.array(zGroup);
 
 export const zCreateGroupGroupsPostResponse = zGroup;
 
-export const zDeleteGroupGroupsGroupIdDeleteResponse = z.object({});
+export const zDeleteGroupGroupsGroupIdDeleteResponse = z.void();
 
 export const zReadGroupGroupsGroupIdGetResponse = zGroupWithUsersResponse;
 
@@ -324,9 +270,9 @@ export const zGenerateInviteLinkInvitesGroupIdGeneratePostResponse = zInvitation
 
 export const zInviteByEmailInvitesGroupIdEmailPostResponse = zGroupInviteResponse;
 
-export const zAcceptInviteInvitesAcceptTokenGetResponse = z.object({});
+export const zAcceptInviteInvitesAcceptTokenPutResponse = z.object({});
 
-export const zRejectInviteInvitesRejectTokenDeleteResponse = z.object({});
+export const zRejectInviteInvitesRejectTokenDeleteResponse = z.void();
 
 export const zReadTransactionsUserIsParticipantInTransactionsGetResponse = z.array(zTransactionRead);
 

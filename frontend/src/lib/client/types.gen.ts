@@ -9,11 +9,6 @@ export type BodyLoginAuthLoginPost = {
     client_secret?: string | null;
 };
 
-export type BodyUpdateTransactionTransactionsTransactionIdPut = {
-    transaction_in: TransactionUpdate;
-    settings: Settings;
-};
-
 export type CreateGroup = {
     name: string;
 };
@@ -45,6 +40,8 @@ export type GroupInviteResponse = {
 export type GroupWithUsersResponse = {
     id: string;
     name: string;
+    created_at: string;
+    updated_at: string;
     users?: Array<UserResponse>;
     invites?: Array<GroupInviteResponse> | null;
 };
@@ -55,22 +52,6 @@ export type HttpValidationError = {
 
 export type InvitationTokenResponse = {
     token: string;
-};
-
-export type Settings = {
-    PROD: boolean;
-    FRONTEND_URL: string;
-    DATABASE_URL: string;
-    SECRET_KEY: string;
-    ALGORITHM: string;
-    ACCESS_TOKEN_EXPIRE_MINUTES: number;
-    SMTP_SERVER: string;
-    SMTP_PORT: number;
-    SMTP_USER: string;
-    SMTP_PASSWORD: string;
-    SMTP_USE_TLS: boolean;
-    SENDER_EMAIL: string;
-    EMAIL_ACCOUNT_VERIFICATION: boolean;
 };
 
 export type Token = {
@@ -104,6 +85,8 @@ export type TransactionParticipantRead = {
     transaction_id: string;
     debtor_id: string;
     id: string;
+    created_at: string;
+    updated_at: string;
     debtor: User;
 };
 
@@ -136,7 +119,7 @@ export type TransactionUpdate = {
 };
 
 export type UpdateGroup = {
-    name: string;
+    name?: string;
 };
 
 export type User = {
@@ -147,7 +130,7 @@ export type User = {
     email: string;
     email_verified?: boolean;
     email_verification_token?: number;
-    password?: string;
+    password: string;
 };
 
 export type UserCreate = {
@@ -164,6 +147,7 @@ export type UserResponse = {
     id: string;
     email: string;
     username: string;
+    email_verified: boolean;
     created_at: string;
     updated_at: string;
 };
@@ -190,9 +174,7 @@ export type DeleteUserAccountDeleteResponses = {
     /**
      * Successful Response
      */
-    200: {
-        [key: string]: unknown;
-    };
+    204: void;
 };
 
 export type DeleteUserAccountDeleteResponse = DeleteUserAccountDeleteResponses[keyof DeleteUserAccountDeleteResponses];
@@ -287,7 +269,7 @@ export type RegisterAuthRegisterPostResponses = {
     /**
      * Successful Response
      */
-    200: UserResponse;
+    201: UserResponse;
 };
 
 export type RegisterAuthRegisterPostResponse = RegisterAuthRegisterPostResponses[keyof RegisterAuthRegisterPostResponses];
@@ -378,7 +360,7 @@ export type CreateGroupGroupsPostResponses = {
     /**
      * Successful Response
      */
-    200: Group;
+    201: Group;
 };
 
 export type CreateGroupGroupsPostResponse = CreateGroupGroupsPostResponses[keyof CreateGroupGroupsPostResponses];
@@ -405,9 +387,7 @@ export type DeleteGroupGroupsGroupIdDeleteResponses = {
     /**
      * Successful Response
      */
-    200: {
-        [key: string]: unknown;
-    };
+    204: void;
 };
 
 export type DeleteGroupGroupsGroupIdDeleteResponse = DeleteGroupGroupsGroupIdDeleteResponses[keyof DeleteGroupGroupsGroupIdDeleteResponses];
@@ -562,7 +542,7 @@ export type GenerateInviteLinkInvitesGroupIdGeneratePostResponses = {
     /**
      * Successful Response
      */
-    200: InvitationTokenResponse;
+    201: InvitationTokenResponse;
 };
 
 export type GenerateInviteLinkInvitesGroupIdGeneratePostResponse = GenerateInviteLinkInvitesGroupIdGeneratePostResponses[keyof GenerateInviteLinkInvitesGroupIdGeneratePostResponses];
@@ -589,12 +569,12 @@ export type InviteByEmailInvitesGroupIdEmailPostResponses = {
     /**
      * Successful Response
      */
-    200: GroupInviteResponse;
+    201: GroupInviteResponse;
 };
 
 export type InviteByEmailInvitesGroupIdEmailPostResponse = InviteByEmailInvitesGroupIdEmailPostResponses[keyof InviteByEmailInvitesGroupIdEmailPostResponses];
 
-export type AcceptInviteInvitesAcceptTokenGetData = {
+export type AcceptInviteInvitesAcceptTokenPutData = {
     body?: never;
     path: {
         token: string;
@@ -603,16 +583,16 @@ export type AcceptInviteInvitesAcceptTokenGetData = {
     url: '/invites/accept/{token}';
 };
 
-export type AcceptInviteInvitesAcceptTokenGetErrors = {
+export type AcceptInviteInvitesAcceptTokenPutErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type AcceptInviteInvitesAcceptTokenGetError = AcceptInviteInvitesAcceptTokenGetErrors[keyof AcceptInviteInvitesAcceptTokenGetErrors];
+export type AcceptInviteInvitesAcceptTokenPutError = AcceptInviteInvitesAcceptTokenPutErrors[keyof AcceptInviteInvitesAcceptTokenPutErrors];
 
-export type AcceptInviteInvitesAcceptTokenGetResponses = {
+export type AcceptInviteInvitesAcceptTokenPutResponses = {
     /**
      * Successful Response
      */
@@ -621,7 +601,7 @@ export type AcceptInviteInvitesAcceptTokenGetResponses = {
     };
 };
 
-export type AcceptInviteInvitesAcceptTokenGetResponse = AcceptInviteInvitesAcceptTokenGetResponses[keyof AcceptInviteInvitesAcceptTokenGetResponses];
+export type AcceptInviteInvitesAcceptTokenPutResponse = AcceptInviteInvitesAcceptTokenPutResponses[keyof AcceptInviteInvitesAcceptTokenPutResponses];
 
 export type RejectInviteInvitesRejectTokenDeleteData = {
     body?: never;
@@ -645,9 +625,7 @@ export type RejectInviteInvitesRejectTokenDeleteResponses = {
     /**
      * Successful Response
      */
-    200: {
-        [key: string]: unknown;
-    };
+    204: void;
 };
 
 export type RejectInviteInvitesRejectTokenDeleteResponse = RejectInviteInvitesRejectTokenDeleteResponses[keyof RejectInviteInvitesRejectTokenDeleteResponses];
@@ -688,9 +666,7 @@ export type ReadTransactionsUserIsParticipantInTransactionsGetResponse = ReadTra
 export type CreateTransactionTransactionsPostData = {
     body: TransactionCreate;
     path?: never;
-    query: {
-        group_id: string;
-    };
+    query?: never;
     url: '/transactions/';
 };
 
@@ -717,13 +693,11 @@ export type CreateTransactionTransactionsPostResponses = {
 export type CreateTransactionTransactionsPostResponse = CreateTransactionTransactionsPostResponses[keyof CreateTransactionTransactionsPostResponses];
 
 export type DeleteTransactionTransactionsTransactionIdDeleteData = {
-    body: Settings;
+    body?: never;
     path: {
         transaction_id: string;
     };
-    query: {
-        token: string;
-    };
+    query?: never;
     url: '/transactions/{transaction_id}';
 };
 
@@ -750,13 +724,11 @@ export type DeleteTransactionTransactionsTransactionIdDeleteResponses = {
 export type DeleteTransactionTransactionsTransactionIdDeleteResponse = DeleteTransactionTransactionsTransactionIdDeleteResponses[keyof DeleteTransactionTransactionsTransactionIdDeleteResponses];
 
 export type ReadTransactionTransactionsTransactionIdGetData = {
-    body: Settings;
+    body?: never;
     path: {
         transaction_id: string;
     };
-    query: {
-        token: string;
-    };
+    query?: never;
     url: '/transactions/{transaction_id}';
 };
 
@@ -783,13 +755,11 @@ export type ReadTransactionTransactionsTransactionIdGetResponses = {
 export type ReadTransactionTransactionsTransactionIdGetResponse = ReadTransactionTransactionsTransactionIdGetResponses[keyof ReadTransactionTransactionsTransactionIdGetResponses];
 
 export type UpdateTransactionTransactionsTransactionIdPutData = {
-    body: BodyUpdateTransactionTransactionsTransactionIdPut;
+    body: TransactionUpdate;
     path: {
         transaction_id: string;
     };
-    query: {
-        token: string;
-    };
+    query?: never;
     url: '/transactions/{transaction_id}';
 };
 
