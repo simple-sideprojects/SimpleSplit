@@ -18,9 +18,9 @@ class TransactionParticipantBase(SQLModel):
 
 class TransactionParticipant(TransactionParticipantBase, BaseModel, table=True):
     __tablename__ = "transaction_participants"
-    transaction: "Transaction" = Relationship(  # type: ignore
+    transaction: "Transaction" = Relationship(
         back_populates="participants")
-    debtor: "User" = Relationship(  # type: ignore
+    debtor: "User" = Relationship(
         back_populates="owed_transactions")
 
 

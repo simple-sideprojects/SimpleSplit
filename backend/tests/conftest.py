@@ -1,6 +1,4 @@
 import pytest
-import tempfile
-import os
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
@@ -11,9 +9,7 @@ from app.main import app
 from app.database.database import get_session
 from app.config import get_settings, Settings
 from app.services.auth import AuthService
-from app.database.models.user import User, UserCreate
-from app.database.models.group import Group, CreateGroup
-from app.database.models import *  # Import all models to ensure they're registered
+from app.database.models import *
 
 
 class TestSettings(Settings):
@@ -21,12 +17,12 @@ class TestSettings(Settings):
     PROD: bool = False
     FRONTEND_URL: str = "http://localhost:3000"
     DATABASE_URL: str = "sqlite:///test.db"
-    
+
     # Auth Settings
     SECRET_KEY: str = "test-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    
+
     # SMTP Settings (disabled for tests)
     SMTP_SERVER: str = "localhost"
     SMTP_PORT: int = 587
@@ -34,7 +30,8 @@ class TestSettings(Settings):
     SMTP_PASSWORD: str = "test"
     SMTP_USE_TLS: bool = False
     SENDER_EMAIL: str = "test@example.com"
-    EMAIL_ACCOUNT_VERIFICATION: bool = False  # Disable email verification for tests
+    # Disable email verification for tests
+    EMAIL_ACCOUNT_VERIFICATION: bool = False
 
     class Config:
         env_file = None  # Don't load from .env in tests
@@ -76,10 +73,10 @@ def client_fixture(session: Session, test_settings: TestSettings) -> Generator[T
 
     app.dependency_overrides[get_session] = get_session_override
     app.dependency_overrides[get_settings] = get_settings_override
-    
+
     client = TestClient(app)
     yield client
-    
+
     # Clean up
     app.dependency_overrides.clear()
 
@@ -92,7 +89,7 @@ def test_user_fixture(session: Session, test_settings: TestSettings) -> User:
         username="testuser",
         password="testpassword123"
     )
-    
+
     hashed_password = AuthService.get_password_hash(user_data.password)
     db_user = User(
         email=user_data.email,
@@ -100,7 +97,7 @@ def test_user_fixture(session: Session, test_settings: TestSettings) -> User:
         password=hashed_password,
         email_verified=True  # Skip email verification for tests
     )
-    
+
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
@@ -115,7 +112,7 @@ def test_user_2_fixture(session: Session, test_settings: TestSettings) -> User:
         username="testuser2",
         password="testpassword123"
     )
-    
+
     hashed_password = AuthService.get_password_hash(user_data.password)
     db_user = User(
         email=user_data.email,
@@ -123,7 +120,7 @@ def test_user_2_fixture(session: Session, test_settings: TestSettings) -> User:
         password=hashed_password,
         email_verified=True
     )
-    
+
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
@@ -133,7 +130,8 @@ def test_user_2_fixture(session: Session, test_settings: TestSettings) -> User:
 @pytest.fixture(name="auth_token")
 def auth_token_fixture(test_user: User, test_settings: TestSettings) -> str:
     """Create an authentication token for the test user"""
-    access_token_expires = timedelta(minutes=test_settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(
+        minutes=test_settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = AuthService.create_access_token(
         data={
             "user": {
@@ -160,11 +158,11 @@ def test_group_fixture(session: Session, test_user: User) -> Group:
     db_group = Group(
         name="Test Group"
     )
-    
+
     # Add the test user to the group
     db_group.users.append(test_user)
-    
+
     session.add(db_group)
     session.commit()
     session.refresh(db_group)
-    return db_group 
+    return db_group

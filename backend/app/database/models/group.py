@@ -12,20 +12,22 @@ if TYPE_CHECKING:
     from app.database.models.invite import GroupInvite
     from app.database.models.user import UserResponse
     from app.database.models.invite import GroupInviteResponse
+    from app.database.models.balance import Balance
+    from app.database.models.transaction import TransactionRead
 
 
 class Group(BaseModel, table=True):
     __tablename__ = "groups"
     name: str = Field(index=True, min_length=1, max_length=100)
-    users: list['User'] = Relationship(  # type: ignore
+    users: list["User"] = Relationship(
         back_populates="groups",
         link_model=UsersGroups
     )
-    invites: list['GroupInvite'] = Relationship(  # type: ignore
+    invites: list["GroupInvite"] = Relationship(
         back_populates="group",
         cascade_delete=True
     )
-    transactions: List['Transaction'] = Relationship(  # type: ignore
+    transactions: List["Transaction"] = Relationship(
         back_populates="group",
         cascade_delete=True
     )
@@ -46,10 +48,12 @@ class GroupResponse(SQLModel):
     updated_at: datetime
 
 
-class GroupWithUsersResponse(SQLModel):
+class GroupExpandedResponse(SQLModel):
     id: UUID
     name: str
     created_at: datetime
     updated_at: datetime
     users: list['UserResponse'] = []
     invites: Optional[list['GroupInviteResponse']] = []
+    balance: Optional['Balance'] = None
+    transactions: Optional[list['TransactionRead']] = []

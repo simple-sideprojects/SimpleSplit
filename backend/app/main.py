@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from app import config
-from app.routers import account, auth, groups, invites, transactions
+from app.routers import account, auth, balances, groups, invites, transactions
 from app.database.database import create_db_and_tables
 
 
@@ -17,6 +17,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(account.router)
 app.include_router(auth.router)
+app.include_router(balances.router)
 app.include_router(groups.router)
 app.include_router(invites.router)
 app.include_router(transactions.router)

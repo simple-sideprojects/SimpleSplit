@@ -10,7 +10,7 @@ from uuid import UUID
 
 
 async def is_user_in_group(
-    group_id: str,
+    group_id: str | UUID,
     session: SessionDep,
     token: Annotated[str, Depends(oauth2_scheme)],
     settings: Annotated[config.Settings, Depends(config.get_settings)]
@@ -20,7 +20,10 @@ async def is_user_in_group(
     user = session.exec(statement).first()
 
     try:
-        group_uuid = UUID(group_id)
+        if isinstance(group_id, str):
+            group_uuid = UUID(group_id)
+        else:
+            group_uuid = group_id
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid group ID format")

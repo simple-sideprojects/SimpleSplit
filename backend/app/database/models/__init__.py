@@ -1,6 +1,6 @@
 from .base import BaseModel
 from .user import User, UserCreate, UserResponse
-from .group import Group, CreateGroup, GroupResponse, GroupWithUsersResponse, UpdateGroup
+from .group import Group, CreateGroup, GroupResponse, GroupExpandedResponse, UpdateGroup
 from .invite import GroupInvite, GroupInviteCreate, GroupInviteResponse, InvitationTokenResponse
 from .users_groups import UsersGroups
 from .transaction import (
@@ -16,6 +16,7 @@ from .transaction_participant import (
     TransactionParticipantRead,
     TransactionParticipantUpdate,
 )
+from .balance import Balance, UserBalance
 from .auth import (
     EmailPasswordLoginRequest,
     Token,
@@ -28,11 +29,12 @@ User.model_rebuild()
 Group.model_rebuild()
 GroupInvite.model_rebuild()
 GroupResponse.model_rebuild()
-GroupWithUsersResponse.model_rebuild()
+GroupExpandedResponse.model_rebuild()
 Transaction.model_rebuild()
 TransactionParticipant.model_rebuild()
 TransactionCreate.model_rebuild()
 TransactionRead.model_rebuild()
+Balance.model_rebuild()
 
 __all__ = [
     "BaseModel",
@@ -44,7 +46,7 @@ __all__ = [
     "Group",
     "CreateGroup",
     "GroupResponse",
-    "GroupWithUsersResponse",
+    "GroupExpandedResponse",
     "UpdateGroup",
     # Invite models
     "GroupInvite",
@@ -64,6 +66,9 @@ __all__ = [
     "TransactionParticipantCreate",
     "TransactionParticipantRead",
     "TransactionParticipantUpdate",
+    # Balance models
+    "Balance",
+    "UserBalance",
     # Auth models
     "EmailPasswordLoginRequest",
     "Token",

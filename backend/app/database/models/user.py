@@ -4,11 +4,11 @@ from pydantic import EmailStr
 from typing import TYPE_CHECKING, List
 
 from app.database.models.base import BaseModel
-from app.database.models.group import Group
 from app.database.models.users_groups import UsersGroups
 from datetime import datetime
 
 if TYPE_CHECKING:
+    from app.database.models.group import Group
     from app.database.models.transaction import Transaction
     from app.database.models.transaction_participant import TransactionParticipant
 
@@ -20,13 +20,13 @@ class User(BaseModel, table=True):
     email_verified: bool = Field(default=False)
     email_verification_token: int = Field(default=None, nullable=True)
     password: str = Field(min_length=8)
-    groups: list[Group] = Relationship(
+    groups: list["Group"] = Relationship(
         back_populates="users",
         link_model=UsersGroups
     )
-    paid_transactions: List["Transaction"] = Relationship(  # type: ignore
+    paid_transactions: List["Transaction"] = Relationship(
         back_populates="payer")
-    owed_transactions: List["TransactionParticipant"] = Relationship(  # type: ignore
+    owed_transactions: List["TransactionParticipant"] = Relationship(
         back_populates="debtor")
 
 
