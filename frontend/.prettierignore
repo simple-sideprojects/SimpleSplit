@@ -5,3 +5,7 @@ yarn.lock
 
 # Generated files
 src/lib/client/**/*
+
+# Native mobile directories
+ios/**/*
+android/**/*

@@ -1,20 +1,20 @@
 <script lang="ts">
+	import { building } from '$app/environment';
 	import { page } from '$app/state';
+	import type { GroupExpandedResponse } from '$lib/client';
 	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
+	import { superForm } from '$lib/shared/form/super-form.js';
+	import { groupsStore } from '$lib/shared/stores/groups.store.js';
+	import type { ActionResult } from '@sveltejs/kit';
 	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import IconCheck from '~icons/tabler/check';
 	import IconEdit from '~icons/tabler/edit';
 	import IconHistory from '~icons/tabler/history';
 	import IconSettings from '~icons/tabler/settings';
 	import IconUsers from '~icons/tabler/users';
 	import IconX from '~icons/tabler/x';
-	import { groupsStore, type Group } from '$lib/shared/stores/groups.store.js';
-	import { building } from '$app/environment';
-	import { superForm } from '$lib/shared/form/super-form.js';
-	import { toast } from 'svelte-sonner';
-	import { invalidate } from '$app/navigation';
 	import type { PageData } from './$types';
-	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
 	let { data, children } = $props<{ data: PageData }>();
@@ -23,7 +23,7 @@
 			? null
 			: (page.url.searchParams.get('groupId') as string)
 	);
-	let group: Group | null = $derived(groupId ? $groupsStore[groupId] : null);
+	let group: GroupExpandedResponse | null = $derived(groupId ? $groupsStore[groupId] : null);
 
 	//Update group store if it is available through server load()
 	$effect(() => {
@@ -71,10 +71,7 @@
 			return;
 		}
 
-		const serverResponse: ActionResult<{
-			group: Group;
-			updateGroupNameForm: any;
-		}> = await onLayoutLoad('/groups/dashboard/', true, {
+		const serverResponse: ActionResult = await onLayoutLoad('/groups/dashboard/', true, {
 			groupId
 		});
 
@@ -82,7 +79,7 @@
 			return;
 		}
 
-		let group: Group = serverResponse.data.group;
+		let group: GroupExpandedResponse = serverResponse.data.group;
 
 		//Update the group in the store
 		groupsStore.updateGroup(group);

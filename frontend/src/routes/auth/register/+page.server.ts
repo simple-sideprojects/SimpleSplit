@@ -1,17 +1,17 @@
+import { building } from '$app/environment';
+import type { UserResponse } from '$lib/client';
 import {
 	loginAuthLoginPost,
 	readUsersMeAccountGet,
 	registerAuthRegisterPost
 } from '$lib/client/sdk.gen';
 import { zUserCreate } from '$lib/client/zod.gen';
+import { isCompiledStatic } from '$lib/shared/app/controller';
 import { fail, type ActionFailure } from '@sveltejs/kit';
 import { setMessage, superValidate, type SuperValidated } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions, PageServerLoad } from './$types';
-import { isCompiledStatic } from '$lib/shared/app/controller';
-import { building } from '$app/environment';
 import type { z } from 'zod';
-import type { UserResponse } from '$lib/client';
+import type { Actions, PageServerLoad } from './$types';
 
 const registerSchema = zUserCreate;
 

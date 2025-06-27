@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { readGroupGroupsGroupIdGet } from '$lib/client';
 	import type {
+		GroupExpandedResponse,
 		TransactionCreate,
 		TransactionParticipantCreate,
 		TransactionType
@@ -16,7 +18,7 @@
 	let dialog: HTMLDialogElement;
 	let loading = $state(false);
 	let selectedGroup = $state<string | null>(null);
-	let groupWithUsers = $state<any | null>(null);
+	let groupWithUsers = $state<GroupExpandedResponse | null>(null);
 	let splitType = $state<TransactionType>('EVEN');
 	let selectedParticipants = $state<Set<string>>(new Set());
 	let participantAmounts = $state<Map<string, string>>(new Map());
@@ -29,111 +31,108 @@
 		enhance,
 		submitting,
 		reset
-	} = superForm(
-		{},
-		{
-			validators: zod(zTransactionCreate),
-			resetForm: true,
-			dataType: 'json',
-			onResult: ({ result }) => {
-				if (result.type === 'success') {
-					toast.success('Transaction added successfully');
-					closeDialog();
-				} else if (result.type === 'error') {
-					toast.error('Failed to add transaction');
-				}
-			},
-			onSubmit: ({ jsonData, cancel }) => {
-				// Data validation check
-				if (!selectedGroup || !$transactionForm.payer_id || selectedParticipants.size === 0) {
-					toast.error('Please fill in all required fields');
-					return cancel();
-				}
+	} = superForm({} as TransactionCreate, {
+		validators: zod(zTransactionCreate),
+		resetForm: true,
+		dataType: 'json',
+		onResult: ({ result }) => {
+			if (result.type === 'success') {
+				toast.success('Transaction added successfully');
+				closeDialog();
+			} else if (result.type === 'error') {
+				toast.error('Failed to add transaction');
+			}
+		},
+		onSubmit: ({ jsonData, cancel }) => {
+			// Data validation check
+			if (!selectedGroup || !$transactionForm.payer_id || selectedParticipants.size === 0) {
+				toast.error('Please fill in all required fields');
+				return cancel();
+			}
 
-				// Convert amount from euros to cents
-				const amountInCents = Math.round(parseFloat($transactionForm.amount || '0') * 100);
+			// Convert amount from euros to cents
+			const amountInCents = Math.round($transactionForm.amount * 100);
 
-				// Validate participants based on split type
-				participantsError = null;
-				const participants: TransactionParticipantCreate[] = [];
+			// Validate participants based on split type
+			participantsError = null;
+			const participants: TransactionParticipantCreate[] = [];
 
-				if (selectedParticipants.size > 0) {
-					if (splitType === 'EVEN') {
-						const amountPerPerson = Math.round(amountInCents / selectedParticipants.size);
-						for (const userId of selectedParticipants) {
-							participants.push({
-								debtor_id: userId,
-								amount_owed: amountPerPerson
-							});
-						}
-					} else if (splitType === 'AMOUNT') {
-						let totalAmount = 0;
-						// First pass to calculate total amount
-						for (const userId of selectedParticipants) {
-							const userAmount = parseFloat(participantAmounts.get(userId) || '0');
-							if (isNaN(userAmount)) {
-								participantsError = `Please enter a valid amount for all participants`;
-								return cancel();
-							}
-							totalAmount += Math.round(userAmount * 100);
-						}
-
-						if (totalAmount !== amountInCents) {
-							participantsError = `Total amounts (${(totalAmount / 100).toFixed(2)}€) don't match transaction amount (${(amountInCents / 100).toFixed(2)}€)`;
+			if (selectedParticipants.size > 0) {
+				if (splitType === 'EVEN') {
+					const amountPerPerson = Math.round(amountInCents / selectedParticipants.size);
+					for (const userId of selectedParticipants) {
+						participants.push({
+							debtor_id: userId,
+							amount_owed: amountPerPerson
+						});
+					}
+				} else if (splitType === 'AMOUNT') {
+					let totalAmount = 0;
+					// First pass to calculate total amount
+					for (const userId of selectedParticipants) {
+						const userAmount = parseFloat(participantAmounts.get(userId) || '0');
+						if (isNaN(userAmount)) {
+							participantsError = `Please enter a valid amount for all participants`;
 							return cancel();
 						}
+						totalAmount += Math.round(userAmount * 100);
+					}
 
-						// Second pass to create participants
-						for (const userId of selectedParticipants) {
-							const userAmount = parseFloat(participantAmounts.get(userId) || '0');
-							participants.push({
-								debtor_id: userId,
-								amount_owed: Math.round(userAmount * 100)
-							});
-						}
-					} else if (splitType === 'PERCENTAGE') {
-						let totalPercentage = 0;
-						// First pass to validate percentages
-						for (const userId of selectedParticipants) {
-							const percentage = parseFloat(participantAmounts.get(userId) || '0');
-							if (isNaN(percentage)) {
-								participantsError = `Please enter a valid percentage for all participants`;
-								return cancel();
-							}
-							totalPercentage += percentage;
-						}
+					if (totalAmount !== amountInCents) {
+						participantsError = `Total amounts (${(totalAmount / 100).toFixed(2)}€) don't match transaction amount (${(amountInCents / 100).toFixed(2)}€)`;
+						return cancel();
+					}
 
-						if (Math.abs(totalPercentage - 100) > 0.01) {
-							participantsError = `Total percentage (${totalPercentage.toFixed(2)}%) doesn't add up to 100%`;
+					// Second pass to create participants
+					for (const userId of selectedParticipants) {
+						const userAmount = parseFloat(participantAmounts.get(userId) || '0');
+						participants.push({
+							debtor_id: userId,
+							amount_owed: Math.round(userAmount * 100)
+						});
+					}
+				} else if (splitType === 'PERCENTAGE') {
+					let totalPercentage = 0;
+					// First pass to validate percentages
+					for (const userId of selectedParticipants) {
+						const percentage = parseFloat(participantAmounts.get(userId) || '0');
+						if (isNaN(percentage)) {
+							participantsError = `Please enter a valid percentage for all participants`;
 							return cancel();
 						}
+						totalPercentage += percentage;
+					}
 
-						// Second pass to create participants
-						for (const userId of selectedParticipants) {
-							const percentage = parseFloat(participantAmounts.get(userId) || '0');
-							const calculatedAmount = Math.round((percentage / 100) * amountInCents);
-							participants.push({
-								debtor_id: userId,
-								amount_owed: calculatedAmount
-							});
-						}
+					if (Math.abs(totalPercentage - 100) > 0.01) {
+						participantsError = `Total percentage (${totalPercentage.toFixed(2)}%) doesn't add up to 100%`;
+						return cancel();
+					}
+
+					// Second pass to create participants
+					for (const userId of selectedParticipants) {
+						const percentage = parseFloat(participantAmounts.get(userId) || '0');
+						const calculatedAmount = Math.round((percentage / 100) * amountInCents);
+						participants.push({
+							debtor_id: userId,
+							amount_owed: calculatedAmount
+						});
 					}
 				}
-
-				const formData: TransactionCreate = {
-					group_id: selectedGroup,
-					payer_id: $transactionForm.payer_id,
-					title: $transactionForm.title,
-					amount: amountInCents,
-					purchased_on: purchasedDate ? new Date(purchasedDate).toISOString() : undefined,
-					transaction_type: splitType,
-					participants: participants
-				};
-
-				jsonData(formData);
 			}
+
+			const formData: TransactionCreate = {
+				group_id: selectedGroup,
+				payer_id: $transactionForm.payer_id,
+				title: $transactionForm.title,
+				amount: amountInCents,
+				purchased_on: purchasedDate ? new Date(purchasedDate).toISOString() : undefined,
+				transaction_type: splitType,
+				participants: participants
+			};
+
+			jsonData(formData);
 		}
-	);
+	});
 
 	$effect(() => {
 		if (selectedGroup) {
@@ -164,12 +163,19 @@
 	async function loadGroupUsers() {
 		loading = true;
 		try {
-			const response = await fetch(`/api/groups/${selectedGroup}`);
-			if (!response.ok) {
+			if (!selectedGroup) {
+				return;
+			}
+
+			const response = await readGroupGroupsGroupIdGet({
+				path: {
+					group_id: selectedGroup
+				}
+			});
+			if (!response.data) {
 				throw new Error('Failed to fetch group');
 			}
-			const data = await response.json();
-			groupWithUsers = data;
+			groupWithUsers = response.data;
 			// Reset participants when group changes
 			selectedParticipants = new Set();
 
@@ -178,13 +184,13 @@
 				participantAmounts.delete(userId);
 			}
 
-			$transactionForm.payer_id = user.id;
-			for (const user of groupWithUsers.users) {
+			$transactionForm.payer_id = user?.id;
+			for (const user of groupWithUsers.users || []) {
 				selectedParticipants.add(user.id);
 			}
 
 			participantsError = null;
-		} catch (error) {
+		} catch {
 			toast.error('Failed to load group users');
 		} finally {
 			loading = false;
@@ -339,7 +345,7 @@
 				required
 			>
 				<option value="" disabled selected>Select a group</option>
-				{#each groups || [] as group}
+				{#each groups || [] as group (group.id)}
 					<option value={group.id}>{group.name}</option>
 				{/each}
 			</select>
@@ -359,7 +365,7 @@
 					required
 				>
 					<option value="" disabled selected>Select who paid</option>
-					{#each groupWithUsers.users || [] as user}
+					{#each groupWithUsers.users || [] as user (user.id)}
 						<option value={user.id}>{user.username}</option>
 					{/each}
 				</select>
@@ -369,8 +375,8 @@
 			</div>
 
 			<!-- Split Type Tabs -->
-			<div class="mt-4">
-				<label class="mb-2 block text-sm font-medium text-gray-700">Split Type</label>
+			<fieldset class="mt-4">
+				<legend class="mb-2 block text-sm font-medium text-gray-700">Split Type</legend>
 				<div class="flex overflow-hidden rounded-md border border-gray-200">
 					<button
 						type="button"
@@ -406,17 +412,17 @@
 						Percentage
 					</button>
 				</div>
-			</div>
+			</fieldset>
 
 			<!-- Participants -->
-			<div>
+			<fieldset>
 				<div class="flex items-center justify-between">
-					<label class="mb-2 block text-sm font-medium text-gray-700">Participants</label>
+					<legend class="mb-2 block text-sm font-medium text-gray-700">Participants</legend>
 					{#if splitType !== 'EVEN' && selectedParticipants.size > 0}
 						<span class="text-sm text-gray-500">
 							Total: {calculateTotal()}
 							{#if splitType === 'AMOUNT' && $transactionForm.amount}
-								/ {parseFloat($transactionForm.amount).toFixed(2)}€
+								/ {($transactionForm.amount / 100).toFixed(2)}€
 							{:else if splitType === 'PERCENTAGE'}
 								/ 100%
 							{/if}
@@ -425,7 +431,7 @@
 				</div>
 
 				<div class="max-h-48 space-y-2 overflow-y-auto rounded-md border border-gray-200 p-2">
-					{#each groupWithUsers.users || [] as user}
+					{#each groupWithUsers.users || [] as user (user.id)}
 						<div
 							class="flex items-center justify-between border-b border-gray-100 p-2 last:border-b-0"
 						>
@@ -467,7 +473,7 @@
 				{#if selectedParticipants.size === 0}
 					<p class="mt-1 text-sm text-amber-600">Please select at least one participant</p>
 				{/if}
-			</div>
+			</fieldset>
 		{:else if selectedGroup}
 			<div class="py-4 text-center">
 				<IconLoader class="mx-auto size-8 animate-spin text-blue-500" />

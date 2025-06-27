@@ -24,7 +24,7 @@ async function getPageData() {
 	};
 }
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async () => {
 	//If svelte is precompiling, return only the validator
 	if (building) {
 		return {
@@ -77,7 +77,7 @@ export const actions: Actions | undefined = isCompiledStatic()
 						return redirect(302, '/auth/login');
 					}
 					return error(500, {
-						message: groupResponse.error
+						message: groupResponse.error.detail?.[0]?.msg ?? 'Failed to update group name'
 					});
 				}
 

@@ -2,9 +2,11 @@
 	import { afterNavigate, invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
+	import type { GroupExpandedResponse, UserResponse } from '$lib/client';
 	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
-	import { authStore, type User } from '$lib/shared/stores/auth.store.js';
-	import { groupsStore, type Group } from '$lib/shared/stores/groups.store.js';
+	import { authStore } from '$lib/shared/stores/auth.store.js';
+	import { groupsStore } from '$lib/shared/stores/groups.store.js';
+	import type { ActionResult } from '@sveltejs/kit';
 	import { onMount } from 'svelte';
 	import IconDashboard from '~icons/tabler/dashboard';
 	import IconPlus from '~icons/tabler/plus';
@@ -12,12 +14,11 @@
 	import IconUser from '~icons/tabler/user';
 	import IconUsers from '~icons/tabler/users';
 	import type { PageData } from './$types';
-	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
 	let { data, children } = $props<{ data: PageData }>();
-	let groups: Group[] = $derived(Object.values($groupsStore));
-	let user: User | null = $derived($authStore.user);
+	let groups: GroupExpandedResponse[] = $derived(Object.values($groupsStore));
+	let user: UserResponse | null = $derived($authStore.user);
 
 	//Update groups store if it is available through server load()
 	$effect(() => {
@@ -52,10 +53,7 @@
 			return;
 		}
 
-		const serverResponse: ActionResult<{
-			user: User | null;
-			groups: Group[];
-		}> = await onLayoutLoad('/', true);
+		const serverResponse: ActionResult = await onLayoutLoad('/', true);
 
 		if (serverResponse.type !== 'success' || !serverResponse.data) {
 			return;

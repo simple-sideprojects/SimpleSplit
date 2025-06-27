@@ -1,15 +1,15 @@
-import { acceptInviteInvitesAcceptTokenGet } from '$lib/client';
-import { redirect } from '@sveltejs/kit';
-import type { PageServerLoad, Actions } from './$types';
 import { building } from '$app/environment';
+import { acceptInviteInvitesAcceptTokenPut } from '$lib/client';
 import { isCompiledStatic } from '$lib/shared/app/controller';
+import { redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
 
 async function getPageData(token: string | null) {
 	if (!token) {
 		return redirect(303, '/groups');
 	}
 
-	const { data: inviteData } = await acceptInviteInvitesAcceptTokenGet({
+	const { data: inviteData } = await acceptInviteInvitesAcceptTokenPut({
 		path: { token }
 	});
 

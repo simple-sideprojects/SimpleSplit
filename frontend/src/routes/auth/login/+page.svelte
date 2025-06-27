@@ -1,15 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { clientSideLogin } from '$lib/shared/stores/auth.store';
-	import type { PageData } from './$types';
-	import { superForm } from '$lib/shared/form/super-form';
-	import IconLoader from '~icons/tabler/loader';
-	import IconChevronDown from '~icons/tabler/chevron-down';
-	import IconChevronUp from '~icons/tabler/chevron-up';
-	import IconPlus from '~icons/tabler/plus';
-	import { authStore } from '$lib/shared/stores/auth.store';
 	import { PUBLIC_FRONTEND_URL, PUBLIC_FRONTEND_URL_CHANGABLE } from '$env/static/public';
 	import { isCompiledStatic } from '$lib/shared/app/controller';
+	import { superForm } from '$lib/shared/form/super-form';
+	import { authStore, clientSideLogin } from '$lib/shared/stores/auth.store';
+	import IconChevronDown from '~icons/tabler/chevron-down';
+	import IconChevronUp from '~icons/tabler/chevron-up';
+	import IconLoader from '~icons/tabler/loader';
+	import IconPlus from '~icons/tabler/plus';
+	import type { PageData } from './$types';
 
 	//Get data from server
 	const { data } = $props<{ data: PageData }>();
@@ -23,13 +22,18 @@
 			}
 
 			if (result.data && result.data.token) {
-				// Login-Funktion im Store aufrufen
 				clientSideLogin(result.data.token, result.data.user);
 
-				// Zur Hauptseite weiterleiten
 				await goto('/');
 			} else {
 				cancel();
+			}
+		},
+		onError({ result }) {
+			if (result.type === 'error') {
+				message.set(result.error.message);
+			} else if (result.type === 'exception') {
+				message.set('An unexpected error occurred while logging in');
 			}
 		}
 	});
@@ -114,9 +118,14 @@
 					<div class="flex items-center justify-between">
 						<label for="password" class="block text-sm/6 font-medium text-gray-900">Password</label>
 						<div class="text-sm">
-							<a href="#" class="font-semibold text-blue-600 hover:text-blue-800" tabindex="-1">
+							<button
+								type="button"
+								class="font-semibold text-blue-600 hover:text-blue-800"
+								tabindex="-1"
+								disabled
+							>
 								Forgot password?
-							</a>
+							</button>
 						</div>
 					</div>
 					<div class="mt-2">
@@ -164,10 +173,10 @@
 					<p class="mt-4 mb-0 text-center text-sm/6 text-gray-500">
 						Zugriff auf:
 						<span class="relative">
-							<a
+							<button
 								id="server-link"
+								type="button"
 								class="inline-flex cursor-pointer items-center font-semibold text-blue-600 hover:text-blue-500"
-								href="#"
 								onclick={togglePopover}
 							>
 								{SERVER_HOST.hostname}{#if SERVER_HOST.port !== ''}:{SERVER_HOST.port}{/if}
@@ -176,7 +185,7 @@
 								{:else}
 									<IconChevronDown class="ml-1 inline-flex size-4 text-gray-500" />
 								{/if}
-							</a>
+							</button>
 						</span>
 					</p>
 				{/if}
@@ -240,6 +249,7 @@
 											server_input = '';
 											showPopover = false;
 										} catch (error) {
+											console.error(error);
 											if (server_input == '') {
 												server_input_error_message = 'Server URL is required';
 											} else if (

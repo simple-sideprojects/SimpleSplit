@@ -1,7 +1,9 @@
 <script lang="ts">
+	import type { UserResponse } from '$lib/client';
 	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
 	import { superForm } from '$lib/shared/form/super-form.js';
-	import { authStore, clientSideLogout, type User } from '$lib/shared/stores/auth.store.js';
+	import { authStore, clientSideLogout } from '$lib/shared/stores/auth.store.js';
+	import type { ActionResult } from '@sveltejs/kit';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import IconDeviceFloppy from '~icons/tabler/device-floppy';
@@ -10,11 +12,10 @@
 	import IconLogout from '~icons/tabler/logout';
 	import IconTrash from '~icons/tabler/trash';
 	import type { PageData } from './$types.js';
-	import type { ActionResult } from '@sveltejs/kit';
 
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
-	let userData: User | null = $derived($authStore.user);
+	let userData: UserResponse | null = $derived($authStore.user);
 
 	//Update auth store if it is available through server load()
 	$effect(() => {
@@ -95,9 +96,7 @@
 		if (!isCompiledStatic()) {
 			return;
 		}
-		const serverResponse: ActionResult<{
-			userData: User;
-		}> = await onPageLoad(true, {
+		const serverResponse: ActionResult = await onPageLoad(true, {
 			userData: userData
 		});
 		if (serverResponse.type !== 'success' || !serverResponse.data) {

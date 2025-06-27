@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { browser, building } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import type { GroupExpandedResponse } from '$lib/client';
+	import { superForm } from '$lib/shared/form/super-form.js';
+	import { groupsStore } from '$lib/shared/stores/groups.store.js';
 	import { toast } from 'svelte-sonner';
-	import type { Group } from '$lib/client';
 	import IconCopy from '~icons/tabler/copy';
 	import IconLink from '~icons/tabler/link';
 	import IconTrash from '~icons/tabler/trash';
 	import IconUserPlus from '~icons/tabler/user-plus';
 	import IconX from '~icons/tabler/x';
-	import { page } from '$app/state';
-	import { superForm } from '$lib/shared/form/super-form.js';
-	import { groupsStore } from '$lib/shared/stores/groups.store.js';
 	import type { PageData } from './$types';
 
 	//Handle provided data
@@ -19,7 +19,7 @@
 		building || !page.url.searchParams.has('groupId')
 			? null
 			: (page.url.searchParams.get('groupId') as string);
-	let group: Group | null = $derived(groupId ? $groupsStore[groupId] : null);
+	let group: GroupExpandedResponse | null = $derived(groupId ? $groupsStore[groupId] : null);
 	let memberToRemove = $state<string | null>(null);
 	let showDeleteConfirm = $state(false);
 	let deleteConfirmation = $state('');
@@ -75,11 +75,16 @@
 				formData.set('groupId', groupId as string);
 				isCancelingInvite = true;
 
-				return async ({ update, result }) => {
+				return async ({ update, result }: { update: () => Promise<void>; result: unknown }) => {
 					await update();
 					isCancelingInvite = false;
 
-					if (result.type === 'success') {
+					if (
+						result &&
+						typeof result === 'object' &&
+						'type' in result &&
+						result.type === 'success'
+					) {
 						toast.success('Invitation canceled');
 					}
 				};
@@ -93,8 +98,18 @@
 		{
 			onSubmit: ({ formData }) => {
 				formData.set('groupId', groupId as string);
-				return async ({ result, update }) => {
-					if (result.type === 'success' && browser && result.data?.invite) {
+				return async ({ result, update }: { result: unknown; update: () => Promise<void> }) => {
+					if (
+						result &&
+						typeof result === 'object' &&
+						'type' in result &&
+						result.type === 'success' &&
+						browser &&
+						'data' in result &&
+						result.data &&
+						typeof result.data === 'object' &&
+						'invite' in result.data
+					) {
 						const invite = result.data.invite as { token: string };
 						const link = `${document.location.origin}/groups/invite?token=${invite.token}`;
 						copyToClipboard(link);
@@ -113,12 +128,17 @@
 			onSubmit: ({ formData }) => {
 				formData.set('groupId', groupId as string);
 				isRemovingMember = true;
-				return async ({ update, result }) => {
+				return async ({ update, result }: { update: () => Promise<void>; result: unknown }) => {
 					await update();
 					isRemovingMember = false;
 					memberToRemove = null;
 
-					if (result.type === 'success') {
+					if (
+						result &&
+						typeof result === 'object' &&
+						'type' in result &&
+						result.type === 'success'
+					) {
 						toast.success('Member removed successfully');
 					}
 				};
@@ -186,7 +206,7 @@
 					</form>
 				</div>
 
-				{#if $inviteMemberErrors.email}
+				{#if $inviteMemberErrors.email && Array.isArray($inviteMemberErrors.email) && $inviteMemberErrors.email.length > 0}
 					<div class="mt-2 rounded-md bg-red-50 p-3">
 						<p class="text-sm text-red-700">
 							{$inviteMemberErrors.email[$inviteMemberErrors.email.length - 1]}

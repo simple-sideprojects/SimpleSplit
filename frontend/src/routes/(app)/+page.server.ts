@@ -1,33 +1,28 @@
-import { env } from '$env/dynamic/public';
+import { building } from '$app/environment';
 import {
 	createTransactionTransactionsPost,
+	getUserBalancesBalancesGet,
 	readTransactionsUserIsParticipantInTransactionsGet,
-	type Group,
-	type TransactionRead,
-	type UserResponse
+	type Balance,
+	type TransactionRead
 } from '$lib/client';
 import { zTransactionCreate } from '$lib/client/zod.gen';
-import { fail } from '@sveltejs/kit';
-import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions, PageServerLoad } from './$types';
 import { isCompiledStatic } from '$lib/shared/app/controller';
-import { building } from '$app/environment';
-import { getRootLayoutData } from '$lib/server/layout-data';
-import { error, redirect } from '@sveltejs/kit';
-import type { ActionFailure, Cookies } from '@sveltejs/kit';
-import { setMessage, superValidate, type SuperValidated } from 'sveltekit-superforms/server';
-import type { Balance } from '$lib/interfaces';
-import type { z } from 'zod';
+import type { Cookies } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
+import { zod } from 'sveltekit-superforms/adapters';
+import { setMessage, superValidate } from 'sveltekit-superforms/server';
+import type { Actions, PageServerLoad } from './$types';
 
 async function getPageData(
 	fetch: Fetch,
 	cookies: Cookies
 ): Promise<{
-	balances: Balance[];
+	balance: Balance;
 	transactions: TransactionRead[];
 }> {
 	const [balanceRes, recentRes] = await Promise.all([
-		fetch(`${env.PUBLIC_BACKEND_URL}/balance`),
+		getUserBalancesBalancesGet(),
 		readTransactionsUserIsParticipantInTransactionsGet({
 			query: {
 				limit: 5
@@ -35,8 +30,19 @@ async function getPageData(
 		})
 	]);
 
-	if (!balanceRes.ok || recentRes.error) {
-		if (balanceRes.status === 401) {
+	if (balanceRes.error || recentRes.error) {
+		// Check for authentication errors
+		const isAuthError =
+			(balanceRes.error &&
+				typeof balanceRes.error === 'object' &&
+				'status' in balanceRes.error &&
+				balanceRes.error.status === 401) ||
+			(recentRes.error &&
+				typeof recentRes.error === 'object' &&
+				'status' in recentRes.error &&
+				recentRes.error.status === 401);
+
+		if (isAuthError) {
 			cookies.delete('auth_token', { path: '/' });
 			return redirect(302, '/auth/login');
 		}
@@ -45,16 +51,16 @@ async function getPageData(
 		});
 	}
 
-	const [balances, transactions] = await Promise.all([balanceRes.json(), recentRes.data]);
+	const [balance, transactions] = [balanceRes.data, recentRes.data];
 
-	if (transactions === undefined) {
+	if (transactions === undefined || balance === undefined) {
 		return error(500, {
-			message: 'Failed to fetch transactions'
+			message: 'Failed to fetch data'
 		});
 	}
 
 	return {
-		balances,
+		balance,
 		transactions
 	};
 }
@@ -64,10 +70,10 @@ export const load: PageServerLoad = async ({
 	cookies
 }): Promise<
 	| {
-			balances: Balance[];
+			balance: Balance;
 			transactions: TransactionRead[];
 	  }
-	| {}
+	| Record<string, never>
 > => {
 	//If svelte is precompiling, return empty object
 	if (building) {
@@ -80,53 +86,22 @@ export const load: PageServerLoad = async ({
 export const actions: Actions | undefined = isCompiledStatic()
 	? undefined
 	: {
-			data_layout: async ({
-				cookies
-			}): Promise<{
-				user: UserResponse;
-				groups: Group[];
-			}> => {
-				const layout_data = await getRootLayoutData(cookies);
-				return layout_data;
-			},
-			data: async ({
-				fetch,
-				cookies
-			}): Promise<{
-				balances: Balance[];
-				transactions: TransactionRead[];
-			}> => {
-				const page_data = await getPageData(fetch, cookies);
-				return page_data;
-			},
-			createTransaction: async ({
-				request
-			}): Promise<
-				| {
-						form: SuperValidated<z.infer<typeof zTransactionCreate>>;
-				  }
-				| ActionFailure<{
-						form: SuperValidated<z.infer<typeof zTransactionCreate>>;
-				  }>
-			> => {
+			create: async ({ request }) => {
 				const form = await superValidate(request, zod(zTransactionCreate));
 
 				if (!form.valid) {
 					return fail(400, { form });
 				}
 
-				const response = await createTransactionTransactionsPost({
-					body: form.data,
-					query: {
-						group_id: form.data.group_id
-					}
+				// Pass the form data to the API
+				const result = await createTransactionTransactionsPost({
+					body: form.data
 				});
 
-				if (!response.data) {
-					setMessage(form, 'An unexpected error occurred during transaction creation.');
-					return fail(500, { form });
+				if (result.error) {
+					return setMessage(form, 'Failed to create transaction', { status: 400 });
 				}
 
-				return { form };
+				return setMessage(form, 'Transaction created successfully');
 			}
 		};

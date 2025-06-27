@@ -1,14 +1,13 @@
 <script lang="ts">
-	import { env } from '$env/dynamic/public';
-	import { EditTransactionDialog, Pagination, TransactionComponent } from '$lib';
-	import type { ITransaction } from '$lib/interfaces';
-	import { isCompiledStatic, onPageLoad, triggerAction } from '$lib/shared/app/controller.js';
+	import { building } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { onMount } from 'svelte';
-	import { building } from '$app/environment';
-	import type { PageData } from './$types';
+	import { EditTransactionDialog, Pagination, TransactionComponent } from '$lib';
+	import type { TransactionRead } from '$lib/client';
+	import { isCompiledStatic, onPageLoad, triggerAction } from '$lib/shared/app/controller.js';
 	import type { ActionResult } from '@sveltejs/kit';
+	import { onMount } from 'svelte';
+	import type { PageData } from './$types';
 
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
@@ -16,28 +15,21 @@
 		building || !page.url.searchParams.has('groupId')
 			? null
 			: (page.url.searchParams.get('groupId') as string);
-	let transactions = $state<ITransaction[]>(data.transactions ?? []);
+	let transactions = $state<TransactionRead[]>(data.transactions ?? []);
 	let totalTransactions = $state(data.total ?? 0);
 	let currentPage = $state(data.page ?? 1);
 	let itemsPerPage = $state(data.limit ?? 25);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
-	let selectedTransaction = $state<ITransaction | null>(null);
+	let selectedTransaction = $state<TransactionRead | null>(null);
 	let openEditDialog = $state<() => void>(() => {});
 
 	//Fetch transactions
-	interface ServerData extends Record<string, unknown> {
-		transactions: ITransaction[];
-		total: number;
-		page: number;
-		limit: number;
-		totalPages: number;
-	}
 	async function fetchTransactions(page: number, limit: number) {
 		isLoading = true;
 		error = null;
 
-		const serverData: ActionResult<ServerData> = await triggerAction('transactions', {
+		const serverData: ActionResult = await triggerAction('transactions', {
 			page: page,
 			limit: limit
 		});
@@ -55,17 +47,17 @@
 		isLoading = false;
 	}
 
-	async function handleEdit(transaction: ITransaction) {
+	async function handleEdit(transaction: TransactionRead) {
 		selectedTransaction = transaction;
 		openEditDialog();
 	}
 
-	async function handleDelete(transaction: ITransaction) {
+	async function handleDelete(transaction: TransactionRead) {
 		if (!confirm('Are you sure you want to delete this transaction?')) {
 			return;
 		}
 
-		const serverData: ActionResult<any, any> = await triggerAction('delete', {
+		const serverData: ActionResult = await triggerAction('delete', {
 			id: transaction.id
 		});
 
@@ -100,7 +92,7 @@
 			goto('/groups');
 		}
 
-		const serverResponse: ActionResult<ServerData> = await onPageLoad(true, {
+		const serverResponse: ActionResult = await onPageLoad(true, {
 			groupId: groupId
 		});
 

@@ -1,11 +1,11 @@
-import { authStore, clientSideLogout } from '$lib/shared/stores/auth.store';
-import { type ActionResult, type SubmitFunction } from '@sveltejs/kit';
 import { building } from '$app/environment';
-import { goto } from '$app/navigation';
-import { PUBLIC_ADAPTER } from '$env/static/public';
-import { page } from '$app/state';
 import { deserialize } from '$app/forms';
+import { goto } from '$app/navigation';
+import { page } from '$app/state';
+import { PUBLIC_ADAPTER } from '$env/static/public';
+import { authStore, clientSideLogout } from '$lib/shared/stores/auth.store';
 import { Network } from '@capacitor/network';
+import { type ActionResult, type SubmitFunction } from '@sveltejs/kit';
 
 export function isCompiledStatic() {
 	return PUBLIC_ADAPTER === 'static';
@@ -23,35 +23,6 @@ export function createCustomRequestForFormAction(input: Parameters<SubmitFunctio
 		triggerActionRaw(action, data, input.action.pathname).then((response) => {
 			resolve(response);
 		});
-
-		/*const xhr = new XMLHttpRequest();
-
-        xhr.onload = () => {
-            if (xhr.readyState === xhr.DONE) {
-                resolve(xhr);
-            }
-        };
-        
-        let pathname = input.action.pathname;
-        //Add a trailing slash to the pathname if it doesn't have one
-        if (!pathname.endsWith('/')){
-            pathname += '/';
-        }
-
-        const url = new URL(authStore.getAuthData().frontend_url + pathname + input.action.search);
-
-        xhr.open('POST', url, true);
-
-        xhr.withCredentials = true;
-        xhr.setRequestHeader('x-sveltekit-action', 'true');
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.setRequestHeader('Accept', 'application/json');
-        
-        const data: Record<string, string> = Object.fromEntries(
-            input.formData.entries()
-        ) as Record<string, string>;
-
-        xhr.send(new URLSearchParams(data).toString());*/
 	});
 }
 
@@ -75,7 +46,7 @@ function beforeDataLoad(protectedRoute = true) {
 
 function triggerActionRaw(
 	action: string,
-	data?: Record<string, any>,
+	data?: Record<string, unknown>,
 	pathname?: string
 ): Promise<Response> {
 	return new Promise<Response>((resolve) => {
@@ -92,7 +63,7 @@ function triggerActionRaw(
 		//Add passed data to the form data
 		if (data) {
 			Object.entries(data).forEach(([key, value]) => {
-				formData.append(key, value);
+				formData.append(key, String(value));
 			});
 		}
 
@@ -154,9 +125,9 @@ function triggerActionRaw(
 
 export async function triggerAction(
 	action: string,
-	data?: Record<string, any>,
+	data?: Record<string, unknown>,
 	pathname?: string
-): Promise<ActionResult<any, any>> {
+): Promise<ActionResult> {
 	const response = await triggerActionRaw(action, data, pathname);
 
 	if (!response.ok) {
@@ -185,8 +156,8 @@ export async function triggerAction(
 export async function onLayoutLoad(
 	pathname: string,
 	protectedRoute = true,
-	data?: Record<string, any>
-): Promise<ActionResult<any, any>> {
+	data?: Record<string, unknown>
+): Promise<ActionResult> {
 	beforeDataLoad(protectedRoute);
 
 	//Request data normally in the +page.server.ts load function
@@ -195,8 +166,8 @@ export async function onLayoutLoad(
 
 export async function onPageLoad(
 	protectedRoute = true,
-	data?: Record<string, any>
-): Promise<ActionResult<any, any>> {
+	data?: Record<string, unknown>
+): Promise<ActionResult> {
 	beforeDataLoad(protectedRoute);
 
 	//Request data normally in the +page.server.ts load function

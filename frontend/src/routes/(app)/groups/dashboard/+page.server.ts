@@ -1,25 +1,25 @@
-import { env } from '$env/dynamic/public';
-import type { Actions, PageServerLoad } from './$types';
-import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
-import { getGroupLayoutData } from '$lib/server/layout-data';
-import { error, redirect, type Cookies } from '@sveltejs/kit';
+import { env } from '$env/dynamic/public';
 import {
 	readGroupTransactionsGroupsGroupIdTransactionsGet,
+	type Balance,
 	type Group,
 	type TransactionRead
 } from '$lib/client';
-import type { Balance } from '$lib/interfaces/balance';
-import type { SuperValidated } from 'sveltekit-superforms';
 import type { zUpdateGroup } from '$lib/client/zod.gen';
+import { getGroupLayoutData } from '$lib/server/layout-data';
+import { isCompiledStatic } from '$lib/shared/app/controller';
+import { error, redirect, type Cookies } from '@sveltejs/kit';
+import type { SuperValidated } from 'sveltekit-superforms';
 import type { z } from 'zod';
+import type { Actions, PageServerLoad } from './$types';
 
 async function getPageData(
 	fetch: Fetch,
 	groupId: string | null,
 	cookies: Cookies
 ): Promise<{
-	balances: Balance[];
+	balance: Balance;
 	transactions: TransactionRead[];
 }> {
 	if (!groupId) {
@@ -46,10 +46,10 @@ async function getPageData(
 		});
 	}
 
-	const [balances, transactions] = await Promise.all([balanceRes.json(), recentRes.data]);
+	const [balance, transactions] = await Promise.all([balanceRes.json(), recentRes.data]);
 
 	return {
-		balances,
+		balance,
 		transactions
 	};
 }
@@ -60,10 +60,10 @@ export const load: PageServerLoad = async ({
 	cookies
 }): Promise<
 	| {
-			balances: Balance[];
+			balance: Balance;
 			transactions: TransactionRead[];
 	  }
-	| {}
+	| Record<string, never>
 > => {
 	//If svelte is precompiling, return nothing
 	if (building) {
@@ -94,7 +94,7 @@ export const actions: Actions | undefined = isCompiledStatic()
 				request,
 				cookies
 			}): Promise<{
-				balances: Balance[];
+				balance: Balance;
 				transactions: TransactionRead[];
 			}> => {
 				const data = await request.formData();

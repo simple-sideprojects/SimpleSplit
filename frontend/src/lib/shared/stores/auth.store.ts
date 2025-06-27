@@ -1,19 +1,15 @@
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { PUBLIC_FRONTEND_URL } from '$env/static/public';
+import type { UserResponse } from '$lib/client';
 import { createPersistentStore } from '../app/persistentStore';
 import { groupsStore } from './groups.store';
 import { transactionsStore } from './transactions.store';
 
-export type User = {
-	username: string;
-	email: string;
-};
-
 type AuthStoreType = {
 	authenticated: boolean;
 	token: string | null;
-	user: User | null;
+	user: UserResponse | null;
 	frontend_url: string;
 };
 
@@ -33,7 +29,7 @@ function createAuthStore() {
 		update: store.update,
 		getAuthData: () => store.get(),
 		getUser: () => store.get().user,
-		setUser: (user: User | null) =>
+		setUser: (user: UserResponse | null) =>
 			store.update((state) => ({
 				...state,
 				user: user
@@ -44,7 +40,7 @@ function createAuthStore() {
 export const authStore = createAuthStore();
 
 // Authentifizierungsfunktionen
-export function clientSideLogin(token: string, user: User): void {
+export function clientSideLogin(token: string, user: UserResponse): void {
 	if (!browser) return;
 	authStore.update((state) => ({
 		authenticated: true,

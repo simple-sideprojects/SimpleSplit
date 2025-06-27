@@ -23,26 +23,147 @@ const groups = [
 	}
 ];
 
+// Create group balance mocks using the new Balance structure
 const groupsBalanceMap = new Map();
-groupsBalanceMap.set('1', [
-	{ username: 'Anna Schmidt', balance: 5000 }, // 50.00
-	{ username: 'Thomas Weber', balance: -1500 }, // -15.00
-	{ username: 'Lisa Meyer', balance: 2800 }, // 28.00
-	{ username: 'Michael Bauer', balance: -1200 } // -12.00
-]);
-groupsBalanceMap.set('2', [
-	{ username: 'Max Mustermann', balance: 10000 }, // 100.00
-	{ username: 'Michael Bauer', balance: -5000 }, // -50.00
-	{ username: 'Lisa Meyer', balance: 2800 }, // 28.00
-	{ username: 'Thomas Weber', balance: -1200 }, // -12.00
-	{ username: 'Anna Schmidt', balance: 5000 } // 50.00
-]);
-groupsBalanceMap.set('3', [
-	{ username: 'Max Mustermann', balance: 7000 }, // 70.00
-	{ username: 'Anna Schmidt', balance: -2500 }, // -50.00
-	{ username: 'Lisa Meyer', balance: 1400 }, // 28.00
-	{ username: 'Thomas Weber', balance: -1000 } // -10.00
-]);
+groupsBalanceMap.set('1', {
+	user_id: '112-123-311',
+	group_id: '1',
+	total_balance: 15100, // 151.00
+	total_owed_to_others: 3600, // 36.00
+	total_owed_by_others: 18700, // 187.00
+	user_balances: [
+		{
+			user: {
+				id: '112-123-312',
+				email: 'anna@example.com',
+				username: 'Anna Schmidt',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: 5000 // 50.00
+		},
+		{
+			user: {
+				id: '112-123-313',
+				email: 'thomas@example.com',
+				username: 'Thomas Weber',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: -1500 // -15.00
+		},
+		{
+			user: {
+				id: '112-123-314',
+				email: 'lisa@example.com',
+				username: 'Lisa Meyer',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: 2800 // 28.00
+		},
+		{
+			user: {
+				id: '112-123-315',
+				email: 'michael@example.com',
+				username: 'Michael Bauer',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: -1200 // -12.00
+		}
+	]
+});
+
+groupsBalanceMap.set('2', {
+	user_id: '112-123-311',
+	group_id: '2',
+	total_balance: 4800, // 48.00
+	total_owed_to_others: 1000, // 10.00
+	total_owed_by_others: 5800, // 58.00
+	user_balances: [
+		{
+			user: {
+				id: '112-123-311',
+				email: 'max@example.com',
+				username: 'Max Mustermann',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: 10000 // 100.00
+		},
+		{
+			user: {
+				id: '112-123-315',
+				email: 'michael@example.com',
+				username: 'Michael Bauer',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: -5000 // -50.00
+		}
+	]
+});
+
+groupsBalanceMap.set('3', {
+	user_id: '112-123-311',
+	group_id: '3',
+	total_balance: 4900, // 49.00
+	total_owed_to_others: 1500, // 15.00
+	total_owed_by_others: 6400, // 64.00
+	user_balances: [
+		{
+			user: {
+				id: '112-123-311',
+				email: 'max@example.com',
+				username: 'Max Mustermann',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: 7000 // 70.00
+		},
+		{
+			user: {
+				id: '112-123-312',
+				email: 'anna@example.com',
+				username: 'Anna Schmidt',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: -2500 // -25.00
+		},
+		{
+			user: {
+				id: '112-123-314',
+				email: 'lisa@example.com',
+				username: 'Lisa Meyer',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: 1400 // 14.00
+		},
+		{
+			user: {
+				id: '112-123-313',
+				email: 'thomas@example.com',
+				username: 'Thomas Weber',
+				email_verified: true,
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			balance: -1000 // -10.00
+		}
+	]
+});
 
 export const groupsMock = http.get(`${env.PUBLIC_BACKEND_URL}/groups`, async ({ request }) => {
 	return bypassOrMock(request, HttpResponse.json(groups));
@@ -95,8 +216,9 @@ export const deleteGroupMock = http.delete(
 
 export const balanceByGroupMock = http.get(
 	`${env.PUBLIC_BACKEND_URL}/groups/:groupId/balance`,
-	async ({ request }) => {
-		return HttpResponse.json(groupsBalanceMap.get('1'));
+	async ({ params }) => {
+		const groupId = params.groupId as string;
+		return HttpResponse.json(groupsBalanceMap.get(groupId) || groupsBalanceMap.get('1'));
 	}
 );
 

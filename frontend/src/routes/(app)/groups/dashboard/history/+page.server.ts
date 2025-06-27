@@ -1,22 +1,40 @@
-import { env } from '$env/dynamic/public';
-import { fail, redirect, type Action } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
-import { isCompiledStatic } from '$lib/shared/app/controller';
 import { building } from '$app/environment';
+import { env } from '$env/dynamic/public';
+import {
+	deleteTransactionTransactionsTransactionIdDelete,
+	readGroupTransactionsGroupsGroupIdTransactionsGet,
+	updateTransactionTransactionsTransactionIdPut
+} from '$lib/client';
+import { isCompiledStatic } from '$lib/shared/app/controller';
+import { fail, redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from '../$types';
+import type { Actions } from './$types';
 
 async function getPageData(fetch: Fetch, page: number, limit: number, groupId: string) {
-	const [transactionsRes, totalRes] = await Promise.all([
-		fetch(
-			`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions?page=${page}&limit=${limit}`
-		),
-		fetch(`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/total`)
-	]);
+	// Use the generated OpenAPI function for transactions
+	const transactionsResponse = await readGroupTransactionsGroupsGroupIdTransactionsGet({
+		path: {
+			group_id: groupId
+		},
+		query: {
+			skip: (page - 1) * limit,
+			limit: limit
+		}
+	});
 
-	const [transactions, total] = await Promise.all([transactionsRes.json(), totalRes.json()]);
+	// Still need to fetch total count from local API since it's not in the generated client
+	const totalRes = await fetch(
+		`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/total`
+	);
+	const total = await totalRes.json();
+
+	if (transactionsResponse.error) {
+		throw new Error('Failed to fetch transactions');
+	}
 
 	return {
 		groupId: groupId,
-		transactions,
+		transactions: transactionsResponse.data || [],
 		total,
 		page,
 		limit,
@@ -64,7 +82,7 @@ export const actions: Actions | undefined = isCompiledStatic()
 
 				return getPageData(fetch, page, limit, groupId as string);
 			},
-			edit: async ({ request, fetch }) => {
+			edit: async ({ request }) => {
 				const formData = await request.formData();
 				const groupId = formData.get('groupId');
 
@@ -81,21 +99,17 @@ export const actions: Actions | undefined = isCompiledStatic()
 				}
 
 				try {
-					const response = await fetch(
-						`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/${id}`,
-						{
-							method: 'PUT',
-							headers: {
-								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({
-								description,
-								amount: Math.round(parseFloat(amount as string) * 100)
-							})
+					const response = await updateTransactionTransactionsTransactionIdPut({
+						path: {
+							transaction_id: id as string
+						},
+						body: {
+							title: description as string,
+							amount: Math.round(parseFloat(amount as string) * 100)
 						}
-					);
+					});
 
-					if (!response.ok) {
+					if (response.error) {
 						throw new Error('Failed to update transaction');
 					}
 
@@ -106,7 +120,7 @@ export const actions: Actions | undefined = isCompiledStatic()
 					});
 				}
 			},
-			delete: async ({ request, fetch }) => {
+			delete: async ({ request }) => {
 				const formData = await request.formData();
 				const groupId = formData.get('groupId');
 
@@ -121,14 +135,13 @@ export const actions: Actions | undefined = isCompiledStatic()
 				}
 
 				try {
-					const response = await fetch(
-						`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/${id}`,
-						{
-							method: 'DELETE'
+					const response = await deleteTransactionTransactionsTransactionIdDelete({
+						path: {
+							transaction_id: id as string
 						}
-					);
+					});
 
-					if (!response.ok) {
+					if (response.error) {
 						throw new Error('Failed to delete transaction');
 					}
 

@@ -1,12 +1,9 @@
 <script lang="ts">
-	import IconPlus from '~icons/tabler/plus';
-	import type { Group } from '$lib/client';
+	import type { GroupExpandedResponse } from '$lib/client';
 	import { groupsStore } from '$lib/shared/stores/groups.store.js';
-	import type { PageData } from './$types';
+	import IconPlus from '~icons/tabler/plus';
 
-	//Handle provided data
-	let { data } = $props<{ data: PageData }>();
-	let groups: Group[] = $derived(Object.values($groupsStore));
+	let groups: GroupExpandedResponse[] = $derived(Object.values($groupsStore));
 </script>
 
 <div class="mx-auto w-full max-w-4xl">

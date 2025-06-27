@@ -1,12 +1,12 @@
+import { building } from '$app/environment';
+import type { UserResponse } from '$lib/client';
 import { loginAuthLoginPost, readUsersMeAccountGet } from '$lib/client/sdk.gen';
+import { isCompiledStatic } from '$lib/shared/app/controller';
+import { zEmailPasswordLogin } from '$lib/shared/form/validators';
 import { fail, type ActionFailure, type Actions } from '@sveltejs/kit';
 import { zod } from 'sveltekit-superforms/adapters';
 import { setMessage, superValidate, type SuperValidated } from 'sveltekit-superforms/server';
-import { isCompiledStatic } from '$lib/shared/app/controller';
-import { zEmailPasswordLogin } from '$lib/shared/form/validators';
-import type { UserResponse } from '$lib/client';
 import type { z } from 'zod';
-import { building } from '$app/environment';
 import type { PageServerLoad } from './$types';
 
 async function getPageData() {
@@ -81,6 +81,7 @@ export const actions: Actions | undefined = isCompiledStatic()
 						form
 					};
 				} catch (error) {
+					console.error(error);
 					setMessage(form, 'Invalid email or password');
 					return fail(401, { form });
 				}

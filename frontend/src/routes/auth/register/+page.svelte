@@ -1,18 +1,16 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { clientSideLogin } from '$lib/shared/stores/auth.store.js';
 	import { superForm } from '$lib/shared/form/super-form';
+	import { clientSideLogin } from '$lib/shared/stores/auth.store.js';
 	import IconLoader from '~icons/tabler/loader';
-	import { zUserCreate } from '$lib/client/zod.gen';
-	import { zod } from 'sveltekit-superforms/adapters';
 	import type { PageData } from './$types';
 
 	//Get data from server
 	const { data } = $props<{ data: PageData }>();
 
 	//Register Form
-	const { form, errors, enhance, submit, message, submitting } = superForm(data.registerForm, {
+	const { form, errors, enhance, message, submitting } = superForm(data.registerForm, {
 		resetForm: false,
 		onResult: async ({ result }) => {
 			if (result.type !== 'success') {
@@ -20,16 +18,13 @@
 			}
 
 			if (browser && result.data?.token) {
-				// Login-Funktion im Store aufrufen
 				clientSideLogin(result.data.token, result.data.user);
-
-				// Zur Hauptseite weiterleiten
 				await goto('/');
 			}
 		},
 		onError({ result }) {
 			if (result.type === 'error') {
-				message.set('An error occurred while registering');
+				message.set(result.error.message);
 			} else if (result.type === 'exception') {
 				message.set('An unexpected error occurred while registering');
 			}

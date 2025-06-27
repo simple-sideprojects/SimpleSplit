@@ -1,6 +1,6 @@
+import { browser } from '$app/environment';
 import { writable, type Writable } from 'svelte/store';
 import { PreferencesStorage } from './preferences';
-import { browser } from '$app/environment';
 
 /**
  * Erstellt einen persistenten Store, der Daten mit Capacitor Preferences speichert
@@ -22,7 +22,7 @@ export function createPersistentStore<T>(
 	const store = writable<T>(initialValue);
 
 	// Abonniere Änderungen, um den Wert zu speichern
-	const { subscribe, set, update } = store;
+	const { subscribe, set } = store;
 
 	// Lade den initialen Wert aus Preferences (nur im Browser)
 	const loadInitialValue = async () => {

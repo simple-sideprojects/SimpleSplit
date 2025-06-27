@@ -1,14 +1,8 @@
-import type { Group as BasicGroup, TransactionRead } from '$lib/client';
-import type { Balance } from '$lib/interfaces/balance';
+import type { Balance, GroupExpandedResponse, TransactionRead } from '$lib/client';
 import { createPersistentStore } from '../app/persistentStore';
 
-export interface Group extends BasicGroup {
-	balances: Balance[] | undefined;
-	transactions: TransactionRead[] | undefined;
-}
-
 export interface GroupList {
-	[key: string]: Group;
+	[key: string]: GroupExpandedResponse;
 }
 
 function createGroupsStore() {
@@ -20,7 +14,7 @@ function createGroupsStore() {
 		set: store.set,
 		update: store.update,
 		getGroups: () => store.get(),
-		setGroups: (groups: Group[]) =>
+		setGroups: (groups: GroupExpandedResponse[]) =>
 			store.update(() =>
 				groups.reduce((acc: GroupList, group) => {
 					if (group.id) {
@@ -29,7 +23,7 @@ function createGroupsStore() {
 					return acc;
 				}, {} as GroupList)
 			),
-		updateGroup: (group: Group) =>
+		updateGroup: (group: GroupExpandedResponse) =>
 			store.update((state) => {
 				if (!group.id) return state;
 				return {
@@ -37,19 +31,14 @@ function createGroupsStore() {
 					[group.id]: group
 				};
 			}),
-		setGroupBalances: (id: string, balances: Balance[]) =>
+		setGroupBalance: (id: string, balance: Balance) =>
 			store.update((state) => {
 				if (!state[id]) return state;
 				return {
 					...state,
 					[id]: {
 						...state[id],
-						balances: balances.reduce((acc, balance) => {
-							if (balance.username) {
-								acc[balance.username] = balance;
-							}
-							return acc;
-						}, {} as Balance[])
+						balance: balance
 					}
 				};
 			}),
@@ -60,12 +49,7 @@ function createGroupsStore() {
 					...state,
 					[id]: {
 						...state[id],
-						transactions: transactions.reduce((acc, transaction) => {
-							if (transaction.id) {
-								acc[transaction.id] = transaction;
-							}
-							return acc;
-						}, {} as TransactionRead[])
+						transactions: transactions
 					}
 				};
 			}),

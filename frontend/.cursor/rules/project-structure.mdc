@@ -12,7 +12,7 @@ alwaysApply: true
 - Route load functions: `src/routes/**/+page.ts`, `src/routes/**/+layout.ts`
 - Server-side route handlers: `src/routes/**/+page.server.ts`, `src/routes/**/+layout.server.ts`
 - API handlers: `src/routes/**/+server.ts`
-- Shared interfaces/types: `src/lib/interfaces/**/*.ts`
+- Shared interfaces/types: `src/lib/client/types.gen.ts`
 - Shared utilities/helpers: `src/lib/utils/**/*.ts` (Create if needed)
 - Generated API client: `src/lib/client/` (auto-generated from OpenAPI)
 - App-wide shared logic: `src/lib/shared/app/`

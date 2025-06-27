@@ -1,5 +1,4 @@
-import { browser } from '$app/environment';
-import type { Balance } from '$lib/interfaces';
+import type { Balance } from '$lib/client/types.gen.js';
 import { createPersistentStore } from '../app/persistentStore';
 
 export interface BalanceList {
@@ -24,6 +23,14 @@ function createBalancesStore() {
 					return acc;
 				}, {} as BalanceList)
 			),
+		setBalance: (balance: Balance) =>
+			store.update((state) => {
+				if (!balance.user_id) return state;
+				return {
+					...state,
+					[balance.user_id]: balance
+				};
+			}),
 		updateBalance: (balance: Balance) =>
 			store.update((state) => {
 				if (!balance.user_id) return state;

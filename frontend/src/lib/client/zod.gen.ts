@@ -2,6 +2,28 @@
 
 import { z } from 'zod';
 
+export const zBalance = z.object({
+    user_id: z.string().uuid(),
+    group_id: z.union([
+        z.string().uuid(),
+        z.null()
+    ]).optional(),
+    total_balance: z.number().int(),
+    total_owed_to_others: z.number().int(),
+    total_owed_by_others: z.number().int(),
+    user_balances: z.array(z.object({
+        user: z.object({
+            id: z.string().uuid(),
+            email: z.string().email(),
+            username: z.string(),
+            email_verified: z.boolean(),
+            created_at: z.string().datetime(),
+            updated_at: z.string().datetime()
+        }),
+        balance: z.number().int()
+    }))
+});
+
 export const zBodyLoginAuthLoginPost = z.object({
     grant_type: z.union([
         z.string().regex(/^password$/),
@@ -36,6 +58,85 @@ export const zGroup = z.object({
     name: z.string().min(1).max(100)
 });
 
+export const zGroupExpandedResponse = z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    created_at: z.string().datetime(),
+    updated_at: z.string().datetime(),
+    users: z.array(z.object({
+        id: z.string().uuid(),
+        email: z.string().email(),
+        username: z.string(),
+        email_verified: z.boolean(),
+        created_at: z.string().datetime(),
+        updated_at: z.string().datetime()
+    })).optional().default([]),
+    invites: z.union([
+        z.array(z.object({
+            id: z.string().uuid(),
+            email: z.union([
+                z.string(),
+                z.null()
+            ]).optional(),
+            group_id: z.string().uuid(),
+            token: z.string(),
+            created_at: z.string().datetime()
+        })),
+        z.null()
+    ]).optional(),
+    balance: z.union([
+        zBalance,
+        z.null()
+    ]).optional(),
+    transactions: z.union([
+        z.array(z.object({
+            id: z.string().uuid().optional(),
+            created_at: z.string().datetime().optional(),
+            updated_at: z.string().datetime().optional(),
+            amount: z.number().int(),
+            title: z.string(),
+            purchased_on: z.string().datetime().optional(),
+            transaction_type: z.enum([
+                'EVEN',
+                'AMOUNT',
+                'PERCENTAGE'
+            ]).optional(),
+            group_id: z.string().uuid(),
+            payer_id: z.string().uuid(),
+            participants: z.array(z.object({
+                amount_owed: z.number().int(),
+                transaction_id: z.string().uuid(),
+                debtor_id: z.string().uuid(),
+                id: z.string().uuid(),
+                created_at: z.string().datetime(),
+                updated_at: z.string().datetime(),
+                debtor: z.object({
+                    id: z.string().uuid().optional(),
+                    created_at: z.string().datetime().optional(),
+                    updated_at: z.string().datetime().optional(),
+                    username: z.string().min(1).max(50),
+                    email: z.string().min(1).max(255),
+                    email_verified: z.boolean().optional().default(false),
+                    email_verification_token: z.number().int().optional(),
+                    password: z.string().min(8)
+                })
+            })),
+            payer: z.object({
+                id: z.string().uuid().optional(),
+                created_at: z.string().datetime().optional(),
+                updated_at: z.string().datetime().optional(),
+                username: z.string().min(1).max(50),
+                email: z.string().min(1).max(255),
+                email_verified: z.boolean().optional().default(false),
+                email_verification_token: z.number().int().optional(),
+                password: z.string().min(8)
+            }),
+            group: zGroup
+        })),
+        z.null()
+    ]).optional()
+});
+
 export const zGroupInviteCreate = z.object({
     email: z.union([
         z.string().email(),
@@ -52,25 +153,6 @@ export const zGroupInviteResponse = z.object({
     group_id: z.string().uuid(),
     token: z.string(),
     created_at: z.string().datetime()
-});
-
-export const zGroupWithUsersResponse = z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-    created_at: z.string().datetime(),
-    updated_at: z.string().datetime(),
-    users: z.array(z.object({
-        id: z.string().uuid(),
-        email: z.string().email(),
-        username: z.string(),
-        email_verified: z.boolean(),
-        created_at: z.string().datetime(),
-        updated_at: z.string().datetime()
-    })).optional().default([]),
-    invites: z.union([
-        z.array(zGroupInviteResponse),
-        z.null()
-    ]).optional()
 });
 
 export const zHttpValidationError = z.object({
@@ -206,6 +288,18 @@ export const zUser = z.object({
     password: z.string().min(8)
 });
 
+export const zUserBalance = z.object({
+    user: z.object({
+        id: z.string().uuid(),
+        email: z.string().email(),
+        username: z.string(),
+        email_verified: z.boolean(),
+        created_at: z.string().datetime(),
+        updated_at: z.string().datetime()
+    }),
+    balance: z.number().int()
+});
+
 export const zUserCreate = z.object({
     email: z.string().email(),
     password: z.string().min(8).max(32),
@@ -250,19 +344,21 @@ export const zLoginAuthLoginPostResponse = zToken;
 
 export const zConfirmEmailAuthConfirmEmailPostResponse = zToken;
 
+export const zGetUserBalancesBalancesGetResponse = zBalance;
+
 export const zReadGroupsGroupsGetResponse = z.array(zGroup);
 
 export const zCreateGroupGroupsPostResponse = zGroup;
 
 export const zDeleteGroupGroupsGroupIdDeleteResponse = z.void();
 
-export const zReadGroupGroupsGroupIdGetResponse = zGroupWithUsersResponse;
+export const zReadGroupGroupsGroupIdGetResponse = zGroupExpandedResponse;
 
 export const zUpdateGroupGroupsGroupIdPutResponse = zGroup;
 
 export const zReadGroupTransactionsGroupsGroupIdTransactionsGetResponse = z.array(zTransactionRead);
 
-export const zDeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteResponse = zGroupWithUsersResponse;
+export const zDeleteUserFromGroupGroupsGroupIdUsersUserIdDeleteResponse = zGroupExpandedResponse;
 
 export const zGetMyInvitesInvitesMyInvitesGetResponse = z.array(zGroupInviteResponse);
 
