@@ -2,7 +2,7 @@
 	import { afterNavigate, invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
-	import type { GroupExpandedResponse, UserResponse } from '$lib/client';
+	import type { UserResponse } from '$lib/client';
 	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
 	import { authStore } from '$lib/shared/stores/auth.store.js';
 	import { groupsStore } from '$lib/shared/stores/groups.store.js';
@@ -13,11 +13,10 @@
 	import IconSettings from '~icons/tabler/settings';
 	import IconUser from '~icons/tabler/user';
 	import IconUsers from '~icons/tabler/users';
-	import type { PageData } from './$types';
 
 	//Handle provided data
-	let { data, children } = $props<{ data: PageData }>();
-	let groups: GroupExpandedResponse[] = $derived(Object.values($groupsStore));
+	let { data, children } = $props();
+	let groups = $derived(Object.values($groupsStore));
 	let user: UserResponse | null = $derived($authStore.user);
 
 	//Update groups store if it is available through server load()

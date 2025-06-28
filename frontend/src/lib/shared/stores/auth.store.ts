@@ -8,7 +8,6 @@ import { transactionsStore } from './transactions.store';
 
 type AuthStoreType = {
 	authenticated: boolean;
-	token: string | null;
 	user: UserResponse | null;
 	frontend_url: string;
 };
@@ -16,7 +15,6 @@ type AuthStoreType = {
 function createAuthStore() {
 	const initialValue: AuthStoreType = {
 		authenticated: false,
-		token: null,
 		user: null,
 		frontend_url: PUBLIC_FRONTEND_URL
 	};
@@ -44,7 +42,6 @@ export function clientSideLogin(token: string, user: UserResponse): void {
 	if (!browser) return;
 	authStore.update((state) => ({
 		authenticated: true,
-		token: token,
 		user: user,
 		frontend_url: state.frontend_url
 	}));
@@ -54,7 +51,6 @@ export async function clientSideLogout(): Promise<void> {
 	if (!browser) return;
 	authStore.update((state) => ({
 		authenticated: false,
-		token: null,
 		user: null,
 		frontend_url: state.frontend_url
 	}));

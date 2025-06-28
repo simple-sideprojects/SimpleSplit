@@ -1,12 +1,6 @@
-import {
-	readGroupGroupsGroupIdGet,
-	readGroupsGroupsGet,
-	readUsersMeAccountGet,
-	type Group,
-	type UserResponse
-} from '$lib/client';
+import { readGroupGroupsGroupIdGet, type Group } from '$lib/client';
 import { zUpdateGroup } from '$lib/client/zod.gen';
-import { error, redirect, type Cookies } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { superValidate, type SuperValidated } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import type { z } from 'zod';
@@ -46,30 +40,5 @@ export async function getGroupLayoutData(
 	return {
 		groupData: groupResponse.data,
 		updateGroupNameForm
-	};
-}
-
-export async function getRootLayoutData(cookies: Cookies): Promise<{
-	user: UserResponse;
-	groups: Group[];
-}> {
-	const userResponse = await readUsersMeAccountGet();
-	const groupsResponse = await readGroupsGroupsGet();
-
-	if (userResponse.error || groupsResponse.error) {
-		if (userResponse.response.status === 401 || groupsResponse.response.status === 401) {
-			cookies.delete('auth_token', { path: '/' });
-			return redirect(302, '/auth/login');
-		}
-		return error(500, 'Failed to load user or group data');
-	}
-
-	if (!userResponse.data || !groupsResponse.data) {
-		return redirect(302, '/');
-	}
-
-	return {
-		user: userResponse.data,
-		groups: groupsResponse.data ?? []
 	};
 }

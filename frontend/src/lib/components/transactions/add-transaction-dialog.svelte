@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { readGroupGroupsGroupIdGet } from '$lib/client';
+	import { createTransactionTransactionsPostMutation } from '$lib/client/@tanstack/svelte-query.gen';
 	import type {
 		GroupExpandedResponse,
 		TransactionCreate,
@@ -7,6 +8,8 @@
 		TransactionType
 	} from '$lib/client/types.gen';
 	import { zTransactionCreate } from '$lib/client/zod.gen';
+	import { transactionsStore } from '$lib/shared/stores/transactions.store';
+	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { superForm } from 'sveltekit-superforms/client';
@@ -25,6 +28,29 @@
 	let purchasedDate = $state(new Date().toISOString().split('T')[0]);
 	let participantsError = $state<string | null>(null);
 
+	// Create mutation for adding transactions
+	const queryClient = useQueryClient();
+	const createTransactionMutation = createMutation({
+		...createTransactionTransactionsPostMutation(),
+		onSuccess: (data) => {
+			// Add transaction to store
+			if (data) {
+				transactionsStore.updateTransaction(data);
+			}
+			// Invalidate balance and transaction queries to refresh data
+			queryClient.invalidateQueries({ queryKey: ['getUserBalancesBalancesGet'] });
+			queryClient.invalidateQueries({
+				queryKey: ['readTransactionsUserIsParticipantInTransactionsGet']
+			});
+			toast.success('Transaction added successfully');
+			closeDialog();
+		},
+		onError: (error) => {
+			console.error('Failed to create transaction:', error);
+			toast.error('Failed to add transaction');
+		}
+	});
+
 	const {
 		form: transactionForm,
 		errors,
@@ -35,14 +61,6 @@
 		validators: zod(zTransactionCreate),
 		resetForm: true,
 		dataType: 'json',
-		onResult: ({ result }) => {
-			if (result.type === 'success') {
-				toast.success('Transaction added successfully');
-				closeDialog();
-			} else if (result.type === 'error') {
-				toast.error('Failed to add transaction');
-			}
-		},
 		onSubmit: ({ jsonData, cancel }) => {
 			// Data validation check
 			if (!selectedGroup || !$transactionForm.payer_id || selectedParticipants.size === 0) {
@@ -130,7 +148,12 @@
 				participants: participants
 			};
 
-			jsonData(formData);
+			// Use mutation instead of form action
+			$createTransactionMutation.mutate({
+				body: formData
+			});
+
+			return cancel(); // Prevent form submission since we're handling it with mutation
 		}
 	});
 
@@ -491,10 +514,10 @@
 			</button>
 			<button
 				type="submit"
-				disabled={$submitting || loading}
+				disabled={$createTransactionMutation.isPending || loading}
 				class="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 			>
-				{#if $submitting}
+				{#if $createTransactionMutation.isPending}
 					<div class="flex items-center gap-2">
 						<IconLoader class="size-4 animate-spin" />
 						<span>Adding...</span>

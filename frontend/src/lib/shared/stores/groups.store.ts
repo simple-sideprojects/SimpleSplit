@@ -1,8 +1,8 @@
-import type { Balance, GroupExpandedResponse, TransactionRead } from '$lib/client';
+import type { Balance, Group, GroupExpandedResponse, TransactionRead } from '$lib/client';
 import { createPersistentStore } from '../app/persistentStore';
 
 export interface GroupList {
-	[key: string]: GroupExpandedResponse;
+	[key: string]: Group | GroupExpandedResponse;
 }
 
 function createGroupsStore() {
@@ -14,7 +14,7 @@ function createGroupsStore() {
 		set: store.set,
 		update: store.update,
 		getGroups: () => store.get(),
-		setGroups: (groups: GroupExpandedResponse[]) =>
+		setGroups: (groups: (Group | GroupExpandedResponse)[]) =>
 			store.update(() =>
 				groups.reduce((acc: GroupList, group) => {
 					if (group.id) {
@@ -23,7 +23,7 @@ function createGroupsStore() {
 					return acc;
 				}, {} as GroupList)
 			),
-		updateGroup: (group: GroupExpandedResponse) =>
+		updateGroup: (group: Group | GroupExpandedResponse) =>
 			store.update((state) => {
 				if (!group.id) return state;
 				return {

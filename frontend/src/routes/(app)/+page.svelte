@@ -1,10 +1,15 @@
 <script lang="ts">
 	import { TransactionComponent } from '$lib';
+	import {
+		getUserBalancesBalancesGetOptions,
+		readTransactionsUserIsParticipantInTransactionsGetOptions
+	} from '$lib/client/@tanstack/svelte-query.gen';
 	import type { Balance, TransactionRead } from '$lib/client/types.gen.js';
 	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
 	import { balancesStore } from '$lib/shared/stores/balances.store.js';
 	import { transactionsStore } from '$lib/shared/stores/transactions.store.js';
 	import type { ActionResult } from '@sveltejs/kit';
+	import { createQuery } from '@tanstack/svelte-query';
 	import { onMount } from 'svelte';
 	import IconArrowDown from '~icons/tabler/arrow-down';
 	import IconArrowUp from '~icons/tabler/arrow-up';
@@ -14,24 +19,44 @@
 
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
-	let balance: Balance | undefined = $derived(data.balance);
+
+	// Create queries for balance and transactions
+	const balanceQuery = createQuery({
+		...getUserBalancesBalancesGetOptions(),
+		initialData: data.balance
+	});
+
+	const transactionsQuery = createQuery({
+		...readTransactionsUserIsParticipantInTransactionsGetOptions({
+			query: { limit: 5 }
+		}),
+		initialData: data.transactions
+	});
+
+	// Derive data from stores (populated by query effects)
+	let balance: Balance | undefined = $derived($balancesStore);
 	let transactions: TransactionRead[] = $derived(Object.values($transactionsStore));
 
+	// Update stores when queries succeed
 	$effect(() => {
-		if (balance !== undefined) {
-			balancesStore.setBalance(balance);
+		if ($balanceQuery.data) {
+			balancesStore.setBalance($balanceQuery.data);
 		}
 	});
 
 	$effect(() => {
-		if (data.transactions !== undefined) {
-			transactionsStore.setTransactions(data.transactions);
+		if ($transactionsQuery.data) {
+			transactionsStore.setTransactions($transactionsQuery.data);
 		}
 	});
 
 	//Calculate balances from the user_balances array
 	let totalOwedToMe = $derived(balance ? balance.total_owed_by_others : 0);
 	let totalIOwe = $derived(balance ? balance.total_owed_to_others : 0);
+
+	// Query states for loading indicators
+	let isBalanceLoading = $derived($balanceQuery.isFetching && !balance);
+	let isTransactionsLoading = $derived($transactionsQuery.isFetching && transactions.length === 0);
 
 	//Formatter
 	const AmountFormatter = Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
@@ -62,9 +87,13 @@
 				<IconArrowUp class="size-5 text-green-500" />
 				<h2 class="text-base font-semibold text-gray-900">You are owed</h2>
 			</div>
-			<p class="mt-2 text-2xl font-bold text-green-500">
-				{AmountFormatter.format(totalOwedToMe / 100)}
-			</p>
+			{#if isBalanceLoading}
+				<div class="mt-2 h-8 w-24 animate-pulse rounded bg-gray-200"></div>
+			{:else}
+				<p class="mt-2 text-2xl font-bold text-green-500">
+					{AmountFormatter.format(totalOwedToMe / 100)}
+				</p>
+			{/if}
 		</div>
 
 		<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
@@ -72,14 +101,30 @@
 				<IconArrowDown class="size-5 text-red-500" />
 				<h2 class="text-base font-semibold text-gray-900">You owe</h2>
 			</div>
-			<p class="mt-2 text-2xl font-bold text-red-500">
-				{AmountFormatter.format(totalIOwe / 100)}
-			</p>
+			{#if isBalanceLoading}
+				<div class="mt-2 h-8 w-24 animate-pulse rounded bg-gray-200"></div>
+			{:else}
+				<p class="mt-2 text-2xl font-bold text-red-500">
+					{AmountFormatter.format(totalIOwe / 100)}
+				</p>
+			{/if}
 		</div>
 	</div>
 
 	<!-- Individual Balances -->
-	{#if balance && balance.user_balances && balance.user_balances.length > 0}
+	{#if isBalanceLoading}
+		<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
+			<h2 class="mb-4 text-lg font-semibold">Individual Balances</h2>
+			<div class="space-y-3">
+				{#each Array(3) as _}
+					<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
+						<div class="h-4 w-24 animate-pulse rounded bg-gray-200"></div>
+						<div class="h-4 w-16 animate-pulse rounded bg-gray-200"></div>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{:else if balance && balance.user_balances && balance.user_balances.length > 0}
 		<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
 			<h2 class="mb-4 text-lg font-semibold">Individual Balances</h2>
 			<div class="space-y-3">
@@ -110,11 +155,25 @@
 		</summary>
 
 		<div class="border-t border-gray-100">
-			{#each transactions as transaction (transaction.id)}
-				<div class="border-b border-gray-100 last:border-b-0">
-					<TransactionComponent {transaction} />
-				</div>
-			{/each}
+			{#if isTransactionsLoading}
+				{#each Array(3) as _}
+					<div class="border-b border-gray-100 p-4 last:border-b-0">
+						<div class="flex items-center justify-between">
+							<div class="space-y-2">
+								<div class="h-4 w-32 animate-pulse rounded bg-gray-200"></div>
+								<div class="h-3 w-24 animate-pulse rounded bg-gray-200"></div>
+							</div>
+							<div class="h-4 w-16 animate-pulse rounded bg-gray-200"></div>
+						</div>
+					</div>
+				{/each}
+			{:else}
+				{#each transactions as transaction (transaction.id)}
+					<div class="border-b border-gray-100 last:border-b-0">
+						<TransactionComponent {transaction} />
+					</div>
+				{/each}
+			{/if}
 		</div>
 	</details>
 </div>

@@ -5,7 +5,8 @@ from sqlmodel import select
 from app import config
 from app.database.database import SessionDep
 from app.database.models.group import CreateGroup, Group, GroupExpandedResponse, UpdateGroup
-from app.database.models.user import User
+from app.database.models.invite import GroupInviteResponse
+from app.database.models.user import User, UserResponse
 from app.database.models.transaction import Transaction, TransactionRead
 from app.services.auth import AuthService, oauth2_scheme
 from app.middleware.is_user_group import is_user_in_group
@@ -43,6 +44,8 @@ async def read_group(group_id: UUID, session: SessionDep, token: Annotated[str, 
 
     return GroupExpandedResponse.model_validate({
         **group.model_dump(),
+        "users": [UserResponse.model_validate(user) for user in group.users],
+        "invites": [GroupInviteResponse.model_validate(invite) for invite in group.invites],
         "balance": balance,
         "transactions": transactions
     })

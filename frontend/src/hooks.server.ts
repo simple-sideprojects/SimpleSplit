@@ -1,11 +1,10 @@
-import { dev } from '$app/environment';
+import { building, dev } from '$app/environment';
 import { client } from '$lib/client/client.gen';
 import { i18n } from '$lib/i18n';
-import { redirect, type Handle } from '@sveltejs/kit';
+import { isRedirect, redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { building } from '$app/environment';
-import { csrf } from './lib/server/hooks/csrf';
 import { cors } from './lib/server/hooks/cors';
+import { csrf } from './lib/server/hooks/csrf';
 
 const handleParaglide: Handle = i18n.handle();
 
@@ -20,6 +19,10 @@ export const handleAuth: Handle = ({ event, resolve }) => {
 			return request;
 		});
 		if (event.route.id?.includes('auth')) {
+			if (isRedirect(event)) {
+				event.cookies.delete('auth_token', { path: '/' });
+			}
+
 			throw redirect(303, '/');
 		}
 	} else if (!event.route.id?.includes('auth')) {
