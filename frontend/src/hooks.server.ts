@@ -1,7 +1,7 @@
 import { building, dev } from '$app/environment';
 import { client } from '$lib/client/client.gen';
 import { i18n } from '$lib/i18n';
-import { isRedirect, redirect, type Handle } from '@sveltejs/kit';
+import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { cors } from './lib/server/hooks/cors';
 import { csrf } from './lib/server/hooks/csrf';
@@ -18,11 +18,21 @@ export const handleAuth: Handle = ({ event, resolve }) => {
 			request.headers.set('Authorization', `Bearer ${token}`);
 			return request;
 		});
-		if (event.route.id?.includes('auth')) {
-			if (isRedirect(event)) {
-				event.cookies.delete('auth_token', { path: '/' });
+		client.interceptors.response.use((response) => {
+			if (response.status === 401) {
+				event.cookies.delete('auth_token', {
+					path: '/',
+					httpOnly: true,
+					secure: process.env.NODE_ENV === 'production',
+					sameSite: 'strict'
+				});
+				if (!event.route.id?.includes('auth')) {
+					throw redirect(303, '/auth/login');
+				}
 			}
-
+			return response;
+		});
+		if (event.route.id?.includes('auth')) {
 			throw redirect(303, '/');
 		}
 	} else if (!event.route.id?.includes('auth')) {
