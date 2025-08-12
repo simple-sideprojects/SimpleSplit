@@ -18,20 +18,6 @@ export const handleAuth: Handle = ({ event, resolve }) => {
 			request.headers.set('Authorization', `Bearer ${token}`);
 			return request;
 		});
-		client.interceptors.response.use((response) => {
-			if (response.status === 401) {
-				event.cookies.delete('auth_token', {
-					path: '/',
-					httpOnly: true,
-					secure: process.env.NODE_ENV === 'production',
-					sameSite: 'strict'
-				});
-				if (!event.route.id?.includes('auth')) {
-					throw redirect(303, '/auth/login');
-				}
-			}
-			return response;
-		});
 		if (event.route.id?.includes('auth')) {
 			throw redirect(303, '/');
 		}

@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"name": "🖥️ frontend",
+			"path": "frontend"
+		},
+		{
+			"name": "🗄️ backend",
+			"path": "backend"
+		},
+		{
+			"name": "🏠 root",
+			"path": ".",
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"frontend/**": true,
+			"backend/**": true
+		}
+	}
+}

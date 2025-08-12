@@ -86,16 +86,33 @@ export const actions: Actions | undefined = isCompiledStatic()
 					sameSite: 'strict'
 				});
 
-				const userResponse = await readUsersMeAccountGet();
-				if (userResponse.data === undefined) {
+				try {
+					const userResponse = await readUsersMeAccountGet({
+						headers: {
+							Authorization: `Bearer ${loginResponse.data.access_token}`
+						}
+					});
+
+					if (userResponse.data === undefined) {
+						setMessage(form, 'An unexpected error occurred during registration.');
+						return fail(500, { form });
+					}
+
+					return {
+						token: loginResponse.data.access_token,
+						user: userResponse.data,
+						form
+					};
+				} catch {
+					// If getting user data fails, clear the cookie and return error
+					cookies.delete('auth_token', {
+						path: '/',
+						httpOnly: true,
+						secure: process.env.NODE_ENV === 'production',
+						sameSite: 'strict'
+					});
 					setMessage(form, 'An unexpected error occurred during registration.');
 					return fail(500, { form });
 				}
-
-				return {
-					token: loginResponse.data.access_token,
-					user: userResponse.data,
-					form
-				};
 			}
 		};

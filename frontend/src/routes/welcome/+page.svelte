@@ -14,13 +14,13 @@
 				setTimeout(() => {
 					if ($authStore.authenticated) {
 						goto('/');
-					} else {
-						if (!status.connected) {
-							goto('/offline');
-						} else {
-							goto('/auth/login');
-						}
+						return;
 					}
+					if (!status.connected) {
+						goto('/offline');
+						return;
+					}
+					goto('/auth/login');
 				}, 400);
 			});
 		}, 1000);
