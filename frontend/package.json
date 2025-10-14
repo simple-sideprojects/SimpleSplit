@@ -71,7 +71,9 @@
 		"@capacitor/preferences": "^7.0.1",
 		"@hey-api/client-fetch": "^0.10.0",
 		"@inlang/paraglide-sveltekit": "^0.15.5",
-		"svelte-sonner": "^0.3.28"
+		"jose": "^6.1.0",
+		"svelte-sonner": "^0.3.28",
+		"ts-pattern": "^5.8.0"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
