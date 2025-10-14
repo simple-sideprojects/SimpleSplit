@@ -1,172 +1,79 @@
-import { building } from '$app/environment';
-import { env } from '$env/dynamic/public';
 import {
 	deleteTransactionTransactionsTransactionIdDelete,
-	readGroupTransactionsGroupsGroupIdTransactionsGet,
 	updateTransactionTransactionsTransactionIdPut
 } from '$lib/client';
-import { isCompiledStatic } from '$lib/shared/app/controller';
 import { fail, redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from '../$types';
 import type { Actions } from './$types';
 
-async function getPageData(fetch: Fetch, page: number, limit: number, groupId: string) {
-	// Use the generated OpenAPI function for transactions
-	const transactionsResponse = await readGroupTransactionsGroupsGroupIdTransactionsGet({
-		path: {
-			group_id: groupId
-		},
-		query: {
-			skip: (page - 1) * limit,
-			limit: limit
+export const actions: Actions = {
+	edit: async ({ request }) => {
+		const formData = await request.formData();
+		const groupId = formData.get('groupId');
+
+		if (!groupId) {
+			throw redirect(303, '/groups');
 		}
-	});
 
-	// Still need to fetch total count from local API since it's not in the generated client
-	const totalRes = await fetch(
-		`${env.PUBLIC_BACKEND_URL}/api/groups/${groupId}/transactions/total`
-	);
-	const total = await totalRes.json();
+		const id = formData.get('id');
+		const description = formData.get('description');
+		const amount = formData.get('amount');
 
-	if (transactionsResponse.error) {
-		throw new Error('Failed to fetch transactions');
-	}
+		if (!id || !description || !amount) {
+			return fail(400, { error: 'Missing required fields' });
+		}
 
-	return {
-		groupId: groupId,
-		transactions: transactionsResponse.data || [],
-		total,
-		page,
-		limit,
-		totalPages: Math.ceil(total / limit)
-	};
-}
-
-export const load: PageServerLoad = async ({ fetch, url }) => {
-	//If svelte is precompiling, return nothing
-	if (building) {
-		return {
-			groupId: null,
-			transactions: [],
-			total: 0,
-			page: 1,
-			limit: 25,
-			totalPages: 1
-		};
-	}
-
-	const groupId = url.searchParams.get('groupId');
-	if (!groupId) {
-		throw redirect(303, '/groups');
-	}
-
-	const page = parseInt(url.searchParams.get('page') || '1');
-	const limit = parseInt(url.searchParams.get('limit') || '25');
-
-	return getPageData(fetch, page, limit, groupId);
-};
-
-export const actions: Actions | undefined = isCompiledStatic()
-	? undefined
-	: {
-			data: async ({ request, fetch }) => {
-				const formData = await request.formData();
-				const groupId = formData.get('groupId');
-
-				if (!groupId) {
-					throw redirect(303, '/groups');
+		try {
+			const response = await updateTransactionTransactionsTransactionIdPut({
+				path: {
+					transaction_id: id as string
+				},
+				body: {
+					title: description as string,
+					amount: Math.round(parseFloat(amount as string) * 100)
 				}
+			});
 
-				const page = parseInt((formData.get('page') as string) || '1');
-				const limit = parseInt((formData.get('limit') as string) || '25');
-
-				return getPageData(fetch, page, limit, groupId as string);
-			},
-			edit: async ({ request }) => {
-				const formData = await request.formData();
-				const groupId = formData.get('groupId');
-
-				if (!groupId) {
-					throw redirect(303, '/groups');
-				}
-
-				const id = formData.get('id');
-				const description = formData.get('description');
-				const amount = formData.get('amount');
-
-				if (!id || !description || !amount) {
-					return fail(400, { error: 'Missing required fields' });
-				}
-
-				try {
-					const response = await updateTransactionTransactionsTransactionIdPut({
-						path: {
-							transaction_id: id as string
-						},
-						body: {
-							title: description as string,
-							amount: Math.round(parseFloat(amount as string) * 100)
-						}
-					});
-
-					if (response.error) {
-						throw new Error('Failed to update transaction');
-					}
-
-					return { success: true };
-				} catch (error) {
-					return fail(500, {
-						error: error instanceof Error ? error.message : 'Failed to update transaction'
-					});
-				}
-			},
-			delete: async ({ request }) => {
-				const formData = await request.formData();
-				const groupId = formData.get('groupId');
-
-				if (!groupId) {
-					throw redirect(303, '/groups');
-				}
-
-				const id = formData.get('id');
-
-				if (!id) {
-					return fail(400, { error: 'Missing transaction ID' });
-				}
-
-				try {
-					const response = await deleteTransactionTransactionsTransactionIdDelete({
-						path: {
-							transaction_id: id as string
-						}
-					});
-
-					if (response.error) {
-						throw new Error('Failed to delete transaction');
-					}
-
-					return { success: true };
-				} catch (error) {
-					return fail(500, {
-						error: error instanceof Error ? error.message : 'Failed to delete transaction'
-					});
-				}
-			},
-			transactions: async ({ request, fetch }) => {
-				const formData = await request.formData();
-				const groupId = formData.get('groupId');
-
-				if (!groupId) {
-					throw redirect(303, '/groups');
-				}
-
-				if (!formData.has('page') || !formData.has('limit')) {
-					return fail(400, { error: 'Missing required fields' });
-				}
-
-				const page = parseInt(formData.get('page') as string);
-				const limit = parseInt(formData.get('limit') as string);
-
-				return getPageData(fetch, page, limit, groupId as string);
+			if (response.error) {
+				throw new Error('Failed to update transaction');
 			}
-		};
+
+			return { success: true };
+		} catch (error) {
+			return fail(500, {
+				error: error instanceof Error ? error.message : 'Failed to update transaction'
+			});
+		}
+	},
+	delete: async ({ request }) => {
+		const formData = await request.formData();
+		const groupId = formData.get('groupId');
+
+		if (!groupId) {
+			throw redirect(303, '/groups');
+		}
+
+		const id = formData.get('id');
+
+		if (!id) {
+			return fail(400, { error: 'Missing transaction ID' });
+		}
+
+		try {
+			const response = await deleteTransactionTransactionsTransactionIdDelete({
+				path: {
+					transaction_id: id as string
+				}
+			});
+
+			if (response.error) {
+				throw new Error('Failed to delete transaction');
+			}
+
+			return { success: true };
+		} catch (error) {
+			return fail(500, {
+				error: error instanceof Error ? error.message : 'Failed to delete transaction'
+			});
+		}
+	}
+};

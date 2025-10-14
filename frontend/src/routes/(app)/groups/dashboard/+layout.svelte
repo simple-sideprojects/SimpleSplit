@@ -1,12 +1,9 @@
 <script lang="ts">
 	import { building } from '$app/environment';
 	import { page } from '$app/state';
-	import type { GroupExpandedResponse } from '$lib/client';
-	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
+	import type { Group } from '$lib/client';
 	import { superForm } from '$lib/shared/form/super-form.js';
 	import { groupsStore } from '$lib/shared/stores/groups.store.js';
-	import type { ActionResult } from '@sveltejs/kit';
-	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import IconCheck from '~icons/tabler/check';
 	import IconEdit from '~icons/tabler/edit';
@@ -14,29 +11,23 @@
 	import IconSettings from '~icons/tabler/settings';
 	import IconUsers from '~icons/tabler/users';
 	import IconX from '~icons/tabler/x';
-	import type { PageData } from './$types';
+	import type { LayoutData } from './$types';
 
 	//Handle provided data
-	let { data, children } = $props<{ data: PageData }>();
+	let { data, children } = $props<{ data: LayoutData }>();
 	const groupId = $derived(
 		building || !page.url.searchParams.has('groupId')
 			? null
 			: (page.url.searchParams.get('groupId') as string)
 	);
-	let group: GroupExpandedResponse | null = $derived(groupId ? $groupsStore[groupId] : null);
+	let group = $derived(groupId ? $groupsStore[groupId] : null);
 
-	//Update group store if it is available through server load()
+	//Update group store if it is available through load()
 	$effect(() => {
-		if (data.group !== undefined) {
-			$groupsStore[data.group.id] = data.group;
+		if (data.groupData !== undefined && data.groupData.id) {
+			$groupsStore[data.groupData.id] = data.groupData;
 		}
 	});
-
-	// Derived from URL parameters
-	/*$effect(() => {
-		// Invalidate page data to force a reload
-		invalidate(`app:groupDashboard:${groupId}`);
-	});*/
 
 	//Update Group Name Form
 	const { form, enhance: enhanceUpdateGroupName } = superForm(data.updateGroupNameForm, {
@@ -44,7 +35,6 @@
 			if (result.type === 'success' && result.data && result.data.group) {
 				if (groupId) {
 					$groupsStore[groupId] = result.data.group;
-					data.group = result.data.group;
 				}
 				isEditing = false;
 				toast.success('Group name updated');
@@ -63,31 +53,6 @@
 			return 'settings';
 		}
 		return 'dashboard';
-	});
-
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-
-		const serverResponse: ActionResult = await onLayoutLoad('/groups/dashboard/', true, {
-			groupId
-		});
-
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-
-		let group: GroupExpandedResponse = serverResponse.data.group;
-
-		//Update the group in the store
-		groupsStore.updateGroup(group);
-
-		//Update the data of the form
-		form.update(() => ({
-			name: group.name
-		}));
 	});
 </script>
 

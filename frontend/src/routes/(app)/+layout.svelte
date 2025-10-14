@@ -3,11 +3,8 @@
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
 	import type { UserResponse } from '$lib/client';
-	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
 	import { authStore } from '$lib/shared/stores/auth.store.js';
 	import { groupsStore } from '$lib/shared/stores/groups.store.js';
-	import type { ActionResult } from '@sveltejs/kit';
-	import { onMount } from 'svelte';
 	import IconDashboard from '~icons/tabler/dashboard';
 	import IconPlus from '~icons/tabler/plus';
 	import IconSettings from '~icons/tabler/settings';
@@ -19,14 +16,14 @@
 	let groups = $derived(Object.values($groupsStore));
 	let user: UserResponse | null = $derived($authStore.user);
 
-	//Update groups store if it is available through server load()
+	//Update groups store if it is available through load()
 	$effect(() => {
 		if (data.groups !== undefined) {
 			groupsStore.setGroups(data.groups);
 		}
 	});
 
-	//Update user store if it is available through server load()
+	//Update user store if it is available through load()
 	$effect(() => {
 		if (data.user !== undefined) {
 			$authStore.user = data.user;
@@ -45,22 +42,6 @@
 			page.url.pathname == '/groups/dashboard/' && page.url.searchParams.get('groupId') == groupId
 		);
 	}
-
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-
-		const serverResponse: ActionResult = await onLayoutLoad('/', true);
-
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-
-		$authStore.user = serverResponse.data.user;
-		groupsStore.setGroups(serverResponse.data.groups);
-	});
 </script>
 
 <div class="relative flex h-screen flex-col overflow-hidden sm:min-h-screen sm:flex-row">

@@ -1,10 +1,7 @@
 <script lang="ts">
 	import type { UserResponse } from '$lib/client';
-	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
 	import { superForm } from '$lib/shared/form/super-form.js';
 	import { authStore, clientSideLogout } from '$lib/shared/stores/auth.store.js';
-	import type { ActionResult } from '@sveltejs/kit';
-	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import IconDeviceFloppy from '~icons/tabler/device-floppy';
 	import IconLoader from '~icons/tabler/loader';
@@ -17,7 +14,7 @@
 	let { data } = $props<{ data: PageData }>();
 	let userData: UserResponse | null = $derived($authStore.user);
 
-	//Update auth store if it is available through server load()
+	//Update auth store if it is available through load()
 	$effect(() => {
 		if (data.userData !== undefined) {
 			$authStore.user = data.userData;
@@ -90,20 +87,6 @@
 			}
 		}
 	);
-
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-		const serverResponse: ActionResult = await onPageLoad(true, {
-			userData: userData
-		});
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-		$authStore.user = serverResponse.data.userData;
-	});
 </script>
 
 <div class="space-y-4">

@@ -5,12 +5,9 @@
 		readTransactionsUserIsParticipantInTransactionsGetOptions
 	} from '$lib/client/@tanstack/svelte-query.gen';
 	import type { Balance, TransactionRead } from '$lib/client/types.gen.js';
-	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
 	import { balancesStore } from '$lib/shared/stores/balances.store.js';
 	import { transactionsStore } from '$lib/shared/stores/transactions.store.js';
-	import type { ActionResult } from '@sveltejs/kit';
 	import { createQuery } from '@tanstack/svelte-query';
-	import { onMount } from 'svelte';
 	import IconArrowDown from '~icons/tabler/arrow-down';
 	import IconArrowUp from '~icons/tabler/arrow-up';
 	import IconChevronDown from '~icons/tabler/chevron-down';
@@ -60,21 +57,6 @@
 
 	//Formatter
 	const AmountFormatter = Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
-
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-		const serverResponse: ActionResult = await onPageLoad(true);
-
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-
-		balancesStore.setBalance(serverResponse.data.balance);
-		transactionsStore.setTransactions(serverResponse.data.transactions);
-	});
 </script>
 
 <div class="space-y-6">

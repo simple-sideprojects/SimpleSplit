@@ -1,51 +1,29 @@
 <script lang="ts">
-	import { building } from '$app/environment';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { EditTransactionDialog, Pagination, TransactionComponent } from '$lib';
 	import type { TransactionRead } from '$lib/client';
-	import { isCompiledStatic, onPageLoad, triggerAction } from '$lib/shared/app/controller.js';
-	import type { ActionResult } from '@sveltejs/kit';
-	import { onMount } from 'svelte';
+	import { enhance } from '$app/forms';
 	import type { PageData } from './$types';
 
 	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
-	const groupId =
-		building || !page.url.searchParams.has('groupId')
-			? null
-			: (page.url.searchParams.get('groupId') as string);
 	let transactions = $state<TransactionRead[]>(data.transactions ?? []);
 	let totalTransactions = $state(data.total ?? 0);
 	let currentPage = $state(data.page ?? 1);
 	let itemsPerPage = $state(data.limit ?? 25);
-	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let selectedTransaction = $state<TransactionRead | null>(null);
 	let openEditDialog = $state<() => void>(() => {});
+	let groupId = $derived(page.url.searchParams.get('groupId'));
 
-	//Fetch transactions
-	async function fetchTransactions(page: number, limit: number) {
-		isLoading = true;
-		error = null;
-
-		const serverData: ActionResult = await triggerAction('transactions', {
-			page: page,
-			limit: limit
-		});
-
-		if (serverData.type !== 'success' || !serverData.data) {
-			error = 'Failed to fetch transactions';
-			isLoading = false;
-			return;
-		}
-
-		transactions = serverData.data.transactions;
-		totalTransactions = serverData.data.total;
-		currentPage = serverData.data.page;
-		itemsPerPage = serverData.data.limit;
-		isLoading = false;
-	}
+	//Update local state when data changes
+	$effect(() => {
+		transactions = data.transactions ?? [];
+		totalTransactions = data.total ?? 0;
+		currentPage = data.page ?? 1;
+		itemsPerPage = data.limit ?? 25;
+	});
 
 	async function handleEdit(transaction: TransactionRead) {
 		selectedTransaction = transaction;
@@ -57,54 +35,51 @@
 			return;
 		}
 
-		const serverData: ActionResult = await triggerAction('delete', {
-			id: transaction.id
+		if (!groupId) {
+			error = 'Missing group ID';
+			return;
+		}
+
+		if (!transaction.id) {
+			error = 'Missing transaction ID';
+			return;
+		}
+
+		error = null;
+		// Use standard form submission to delete action
+		const formData = new FormData();
+		formData.append('id', transaction.id);
+		formData.append('groupId', groupId);
+
+		const response = await fetch(`?/delete`, {
+			method: 'POST',
+			body: formData,
+			headers: {
+				'x-sveltekit-action': 'true'
+			}
 		});
 
-		if (serverData.type !== 'success') {
+		if (!response.ok) {
 			error = 'Failed to delete transaction';
 			return;
 		}
 
-		await fetchTransactions(currentPage, itemsPerPage);
+		// Refresh the data
+		await invalidateAll();
 	}
 
-	$effect(() => {
-		fetchTransactions(currentPage, itemsPerPage);
-	});
-
 	function handlePageChange(newPage: number) {
-		currentPage = newPage;
+		const url = new URL(page.url);
+		url.searchParams.set('page', newPage.toString());
+		goto(url.toString());
 	}
 
 	function handleItemsPerPageChange(newItemsPerPage: number) {
-		itemsPerPage = newItemsPerPage;
-		currentPage = 1;
+		const url = new URL(page.url);
+		url.searchParams.set('limit', newItemsPerPage.toString());
+		url.searchParams.set('page', '1');
+		goto(url.toString());
 	}
-
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-
-		if (!groupId) {
-			goto('/groups');
-		}
-
-		const serverResponse: ActionResult = await onPageLoad(true, {
-			groupId: groupId
-		});
-
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-
-		transactions = serverResponse.data.transactions;
-		totalTransactions = serverResponse.data.total;
-		currentPage = serverResponse.data.page;
-		itemsPerPage = serverResponse.data.limit;
-	});
 </script>
 
 <div class="space-y-6">
@@ -112,17 +87,13 @@
 		<h1 class="text-2xl font-semibold">Group History</h1>
 	</div>
 
-	{#if isLoading}
-		<div class="flex justify-center">
-			<div
-				class="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"
-			></div>
-		</div>
-	{:else if error}
+	{#if error}
 		<div class="rounded-lg bg-red-50 p-4 text-sm text-red-700">
 			{error}
 		</div>
-	{:else if transactions.length === 0}
+	{/if}
+
+	{#if transactions.length === 0}
 		<div class="rounded-lg border border-dashed border-gray-200 p-8 text-center">
 			<p class="text-gray-500">No transactions found</p>
 		</div>

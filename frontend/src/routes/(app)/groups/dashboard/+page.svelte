@@ -1,26 +1,33 @@
 <script lang="ts">
-	import { building } from '$app/environment';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
 	import { TransactionComponent } from '$lib';
 	import type { Balance, TransactionRead } from '$lib/client/types.gen.js';
-	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller';
 	import { balancesStore } from '$lib/shared/stores/balances.store.js';
 	import { transactionsStore } from '$lib/shared/stores/transactions.store.js';
-	import type { ActionResult } from '@sveltejs/kit';
-	import { onMount } from 'svelte';
 	import IconArrowDown from '~icons/tabler/arrow-down';
 	import IconArrowUp from '~icons/tabler/arrow-up';
 	import IconChevronDown from '~icons/tabler/chevron-down';
 	import IconClock from '~icons/tabler/clock';
+	import type { PageData } from './$types';
 
 	//Handle provided data
-	let balance: Balance | undefined = $derived($balancesStore[Object.keys($balancesStore)[0]]);
-	let transactions: TransactionRead[] = $derived(Object.values($transactionsStore));
-	const groupId =
-		building || !page.url.searchParams.has('groupId')
-			? null
-			: (page.url.searchParams.get('groupId') as string);
+	let { data } = $props<{ data: PageData }>();
+	let balance: Balance | undefined = $state(data.balance);
+	let transactions: TransactionRead[] = $state(data.transactions ?? []);
+
+	//Update state and stores when data changes
+	$effect(() => {
+		balance = data.balance;
+		if (data.balance) {
+			balancesStore.setBalance(data.balance);
+		}
+	});
+
+	$effect(() => {
+		transactions = data.transactions ?? [];
+		if (data.transactions) {
+			transactionsStore.setTransactions(data.transactions);
+		}
+	});
 
 	//Calculate balances from the user_balances array
 	let totalOwedToMe = $derived(balance ? balance.total_owed_by_others : 0);
@@ -28,27 +35,6 @@
 
 	//Formatter
 	const AmountFormatter = Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
-
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-		if (!groupId) {
-			goto('/groups');
-		}
-
-		const serverResponse: ActionResult = await onPageLoad(true, {
-			groupId: groupId
-		});
-
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-
-		balancesStore.setBalance(serverResponse.data.balance);
-		transactionsStore.setTransactions(serverResponse.data.transactions);
-	});
 </script>
 
 <div class="space-y-6">
