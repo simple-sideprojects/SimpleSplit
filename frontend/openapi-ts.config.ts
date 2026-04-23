@@ -6,7 +6,7 @@ export default defineConfig({
 	plugins: [
 		{
 			name: '@hey-api/client-fetch',
-			runtimeConfigPath: './src/lib/client/config.ts'
+			runtimeConfigPath: './src/lib/api-client-config.ts'
 		},
 		'@tanstack/svelte-query',
 		'zod'

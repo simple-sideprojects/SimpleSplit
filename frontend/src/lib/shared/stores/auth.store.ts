@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { PUBLIC_FRONTEND_URL } from '$env/static/public';
+import { authStorage } from '$lib/shared/auth/storage';
 import { createPersistentStore } from '../app/persistentStore';
 import { balancesStore } from './balances.store';
 import { groupsStore } from './groups.store';
@@ -12,16 +13,12 @@ export type User = {
 };
 
 type AuthStoreType = {
-	authenticated: boolean;
-	token: string | null;
 	user: User | null;
 	frontend_url: string;
 };
 
 function createAuthStore() {
 	const initialValue: AuthStoreType = {
-		authenticated: false,
-		token: null,
 		user: null,
 		frontend_url: PUBLIC_FRONTEND_URL
 	};
@@ -44,24 +41,21 @@ function createAuthStore() {
 
 export const authStore = createAuthStore();
 
-// Authentifizierungsfunktionen
-export function clientSideLogin(token: string, user: User): void {
+export async function clientSideLogin(token: string, user: User): Promise<void> {
 	if (!browser) return;
+	await authStorage.setToken(token);
 	authStore.update((state) => ({
-		authenticated: true,
-		token: token,
-		user: user,
-		frontend_url: state.frontend_url
+		...state,
+		user: user
 	}));
 }
 
 export async function clientSideLogout(): Promise<void> {
 	if (!browser) return;
+	await authStorage.clearToken();
 	authStore.update((state) => ({
-		authenticated: false,
-		token: null,
-		user: null,
-		frontend_url: state.frontend_url
+		...state,
+		user: null
 	}));
 	groupsStore.clear();
 	transactionsStore.clear();

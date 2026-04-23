@@ -61,13 +61,13 @@ function beforeDataLoad(protectedRoute = true) {
 	}
 
 	// Schutz für geschützte Routen
-	if (protectedRoute && !authStore.getAuthData().authenticated) {
+	if (protectedRoute && !authStore.getUser()) {
 		goto('/auth/login');
 		return null;
 	}
 
 	// Weiterleitung von Auth-Seiten wenn bereits angemeldet
-	if (!protectedRoute && authStore.getAuthData().authenticated) {
+	if (!protectedRoute && authStore.getUser()) {
 		goto('/');
 		return null;
 	}

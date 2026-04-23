@@ -1,4 +1,7 @@
 import { dev } from '$app/environment';
+import { installAuthInterceptor } from '$lib/client/interceptors';
+
+installAuthInterceptor();
 
 if (dev) {
 	const { worker } = await import('./mocks/browser');
