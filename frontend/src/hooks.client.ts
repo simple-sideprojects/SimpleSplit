@@ -1,5 +1,5 @@
 import { dev } from '$app/environment';
-import { installAuthInterceptor } from '$lib/client/interceptors';
+import { installAuthInterceptor } from '$lib/shared/auth/interceptor';
 
 installAuthInterceptor();
 
