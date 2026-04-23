@@ -23,7 +23,6 @@ export type CreateGroup = {
 };
 
 export type EmailConfirmationRequest = {
-    frontend_url: string;
     token: number;
 };
 

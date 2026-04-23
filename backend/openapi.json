@@ -126,19 +126,12 @@
       },
       "EmailConfirmationRequest": {
         "properties": {
-          "frontend_url": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Frontend Url",
-            "type": "string"
-          },
           "token": {
             "title": "Token",
             "type": "integer"
           }
         },
         "required": [
-          "frontend_url",
           "token"
         ],
         "title": "EmailConfirmationRequest",
@@ -1184,7 +1177,6 @@
         ],
         "summary": "Read Groups",
         "tags": [
-          "groups",
           "groups"
         ]
       },
@@ -1229,7 +1221,6 @@
         ],
         "summary": "Create Group",
         "tags": [
-          "groups",
           "groups"
         ]
       }
@@ -1278,7 +1269,6 @@
         ],
         "summary": "Delete Group",
         "tags": [
-          "groups",
           "groups"
         ]
       },
@@ -1290,9 +1280,16 @@
             "name": "group_id",
             "required": true,
             "schema": {
-              "format": "uuid",
-              "title": "Group Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              ],
+              "title": "Group Id"
             }
           }
         ],
@@ -1325,7 +1322,6 @@
         ],
         "summary": "Read Group",
         "tags": [
-          "groups",
           "groups"
         ]
       },
@@ -1389,7 +1385,6 @@
         ],
         "summary": "Update Group",
         "tags": [
-          "groups",
           "groups"
         ]
       }
@@ -1472,7 +1467,6 @@
         "summary": "Read Group Transactions",
         "tags": [
           "groups",
-          "groups",
           "transactions"
         ]
       }
@@ -1538,7 +1532,6 @@
         ],
         "summary": "Delete User From Group",
         "tags": [
-          "groups",
           "groups"
         ]
       }

@@ -47,7 +47,6 @@ export const zCreateGroup = z.object({
 });
 
 export const zEmailConfirmationRequest = z.object({
-    frontend_url: z.string().min(1).max(500),
     token: z.number().int()
 });
 
