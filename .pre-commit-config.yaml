@@ -1,0 +1,31 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: ^frontend/
+        exclude: ^frontend/(src/lib/client/|\.svelte-kit/|build|node_modules/)
+
+  - repo: local
+    hooks:
+      - id: api-drift
+        name: Check OpenAPI snapshot + generated client are in sync
+        language: system
+        pass_filenames: false
+        files: ^(backend/app/|frontend/openapi-ts\.config\.ts)
+        entry: bash -c '
+          set -e;
+          command -v python >/dev/null || { echo "skipped: python missing"; exit 0; };
+          (cd backend && python -m app.scripts.dump_openapi >/dev/null 2>&1) || { echo "skipped: backend env not ready"; exit 0; };
+          (cd frontend && pnpm generate:api >/dev/null 2>&1) || { echo "skipped: pnpm not ready"; exit 0; };
+          git diff --exit-code backend/openapi.json frontend/src/lib/client/ \
+            || { echo "OpenAPI snapshot or generated client drifted. Commit the regeneration."; exit 1; }'
