@@ -1,0 +1,7 @@
+import { PUBLIC_BACKEND_URL } from '$env/static/public';
+import type { CreateClientConfig } from './client.gen';
+
+export const createClientConfig: CreateClientConfig = (config) => ({
+	...config,
+	baseUrl: PUBLIC_BACKEND_URL
+});

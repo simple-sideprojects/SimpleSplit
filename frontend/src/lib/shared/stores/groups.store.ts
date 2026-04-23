@@ -78,7 +78,7 @@ function createGroupsStore() {
 				return newState;
 			}),
 		getGroup: (id: string) => store.get()[id],
-		clear: () => store.clear
+		clear: () => store.clear()
 	};
 }
 

@@ -41,7 +41,7 @@ function createBalancesStore() {
 				return newState;
 			}),
 		getBalance: (user_id: string) => store.get()[user_id],
-		clear: () => store.clear
+		clear: () => store.clear()
 	};
 }
 

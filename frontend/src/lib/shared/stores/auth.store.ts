@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { PUBLIC_FRONTEND_URL } from '$env/static/public';
 import { createPersistentStore } from '../app/persistentStore';
+import { balancesStore } from './balances.store';
 import { groupsStore } from './groups.store';
 import { transactionsStore } from './transactions.store';
 
@@ -64,5 +65,6 @@ export async function clientSideLogout(): Promise<void> {
 	}));
 	groupsStore.clear();
 	transactionsStore.clear();
+	balancesStore.clear();
 	await goto('/auth/login');
 }
