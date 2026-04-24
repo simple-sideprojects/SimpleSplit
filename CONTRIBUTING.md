@@ -57,20 +57,30 @@ Everything CI runs is available locally through `just`.
 - Conventional-ish commit messages (`feat:`, `fix:`, `chore:`, `refactor:`,
   `test:`, `docs:`) — useful for the changelog.
 - PR title: the shipping summary. Body: what + why + how it was tested.
-- Keep PRs reviewable. Big refactors land in phases; see the PR series that
-  landed this architecture.
+- Keep PRs reviewable. Big refactors land in phases.
 
 ## Architectural invariants
 
-- **Single data path.** Universal `+page.ts` loaders call the generated SDK.
-  SSR uses `event.fetch`; client uses `window.fetch`. No dual `+page.server.ts`
-  + `onMount(onPageLoad)` paths.
+Please preserve these when making changes — they're the spine of the
+architecture:
+
+- **Single data path.** Every route is a universal `+page.ts` (or `+layout.ts`)
+  that calls the generated SDK and prefetches into TanStack Query. SSR
+  executes the load on the server with `event.fetch`; the browser/Capacitor
+  executes it with `window.fetch`. Do not add `+page.server.ts` / `+layout.server.ts`
+  unless you need a genuinely server-only surface (and then keep data fetching
+  in the universal loader).
 - **Token transport is always `Authorization: Bearer <token>`.** Storage
-  differs — httpOnly cookie on SSR web, `@capacitor/preferences` in the
-  browser/app. See `frontend/src/lib/shared/auth/storage.ts`.
-- **Per-request SDK client on SSR.** `event.locals.api` is built fresh in
-  `hooks.server.ts` with the request's `fetch` + token. Never mutate the
-  module-scoped client on the server.
-- **TanStack Query owns server-state cache.** `auth.store` is session state
-  only. The stores under `shared/stores/` (groups/balances/transactions) are
-  legacy and should disappear in follow-ups.
+  differs: httpOnly cookie for SSR (written by `/api/auth/{login,register}`,
+  read by `hooks.server.ts`); `@capacitor/preferences` for the browser and
+  native app via `lib/shared/auth/storage.ts`.
+- **Per-request SDK client on SSR.** `hooks.server.ts` publishes
+  `event.locals.api` (built with the request's `fetch` + token) and wraps
+  `event.fetch` so any universal-loader call to `PUBLIC_BACKEND_URL` carries
+  the Bearer header. Never mutate a module-scoped SDK client from a request.
+- **TanStack Query owns cached server state.** `auth.store` holds the session
+  `user` only (plain `writable`, no persistence). There is no other
+  client-side data store.
+- **The OpenAPI snapshot is the contract.** Don't edit `frontend/src/lib/client/**`
+  by hand — regenerate via `just generate-api`. CI's `api-drift` job will
+  reject PRs where the snapshot or the generated client would change.

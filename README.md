@@ -85,23 +85,31 @@ just dev-frontend # SvelteKit only
 
 ```
 backend/
-  app/                 FastAPI application
-    routers/           one router per resource
-    services/          auth, balance, email
-    database/models/   SQLModel entities
-    scripts/           dump_openapi.py
-  alembic/             migrations
-  tests/               pytest suite
-  openapi.json         committed schema snapshot (contract)
+  app/
+    routers/             one router per resource
+    services/            auth, balance, email
+    database/models/     SQLModel entities
+    dependencies/        FastAPI `CurrentUser` / `CurrentSettings`
+    scripts/             dump_openapi.py
+    exceptions.py        unified error envelope + request_id
+    logging_config.py    JSON logging + request-id middleware
+    main.py              app factory, CORS, exception handlers
+  alembic/               migrations
+  tests/                 pytest suite
+  openapi.json           committed schema snapshot (the contract)
 frontend/
   src/
-    routes/            SvelteKit routes
+    routes/              SvelteKit routes (universal +page.ts only)
     lib/
-      client/          generated SDK (do not edit by hand)
-      shared/          shared stores, auth, forms
-      components/      UI components
-    hooks.server.ts    SSR request lifecycle
-  tests/               Playwright e2e
+      client/            generated SDK (do not edit by hand)
+      query/             QueryClient factory + shared queryOptions
+      server/            SSR-only helpers (per-request SDK client)
+      shared/auth/       authStorage, interceptor, login/register flows
+      shared/form/       superForm wrapper (SPA-mode default)
+      components/        UI components
+    hooks.server.ts      SSR lifecycle, auth, request-bound fetch
+    hooks.client.ts      installs the SDK auth interceptor
+  tests/                 Playwright e2e
 ```
 
 ## Contributing
