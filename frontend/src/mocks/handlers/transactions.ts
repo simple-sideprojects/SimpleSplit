@@ -47,7 +47,7 @@ export const getTransactionsMock = http.get(
 
 export const getTotalTransactionsMock = http.get(
 	`${env.PUBLIC_BACKEND_URL}/api/groups/:groupId/transactions/total`,
-	() => {
+	({ request }) => {
 		return bypassOrMock(request, HttpResponse.json(mockTransactions.length));
 	}
 );

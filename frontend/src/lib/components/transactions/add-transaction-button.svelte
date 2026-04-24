@@ -1,9 +1,10 @@
 <script lang="ts">
+	import type { Group, UserResponse } from '$lib/client/types.gen';
 	import IconPlus from '~icons/tabler/plus';
 	import AddTransactionDialog from './add-transaction-dialog.svelte';
 
-	let { groups, user } = $props();
-	let openDialog: () => void;
+	let { groups, user }: { groups: Group[] | undefined; user: UserResponse | null } = $props();
+	let openDialog = $state<() => void>(() => {});
 </script>
 
 <button

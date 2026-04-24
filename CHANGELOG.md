@@ -42,11 +42,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `frontend/src/lib/server/hooks/cors.ts`.
 - `frontend/src/lib/shared/stores/{groups,balances,transactions}.store.ts`
   and their README. TanStack Query owns cached server state now.
-- Every `+page.server.ts` / `+layout.server.ts` under `routes/` except one:
-  `(app)/+page.server.ts` keeps the `createTransaction` action because the
-  `add-transaction-dialog` component still posts via SvelteKit actions.
-  Converting that component is the last remaining Phase 3 task (its
-  pre-existing type errors are unchanged from before this branch).
+- **Every** `+page.server.ts` / `+layout.server.ts` under `routes/`. Both
+  transaction dialogs were rewritten to drop SuperForms entirely and call
+  `createTransactionTransactionsPost` /
+  `updateTransactionTransactionsTransactionIdPut` via TanStack Query
+  mutations, invalidating balances + transaction queries on success. The
+  edit dialog also stopped POSTing to the fictional
+  `/api/transactions/{id}` endpoint with non-existent fields
+  (`description`, `from`, `to`); it now binds to the real `TransactionRead`
+  shape and pulls the group's member list via a TanStack Query.
+
+### Other fixes
+- `mocks/handlers/transactions.ts`: `getTotalTransactionsMock` was
+  referencing an undefined `request` — added the destructure.
+- `add-transaction-button`: `openDialog` ref promoted to `$state` so Svelte 5
+  reactivity propagates the dialog handle the child binds back into.
+
+### Result
+- `svelte-check`: **0 errors**.
+- `pnpm build:node` and `pnpm build:static` both succeed.
+- backend pytest: 70 passed. frontend vitest: 3 passed.
+- `grep -r 'isCompiledStatic\|onPageLoad\|onLayoutLoad\|triggerAction\|createCustomRequestForFormAction'` in `frontend/src` → 0 hits.
+- `find frontend/src/routes -name '+page.server.ts' -o -name '+layout.server.ts'` → 0 hits.
 
 
 - Root `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `Justfile`,

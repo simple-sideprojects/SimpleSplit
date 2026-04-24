@@ -1,230 +1,112 @@
 <script lang="ts">
+	import {
+		createTransactionTransactionsPostMutation,
+		getUserBalancesBalancesGetQueryKey,
+		readGroupGroupsGroupIdGetQueryKey,
+		readGroupTransactionsGroupsGroupIdTransactionsGetQueryKey,
+		readTransactionsUserIsParticipantInTransactionsGetQueryKey
+	} from '$lib/client/@tanstack/svelte-query.gen';
 	import type {
-		TransactionCreate,
+		Group,
 		TransactionParticipantCreate,
-		TransactionType
+		TransactionType,
+		UserResponse
 	} from '$lib/client/types.gen';
-	import { zTransactionCreate } from '$lib/client/zod.gen';
+	import { groupQueryOptions } from '$lib/query/options';
+	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
-	import { zod } from 'sveltekit-superforms/adapters';
-	import { superForm } from 'sveltekit-superforms/client';
 	import IconLoader from '~icons/tabler/loader';
 	import IconX from '~icons/tabler/x';
 
-	let { groups, openDialog = $bindable(), user } = $props();
+	let {
+		groups,
+		openDialog = $bindable(),
+		user
+	}: {
+		groups: Group[] | undefined;
+		openDialog?: () => void;
+		user: UserResponse | null;
+	} = $props();
 
 	let dialog: HTMLDialogElement;
-	let loading = $state(false);
+	let title = $state('');
+	let amountStr = $state('');
+	let payerId = $state<string | null>(null);
 	let selectedGroup = $state<string | null>(null);
-	let groupWithUsers = $state<any | null>(null);
 	let splitType = $state<TransactionType>('EVEN');
 	let selectedParticipants = $state<Set<string>>(new Set());
 	let participantAmounts = $state<Map<string, string>>(new Map());
 	let purchasedDate = $state(new Date().toISOString().split('T')[0]);
 	let participantsError = $state<string | null>(null);
+	let formError = $state<string | null>(null);
 
-	const {
-		form: transactionForm,
-		errors,
-		enhance,
-		submitting,
-		reset
-	} = superForm(
-		{},
-		{
-			validators: zod(zTransactionCreate),
-			resetForm: true,
-			dataType: 'json',
-			onResult: ({ result }) => {
-				if (result.type === 'success') {
-					toast.success('Transaction added successfully');
-					closeDialog();
-				} else if (result.type === 'error') {
-					toast.error('Failed to add transaction');
-				}
-			},
-			onSubmit: ({ jsonData, cancel }) => {
-				// Data validation check
-				if (!selectedGroup || !$transactionForm.payer_id || selectedParticipants.size === 0) {
-					toast.error('Please fill in all required fields');
-					return cancel();
-				}
+	const queryClient = useQueryClient();
 
-				// Convert amount from euros to cents
-				const amountInCents = Math.round(parseFloat($transactionForm.amount || '0') * 100);
+	// Pull the group with users on demand once the user picks one.
+	const groupDetailsQuery = $derived.by(() => {
+		const id = selectedGroup;
+		return id
+			? createQuery({ ...groupQueryOptions(id), enabled: !!id })
+			: createQuery({ queryKey: ['noop-group'], queryFn: async () => null, enabled: false });
+	});
+	let groupWithUsers = $derived($groupDetailsQuery.data ?? null);
 
-				// Validate participants based on split type
-				participantsError = null;
-				const participants: TransactionParticipantCreate[] = [];
-
-				if (selectedParticipants.size > 0) {
-					if (splitType === 'EVEN') {
-						const amountPerPerson = Math.round(amountInCents / selectedParticipants.size);
-						for (const userId of selectedParticipants) {
-							participants.push({
-								debtor_id: userId,
-								amount_owed: amountPerPerson
-							});
-						}
-					} else if (splitType === 'AMOUNT') {
-						let totalAmount = 0;
-						// First pass to calculate total amount
-						for (const userId of selectedParticipants) {
-							const userAmount = parseFloat(participantAmounts.get(userId) || '0');
-							if (isNaN(userAmount)) {
-								participantsError = `Please enter a valid amount for all participants`;
-								return cancel();
-							}
-							totalAmount += Math.round(userAmount * 100);
-						}
-
-						if (totalAmount !== amountInCents) {
-							participantsError = `Total amounts (${(totalAmount / 100).toFixed(2)}€) don't match transaction amount (${(amountInCents / 100).toFixed(2)}€)`;
-							return cancel();
-						}
-
-						// Second pass to create participants
-						for (const userId of selectedParticipants) {
-							const userAmount = parseFloat(participantAmounts.get(userId) || '0');
-							participants.push({
-								debtor_id: userId,
-								amount_owed: Math.round(userAmount * 100)
-							});
-						}
-					} else if (splitType === 'PERCENTAGE') {
-						let totalPercentage = 0;
-						// First pass to validate percentages
-						for (const userId of selectedParticipants) {
-							const percentage = parseFloat(participantAmounts.get(userId) || '0');
-							if (isNaN(percentage)) {
-								participantsError = `Please enter a valid percentage for all participants`;
-								return cancel();
-							}
-							totalPercentage += percentage;
-						}
-
-						if (Math.abs(totalPercentage - 100) > 0.01) {
-							participantsError = `Total percentage (${totalPercentage.toFixed(2)}%) doesn't add up to 100%`;
-							return cancel();
-						}
-
-						// Second pass to create participants
-						for (const userId of selectedParticipants) {
-							const percentage = parseFloat(participantAmounts.get(userId) || '0');
-							const calculatedAmount = Math.round((percentage / 100) * amountInCents);
-							participants.push({
-								debtor_id: userId,
-								amount_owed: calculatedAmount
-							});
-						}
-					}
-				}
-
-				const formData: TransactionCreate = {
-					group_id: selectedGroup,
-					payer_id: $transactionForm.payer_id,
-					title: $transactionForm.title,
-					amount: amountInCents,
-					purchased_on: purchasedDate ? new Date(purchasedDate).toISOString() : undefined,
-					transaction_type: splitType,
-					participants: participants
-				};
-
-				jsonData(formData);
-			}
-		}
-	);
+	const createTxn = createMutation(createTransactionTransactionsPostMutation());
 
 	$effect(() => {
-		if (selectedGroup) {
-			loadGroupUsers();
+		// When the loaded group changes, reset participants to "all members" and
+		// pre-fill the payer with the current user.
+		if (groupWithUsers && groupWithUsers.id === selectedGroup) {
+			selectedParticipants = new Set();
+			participantAmounts.clear();
+			for (const member of groupWithUsers.users ?? []) {
+				if (member.id) selectedParticipants.add(member.id);
+			}
+			if (user?.id) payerId = user.id;
+			participantsError = null;
 		}
 	});
 
-	// Separate $effect for splitType changes to prevent infinite loops
 	$effect(() => {
-		const currentSplitType = splitType;
-
-		// Only reset participant amounts when split type changes, but don't create a new Map object
-		if (currentSplitType === 'EVEN') {
-			for (const userId of participantAmounts.keys()) {
-				participantAmounts.delete(userId);
-			}
+		// Splitting evenly clears the per-person amount inputs; other modes
+		// initialise blank inputs for any newly-selected participants.
+		if (splitType === 'EVEN') {
+			participantAmounts.clear();
 		} else {
-			// Initialize amounts for all selected participants if they don't have amounts yet
 			for (const userId of selectedParticipants) {
-				if (!participantAmounts.has(userId)) {
-					participantAmounts.set(userId, '');
-				}
+				if (!participantAmounts.has(userId)) participantAmounts.set(userId, '');
 			}
 		}
 		participantsError = null;
 	});
 
-	async function loadGroupUsers() {
-		loading = true;
-		try {
-			const response = await fetch(`/api/groups/${selectedGroup}`);
-			if (!response.ok) {
-				throw new Error('Failed to fetch group');
-			}
-			const data = await response.json();
-			groupWithUsers = data;
-			// Reset participants when group changes
-			selectedParticipants = new Set();
+	openDialog = () => dialog.showModal();
 
-			// Clear the participantAmounts map instead of creating a new one
-			for (const userId of participantAmounts.keys()) {
-				participantAmounts.delete(userId);
-			}
-
-			$transactionForm.payer_id = user.id;
-			for (const user of groupWithUsers.users) {
-				selectedParticipants.add(user.id);
-			}
-
-			participantsError = null;
-		} catch (error) {
-			toast.error('Failed to load group users');
-		} finally {
-			loading = false;
-		}
-	}
-
-	openDialog = () => {
-		dialog.showModal();
-	};
-
-	const closeDialog = () => {
+	function closeDialog() {
 		dialog.close();
 		resetForm();
-	};
+	}
 
-	const handleClickOutside = (event: MouseEvent) => {
+	function handleClickOutside(event: MouseEvent) {
 		const rect = dialog.getBoundingClientRect();
 		const isInDialog =
 			rect.top <= event.clientY &&
 			event.clientY <= rect.top + rect.height &&
 			rect.left <= event.clientX &&
 			event.clientX <= rect.left + rect.width;
-		if (!isInDialog) {
-			dialog.close();
-		}
-	};
+		if (!isInDialog) dialog.close();
+	}
 
 	function resetForm() {
-		reset();
+		title = '';
+		amountStr = '';
+		payerId = null;
 		selectedGroup = null;
-		groupWithUsers = null;
 		splitType = 'EVEN';
 		selectedParticipants = new Set();
-
-		// Clear the map instead of creating a new one
-		for (const userId of participantAmounts.keys()) {
-			participantAmounts.delete(userId);
-		}
-
+		participantAmounts.clear();
 		participantsError = null;
+		formError = null;
 		purchasedDate = new Date().toISOString().split('T')[0];
 	}
 
@@ -234,35 +116,137 @@
 			participantAmounts.delete(userId);
 		} else {
 			selectedParticipants.add(userId);
-			if (splitType !== 'EVEN') {
-				participantAmounts.set(userId, '');
-			}
+			if (splitType !== 'EVEN') participantAmounts.set(userId, '');
 		}
+		// Force reactivity (Set/Map mutations don't re-trigger by themselves)
+		selectedParticipants = new Set(selectedParticipants);
 		participantsError = null;
 	}
 
 	function calculateTotal() {
 		if (splitType === 'AMOUNT') {
 			let total = 0;
-			for (const userId of selectedParticipants) {
-				const amount = parseFloat(participantAmounts.get(userId) || '0');
-				if (!isNaN(amount)) {
-					total += amount;
-				}
+			for (const id of selectedParticipants) {
+				const v = parseFloat(participantAmounts.get(id) || '0');
+				if (!isNaN(v)) total += v;
 			}
 			return total.toFixed(2) + '€';
-		} else if (splitType === 'PERCENTAGE') {
+		}
+		if (splitType === 'PERCENTAGE') {
 			let total = 0;
-			for (const userId of selectedParticipants) {
-				const percentage = parseFloat(participantAmounts.get(userId) || '0');
-				if (!isNaN(percentage)) {
-					total += percentage;
-				}
+			for (const id of selectedParticipants) {
+				const v = parseFloat(participantAmounts.get(id) || '0');
+				if (!isNaN(v)) total += v;
 			}
 			return total.toFixed(2) + '%';
 		}
 		return null;
 	}
+
+	function buildParticipants(amountInCents: number): TransactionParticipantCreate[] | string {
+		const participants: TransactionParticipantCreate[] = [];
+
+		if (splitType === 'EVEN') {
+			const per = Math.round(amountInCents / selectedParticipants.size);
+			for (const id of selectedParticipants) participants.push({ debtor_id: id, amount_owed: per });
+			return participants;
+		}
+
+		if (splitType === 'AMOUNT') {
+			let total = 0;
+			for (const id of selectedParticipants) {
+				const v = parseFloat(participantAmounts.get(id) || '0');
+				if (isNaN(v)) return 'Please enter a valid amount for all participants';
+				total += Math.round(v * 100);
+			}
+			if (total !== amountInCents) {
+				return `Total amounts (${(total / 100).toFixed(2)}€) don't match transaction amount (${(amountInCents / 100).toFixed(2)}€)`;
+			}
+			for (const id of selectedParticipants) {
+				const v = parseFloat(participantAmounts.get(id) || '0');
+				participants.push({ debtor_id: id, amount_owed: Math.round(v * 100) });
+			}
+			return participants;
+		}
+
+		// PERCENTAGE
+		let totalPct = 0;
+		for (const id of selectedParticipants) {
+			const v = parseFloat(participantAmounts.get(id) || '0');
+			if (isNaN(v)) return 'Please enter a valid percentage for all participants';
+			totalPct += v;
+		}
+		if (Math.abs(totalPct - 100) > 0.01) {
+			return `Total percentage (${totalPct.toFixed(2)}%) doesn't add up to 100%`;
+		}
+		for (const id of selectedParticipants) {
+			const pct = parseFloat(participantAmounts.get(id) || '0');
+			participants.push({
+				debtor_id: id,
+				amount_owed: Math.round((pct / 100) * amountInCents)
+			});
+		}
+		return participants;
+	}
+
+	async function handleSubmit(event: SubmitEvent) {
+		event.preventDefault();
+		formError = null;
+		participantsError = null;
+
+		if (!selectedGroup || !payerId || selectedParticipants.size === 0 || !title || !amountStr) {
+			formError = 'Please fill in all required fields';
+			return;
+		}
+
+		const amountInCents = Math.round(parseFloat(amountStr) * 100);
+		if (!Number.isFinite(amountInCents) || amountInCents <= 0) {
+			formError = 'Amount must be greater than 0';
+			return;
+		}
+
+		const built = buildParticipants(amountInCents);
+		if (typeof built === 'string') {
+			participantsError = built;
+			return;
+		}
+
+		try {
+			await $createTxn.mutateAsync({
+				body: {
+					group_id: selectedGroup,
+					payer_id: payerId,
+					title,
+					amount: amountInCents,
+					purchased_on: purchasedDate ? new Date(purchasedDate).toISOString() : undefined,
+					transaction_type: splitType,
+					participants: built
+				}
+			});
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: getUserBalancesBalancesGetQueryKey() }),
+				queryClient.invalidateQueries({
+					queryKey: readTransactionsUserIsParticipantInTransactionsGetQueryKey()
+				}),
+				queryClient.invalidateQueries({
+					queryKey: readGroupGroupsGroupIdGetQueryKey({ path: { group_id: selectedGroup } })
+				}),
+				queryClient.invalidateQueries({
+					queryKey: readGroupTransactionsGroupsGroupIdTransactionsGetQueryKey({
+						path: { group_id: selectedGroup }
+					})
+				})
+			]);
+			toast.success('Transaction added successfully');
+			closeDialog();
+		} catch (e) {
+			toast.error('Failed to add transaction');
+			formError = e instanceof Error ? e.message : 'Failed to add transaction';
+		}
+	}
+
+	const submitting = $derived($createTxn.isPending);
+	const loading = $derived(!!selectedGroup && $groupDetailsQuery.isLoading);
 </script>
 
 <dialog
@@ -282,21 +266,17 @@
 		</button>
 	</div>
 
-	<form action="/?/createTransaction" method="POST" class="mt-6 space-y-4" use:enhance>
+	<form class="mt-6 space-y-4" onsubmit={handleSubmit}>
 		<div>
 			<label for="title" class="block text-sm font-medium text-gray-700">Title</label>
 			<input
 				type="text"
 				id="title"
-				name="title"
-				bind:value={$transactionForm.title}
+				bind:value={title}
 				required
 				class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 				placeholder="Enter transaction title"
 			/>
-			{#if $errors.title}
-				<p class="mt-1 text-sm text-red-600">{$errors.title}</p>
-			{/if}
 		</div>
 
 		<div>
@@ -304,16 +284,12 @@
 			<input
 				type="number"
 				id="amount"
-				name="amount"
-				bind:value={$transactionForm.amount}
+				bind:value={amountStr}
 				step="0.01"
 				min="0"
 				class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 				required
 			/>
-			{#if $errors.amount}
-				<p class="mt-1 text-sm text-red-600">{$errors.amount}</p>
-			{/if}
 		</div>
 
 		<div>
@@ -322,7 +298,6 @@
 				<input
 					type="date"
 					id="purchased_on"
-					name="purchased_on"
 					bind:value={purchasedDate}
 					class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 				/>
@@ -333,19 +308,15 @@
 			<label for="group_id" class="block text-sm font-medium text-gray-700">Group</label>
 			<select
 				id="group_id"
-				name="group_id"
 				bind:value={selectedGroup}
 				class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 				required
 			>
-				<option value="" disabled selected>Select a group</option>
-				{#each groups || [] as group}
+				<option value={null} disabled selected>Select a group</option>
+				{#each groups ?? [] as group (group.id)}
 					<option value={group.id}>{group.name}</option>
 				{/each}
 			</select>
-			{#if $errors.group_id}
-				<p class="mt-1 text-sm text-red-600">{$errors.group_id}</p>
-			{/if}
 		</div>
 
 		{#if groupWithUsers}
@@ -353,54 +324,37 @@
 				<label for="payer_id" class="block text-sm font-medium text-gray-700">Payer</label>
 				<select
 					id="payer_id"
-					name="payer_id"
-					bind:value={$transactionForm.payer_id}
+					bind:value={payerId}
 					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 					required
 				>
-					<option value="" disabled selected>Select who paid</option>
-					{#each groupWithUsers.users || [] as user}
-						<option value={user.id}>{user.username}</option>
+					<option value={null} disabled>Select who paid</option>
+					{#each groupWithUsers.users ?? [] as member (member.id)}
+						<option value={member.id}>{member.username}</option>
 					{/each}
 				</select>
-				{#if $errors.payer_id}
-					<p class="mt-1 text-sm text-red-600">{$errors.payer_id}</p>
-				{/if}
 			</div>
 
-			<!-- Split Type Tabs -->
 			<div class="mt-4">
-				<label class="mb-2 block text-sm font-medium text-gray-700">Split Type</label>
-				<div class="flex overflow-hidden rounded-md border border-gray-200">
+				<label for="split-type" class="mb-2 block text-sm font-medium text-gray-700">Split Type</label>
+				<div id="split-type" class="flex overflow-hidden rounded-md border border-gray-200">
 					<button
 						type="button"
-						class={`flex-1 px-3 py-2 text-sm font-medium ${
-							splitType === 'EVEN'
-								? 'bg-blue-100 text-blue-700'
-								: 'bg-white text-gray-500 hover:bg-gray-50'
-						}`}
+						class={`flex-1 px-3 py-2 text-sm font-medium ${splitType === 'EVEN' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
 						onclick={() => (splitType = 'EVEN')}
 					>
 						Even
 					</button>
 					<button
 						type="button"
-						class={`flex-1 px-3 py-2 text-sm font-medium ${
-							splitType === 'AMOUNT'
-								? 'bg-blue-100 text-blue-700'
-								: 'bg-white text-gray-500 hover:bg-gray-50'
-						}`}
+						class={`flex-1 px-3 py-2 text-sm font-medium ${splitType === 'AMOUNT' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
 						onclick={() => (splitType = 'AMOUNT')}
 					>
 						Amount
 					</button>
 					<button
 						type="button"
-						class={`flex-1 px-3 py-2 text-sm font-medium ${
-							splitType === 'PERCENTAGE'
-								? 'bg-blue-100 text-blue-700'
-								: 'bg-white text-gray-500 hover:bg-gray-50'
-						}`}
+						class={`flex-1 px-3 py-2 text-sm font-medium ${splitType === 'PERCENTAGE' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
 						onclick={() => (splitType = 'PERCENTAGE')}
 					>
 						Percentage
@@ -408,15 +362,14 @@
 				</div>
 			</div>
 
-			<!-- Participants -->
 			<div>
 				<div class="flex items-center justify-between">
-					<label class="mb-2 block text-sm font-medium text-gray-700">Participants</label>
+					<label for="participants-list" class="mb-2 block text-sm font-medium text-gray-700">Participants</label>
 					{#if splitType !== 'EVEN' && selectedParticipants.size > 0}
 						<span class="text-sm text-gray-500">
 							Total: {calculateTotal()}
-							{#if splitType === 'AMOUNT' && $transactionForm.amount}
-								/ {parseFloat($transactionForm.amount).toFixed(2)}€
+							{#if splitType === 'AMOUNT' && amountStr}
+								/ {parseFloat(amountStr).toFixed(2)}€
 							{:else if splitType === 'PERCENTAGE'}
 								/ 100%
 							{/if}
@@ -424,31 +377,29 @@
 					{/if}
 				</div>
 
-				<div class="max-h-48 space-y-2 overflow-y-auto rounded-md border border-gray-200 p-2">
-					{#each groupWithUsers.users || [] as user}
-						<div
-							class="flex items-center justify-between border-b border-gray-100 p-2 last:border-b-0"
-						>
+				<div id="participants-list" class="max-h-48 space-y-2 overflow-y-auto rounded-md border border-gray-200 p-2">
+					{#each groupWithUsers.users ?? [] as member (member.id)}
+						<div class="flex items-center justify-between border-b border-gray-100 p-2 last:border-b-0">
 							<div class="flex items-center">
 								<input
 									type="checkbox"
-									id={`participant-${user.id}`}
-									checked={selectedParticipants.has(user.id)}
-									onclick={() => toggleParticipant(user.id)}
+									id={`participant-${member.id}`}
+									checked={member.id ? selectedParticipants.has(member.id) : false}
+									onclick={() => member.id && toggleParticipant(member.id)}
 									class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 								/>
-								<label for={`participant-${user.id}`} class="ml-2 text-sm text-gray-700">
-									{user.username}
+								<label for={`participant-${member.id}`} class="ml-2 text-sm text-gray-700">
+									{member.username}
 								</label>
 							</div>
-							{#if selectedParticipants.has(user.id) && splitType !== 'EVEN'}
+							{#if member.id && selectedParticipants.has(member.id) && splitType !== 'EVEN'}
 								<div class="w-24">
 									<input
 										type="number"
 										class="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
 										placeholder={splitType === 'PERCENTAGE' ? '% share' : '€ amount'}
-										value={participantAmounts.get(user.id) || ''}
-										oninput={(e) => participantAmounts.set(user.id, e.currentTarget.value)}
+										value={participantAmounts.get(member.id) || ''}
+										oninput={(e) => participantAmounts.set(member.id!, e.currentTarget.value)}
 										step={splitType === 'PERCENTAGE' ? '1' : '0.01'}
 										min="0"
 										max={splitType === 'PERCENTAGE' ? '100' : undefined}
@@ -460,8 +411,6 @@
 				</div>
 				{#if participantsError}
 					<p class="mt-1 text-sm text-red-600">{participantsError}</p>
-				{:else if $errors.participants}
-					<p class="mt-1 text-sm text-red-600">{$errors.participants}</p>
 				{/if}
 
 				{#if selectedParticipants.size === 0}
@@ -475,6 +424,10 @@
 			</div>
 		{/if}
 
+		{#if formError}
+			<div class="rounded-md bg-red-50 p-3 text-sm text-red-700">{formError}</div>
+		{/if}
+
 		<div class="mt-6 flex justify-end gap-3">
 			<button
 				type="button"
@@ -485,10 +438,10 @@
 			</button>
 			<button
 				type="submit"
-				disabled={$submitting || loading}
+				disabled={submitting || loading}
 				class="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 			>
-				{#if $submitting}
+				{#if submitting}
 					<div class="flex items-center gap-2">
 						<IconLoader class="size-4 animate-spin" />
 						<span>Adding...</span>
