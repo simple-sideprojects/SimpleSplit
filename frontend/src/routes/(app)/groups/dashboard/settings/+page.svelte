@@ -1,25 +1,39 @@
 <script lang="ts">
-	import { browser, building } from '$app/environment';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import {
+		deleteGroupGroupsGroupIdDeleteMutation,
+		deleteUserFromGroupGroupsGroupIdUsersUserIdDeleteMutation,
+		generateInviteLinkInvitesGroupIdGeneratePostMutation,
+		inviteByEmailInvitesGroupIdEmailPostMutation,
+		readGroupGroupsGroupIdGetQueryKey,
+		readGroupsGroupsGetQueryKey,
+		rejectInviteInvitesRejectTokenDeleteMutation
+	} from '$lib/client/@tanstack/svelte-query.gen';
+	import { groupQueryOptions } from '$lib/query/options';
+	import { superForm } from '$lib/shared/form/super-form';
+	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
-	import type { Group } from '$lib/client';
 	import IconCopy from '~icons/tabler/copy';
 	import IconLink from '~icons/tabler/link';
 	import IconTrash from '~icons/tabler/trash';
 	import IconUserPlus from '~icons/tabler/user-plus';
 	import IconX from '~icons/tabler/x';
-	import { page } from '$app/state';
-	import { superForm } from '$lib/shared/form/super-form.js';
-	import { groupsStore } from '$lib/shared/stores/groups.store.js';
 	import type { PageData } from './$types';
 
-	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
-	const groupId =
-		building || !page.url.searchParams.has('groupId')
-			? null
-			: (page.url.searchParams.get('groupId') as string);
-	let group: Group | null = $derived(groupId ? $groupsStore[groupId] : null);
+	const groupId = $derived((data.groupId ?? '') as string);
+
+	const queryClient = useQueryClient();
+	const groupQuery = createQuery(groupQueryOptions(groupId));
+	let group = $derived($groupQuery.data);
+
+	const inviteByEmail = createMutation(inviteByEmailInvitesGroupIdEmailPostMutation());
+	const generateLink = createMutation(generateInviteLinkInvitesGroupIdGeneratePostMutation());
+	const deleteGroup = createMutation(deleteGroupGroupsGroupIdDeleteMutation());
+	const rejectInvite = createMutation(rejectInviteInvitesRejectTokenDeleteMutation());
+	const removeMember = createMutation(deleteUserFromGroupGroupsGroupIdUsersUserIdDeleteMutation());
+
 	let memberToRemove = $state<string | null>(null);
 	let showDeleteConfirm = $state(false);
 	let deleteConfirmation = $state('');
@@ -27,118 +41,105 @@
 	let isRemovingMember = $state(false);
 	let isCancelingInvite = $state(false);
 
-	//Invite Member Form
+	async function invalidateGroup() {
+		await Promise.all([
+			queryClient.invalidateQueries({
+				queryKey: readGroupGroupsGroupIdGetQueryKey({ path: { group_id: groupId } })
+			}),
+			queryClient.invalidateQueries({ queryKey: readGroupsGroupsGetQueryKey() })
+		]);
+	}
+
 	const {
 		form: inviteMemberForm,
 		enhance: enhanceInvite,
 		submitting: inviteSubmitting,
-		errors: inviteMemberErrors
+		errors: inviteMemberErrors,
+		reset: resetInviteForm
 	} = superForm(data.inviteMemberForm, {
 		resetForm: true,
-		onSubmit: ({ formData }) => {
-			formData.set('groupId', groupId as string);
-		},
-		onResult: ({ result }) => {
-			if (result.type === 'success') {
-				if (result.data?.group) {
-					$groupsStore[result.data.group.id] = result.data.group;
-					data.group = result.data.group;
-				}
-
-				if ($inviteMemberForm.email) {
-					toast.success(`Invitation sent to ${$inviteMemberForm.email}`);
-				}
+		onUpdate: async ({ form, cancel }) => {
+			if (!form.valid) return;
+			try {
+				await $inviteByEmail.mutateAsync({
+					path: { group_id: groupId },
+					body: { email: form.data.email as string }
+				});
+				await invalidateGroup();
+				toast.success(`Invitation sent to ${form.data.email}`);
+				resetInviteForm();
+			} catch (e) {
+				toast.error(e instanceof Error ? e.message : 'Failed to send invitation');
+				cancel();
 			}
 		}
 	});
 
-	//Delete Group Form
-	const { enhance: enhanceGroupDelete } = superForm(
-		{},
-		{
-			onSubmit: ({ formData }) => {
-				formData.set('groupId', groupId as string);
-				isDeletingGroup = true;
-				return async () => {
-					toast.success('Group deleted successfully');
-					await goto('/groups/dashboard/');
-				};
+	async function handleGenerateLink() {
+		try {
+			const res = await $generateLink.mutateAsync({ path: { group_id: groupId } });
+			if (browser && res?.token) {
+				const link = `${document.location.origin}/groups/invite?token=${res.token}`;
+				await navigator.clipboard.writeText(link);
+				toast.success('Invite link copied to clipboard');
 			}
+			await invalidateGroup();
+		} catch {
+			toast.error('Failed to generate invite link');
 		}
-	);
-
-	//Cancel Invite Form
-	const { enhance: enhanceCancelInvite } = superForm(
-		{},
-		{
-			onSubmit: ({ formData }) => {
-				formData.set('groupId', groupId as string);
-				isCancelingInvite = true;
-
-				return async ({ update, result }) => {
-					await update();
-					isCancelingInvite = false;
-
-					if (result.type === 'success') {
-						toast.success('Invitation canceled');
-					}
-				};
-			}
-		}
-	);
-
-	//Generate Invite Link Form
-	const { enhance: enhanceGenerateInviteLink } = superForm(
-		{},
-		{
-			onSubmit: ({ formData }) => {
-				formData.set('groupId', groupId as string);
-				return async ({ result, update }) => {
-					if (result.type === 'success' && browser && result.data?.invite) {
-						const invite = result.data.invite as { token: string };
-						const link = `${document.location.origin}/groups/invite?token=${invite.token}`;
-						copyToClipboard(link);
-						toast.success('Invite link copied to clipboard');
-						await update();
-					}
-				};
-			}
-		}
-	);
-
-	//Remove Member Form
-	const { enhance: enhanceRemoveMember } = superForm(
-		{},
-		{
-			onSubmit: ({ formData }) => {
-				formData.set('groupId', groupId as string);
-				isRemovingMember = true;
-				return async ({ update, result }) => {
-					await update();
-					isRemovingMember = false;
-					memberToRemove = null;
-
-					if (result.type === 'success') {
-						toast.success('Member removed successfully');
-					}
-				};
-			}
-		}
-	);
-
-	//Copy to clipboard
-	function copyToClipboard(text: string) {
-		navigator.clipboard.writeText(text).then(
-			() => {
-				toast.success('Link copied to clipboard');
-			},
-			() => {
-				toast.error('Failed to copy link');
-			}
-		);
 	}
 
-	//Mobile App functionality not needed because of prerendering
+	async function handleCancelInvite(token: string) {
+		isCancelingInvite = true;
+		try {
+			await $rejectInvite.mutateAsync({ path: { token } });
+			await invalidateGroup();
+			toast.success('Invitation canceled');
+		} catch {
+			toast.error('Failed to cancel invitation');
+		} finally {
+			isCancelingInvite = false;
+		}
+	}
+
+	async function handleRemoveMember() {
+		if (!memberToRemove) return;
+		isRemovingMember = true;
+		try {
+			await $removeMember.mutateAsync({
+				path: { group_id: groupId, user_id: memberToRemove }
+			});
+			await invalidateGroup();
+			toast.success('Member removed successfully');
+		} catch {
+			toast.error('Failed to remove member');
+		} finally {
+			isRemovingMember = false;
+			memberToRemove = null;
+		}
+	}
+
+	async function handleDeleteGroup(event: SubmitEvent) {
+		event.preventDefault();
+		if (!group || deleteConfirmation !== group.name) return;
+		isDeletingGroup = true;
+		try {
+			await $deleteGroup.mutateAsync({ path: { group_id: groupId } });
+			await queryClient.invalidateQueries({ queryKey: readGroupsGroupsGetQueryKey() });
+			toast.success('Group deleted successfully');
+			await goto('/');
+		} catch {
+			toast.error('Failed to delete group');
+			isDeletingGroup = false;
+		}
+	}
+
+	function copyToClipboard(text: string) {
+		navigator.clipboard.writeText(text).then(
+			() => toast.success('Link copied to clipboard'),
+			() => toast.error('Failed to copy link')
+		);
+	}
 </script>
 
 {#if group}
@@ -153,9 +154,8 @@
 			</div>
 
 			<div class="p-4">
-				<!-- Add Member Form -->
 				<div class="flex gap-3">
-					<form action="?/inviteMember" method="POST" class="flex flex-1 gap-3" use:enhanceInvite>
+					<form method="POST" class="flex flex-1 gap-3" use:enhanceInvite>
 						<div class="flex-1">
 							<input
 								type="email"
@@ -175,26 +175,22 @@
 						</button>
 					</form>
 
-					<form action="?/generateInviteLink" method="POST" use:enhanceGenerateInviteLink>
-						<button
-							type="submit"
-							class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
-						>
-							<IconLink class="size-4" />
-							Create Link
-						</button>
-					</form>
+					<button
+						type="button"
+						onclick={handleGenerateLink}
+						class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+					>
+						<IconLink class="size-4" />
+						Create Link
+					</button>
 				</div>
 
 				{#if $inviteMemberErrors.email}
 					<div class="mt-2 rounded-md bg-red-50 p-3">
-						<p class="text-sm text-red-700">
-							{$inviteMemberErrors.email[$inviteMemberErrors.email.length - 1]}
-						</p>
+						<p class="text-sm text-red-700">{$inviteMemberErrors.email}</p>
 					</div>
 				{/if}
 
-				<!-- Active Members List -->
 				<h3 class="mt-4 mb-2 text-sm font-medium text-gray-700">Active Members</h3>
 				<div class="space-y-2">
 					{#each group.users ?? [] as member (member.id)}
@@ -214,7 +210,6 @@
 					{/each}
 				</div>
 
-				<!-- Pending Invitations -->
 				{#if group.invites && group.invites.length > 0}
 					<h3 class="mt-4 mb-2 text-sm font-medium text-gray-700">Pending Invitations</h3>
 					<div class="space-y-2">
@@ -240,16 +235,14 @@
 										>
 									{/if}
 								</div>
-								<form action="?/cancelInvite" method="POST" use:enhanceCancelInvite>
-									<input type="hidden" name="inviteToken" value={invite.token} />
-									<button
-										type="submit"
-										disabled={isCancelingInvite}
-										class="cursor-pointer rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 disabled:opacity-50"
-									>
-										<IconX class="size-4" />
-									</button>
-								</form>
+								<button
+									type="button"
+									disabled={isCancelingInvite}
+									onclick={() => handleCancelInvite(invite.token)}
+									class="cursor-pointer rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 disabled:opacity-50"
+								>
+									<IconX class="size-4" />
+								</button>
 							</div>
 						{/each}
 					</div>
@@ -279,12 +272,10 @@
 						</button>
 					</div>
 				{:else}
-					<form action="?/deleteGroup" method="POST" use:enhanceGroupDelete>
+					<form onsubmit={handleDeleteGroup}>
 						<div class="mb-2 flex flex-col">
-							<label for="confirm" class="text-sm font-medium text-gray-900">Confirm Deletion</label
-							>
-							<span class="mt-0.5 text-xs text-gray-500">Please type "{group.name}" to confirm</span
-							>
+							<label for="confirm" class="text-sm font-medium text-gray-900">Confirm Deletion</label>
+							<span class="mt-0.5 text-xs text-gray-500">Please type "{group.name}" to confirm</span>
 						</div>
 						<input
 							type="text"
@@ -360,25 +351,21 @@
 				</div>
 
 				<div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-					<form action="?/removeMember" method="POST" use:enhanceRemoveMember>
-						<input type="hidden" name="userId" value={memberToRemove} />
-						<div class="sm:flex sm:flex-row-reverse">
-							<button
-								type="submit"
-								disabled={isRemovingMember}
-								class="inline-flex w-full cursor-pointer justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50 sm:ml-3 sm:w-auto sm:text-sm"
-							>
-								{isRemovingMember ? 'Removing...' : 'Remove'}
-							</button>
-							<button
-								type="button"
-								class="mt-3 inline-flex w-full cursor-pointer justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
-								onclick={() => (memberToRemove = null)}
-							>
-								Cancel
-							</button>
-						</div>
-					</form>
+					<button
+						type="button"
+						disabled={isRemovingMember}
+						onclick={handleRemoveMember}
+						class="inline-flex w-full cursor-pointer justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50 sm:ml-3 sm:w-auto sm:text-sm"
+					>
+						{isRemovingMember ? 'Removing...' : 'Remove'}
+					</button>
+					<button
+						type="button"
+						class="mt-3 inline-flex w-full cursor-pointer justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+						onclick={() => (memberToRemove = null)}
+					>
+						Cancel
+					</button>
 				</div>
 			</div>
 		</div>

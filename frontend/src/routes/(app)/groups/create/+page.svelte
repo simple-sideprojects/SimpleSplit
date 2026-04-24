@@ -1,18 +1,45 @@
 <script lang="ts">
-	import { superForm } from '$lib/shared/form/super-form.js';
+	import { goto } from '$app/navigation';
+	import {
+		createGroupGroupsPostMutation,
+		readGroupsGroupsGetQueryKey
+	} from '$lib/client/@tanstack/svelte-query.gen';
+	import { superForm } from '$lib/shared/form/super-form';
+	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { toast } from 'svelte-sonner';
 	import IconLoader from '~icons/tabler/loader';
 	import type { PageData } from './$types';
 
 	const { data } = $props<{ data: PageData }>();
 
-	let { form, submitting, enhance } = superForm(data.groupCreateForm);
+	const queryClient = useQueryClient();
+	const createGroup = createMutation(createGroupGroupsPostMutation());
+
+	let { form, submitting, enhance, errors } = superForm(data.groupCreateForm, {
+		onUpdate: async ({ form, cancel }) => {
+			if (!form.valid) return;
+			try {
+				const group = await $createGroup.mutateAsync({
+					body: { name: form.data.name as string }
+				});
+				await queryClient.invalidateQueries({ queryKey: readGroupsGroupsGetQueryKey() });
+				toast.success('Group created');
+				if (group?.id) {
+					await goto(`/groups/dashboard/?groupId=${group.id}`);
+				}
+			} catch {
+				toast.error('Failed to create group');
+				cancel();
+			}
+		}
+	});
 </script>
 
 <div class="space-y-6">
 	<h1 class="text-2xl font-bold">Create New Group</h1>
 
 	<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
-		<form class="space-y-6" action="?/createGroup" method="POST" use:enhance>
+		<form class="space-y-6" method="POST" use:enhance>
 			<div class="space-y-1">
 				<div class="mb-3 flex flex-col">
 					<label for="name" class="text-base font-medium text-gray-900">Group Name</label>
@@ -27,6 +54,9 @@
 					class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm/6"
 					placeholder="Enter group name"
 				/>
+				{#if $errors.name}
+					<p class="mt-1 text-xs text-red-600">{$errors.name}</p>
+				{/if}
 			</div>
 
 			<div class="flex justify-end">

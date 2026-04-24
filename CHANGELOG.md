@@ -8,6 +8,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Universal `+page.ts` / `+layout.ts` loaders for every app route (account,
+  dashboard, groups list, group dashboard + history + settings, auth
+  login/register). SSR hydrates via TanStack Query; the static Capacitor
+  build consumes the same queries through the browser client.
+- `lib/query/options.ts`: shared `xxxQueryOptions(id)` helpers used by both
+  loaders and components so dehydrate/hydrate shape stays identical.
+- `lib/shared/auth/flows.ts`: unified `login(email, password)` /
+  `register(...)` that picks `/api/auth/...` on adapter-node and the direct
+  SDK on adapter-static; persists the token to `authStorage` in both cases.
+- Per-request SSR fetch wrapper in `hooks.server.ts` that injects the Bearer
+  header for any call to `PUBLIC_BACKEND_URL`, so universal loaders don't
+  have to plumb the token themselves.
+
+### Changed
+- Every route form (account ×4, group create, group settings ×5, login,
+  register, dashboard layout name edit, invite accept) runs SuperForms in
+  `SPA: true` and calls an SDK mutation via TanStack Query; the wrapper in
+  `lib/shared/form/super-form.ts` now defaults to SPA mode.
+- `auth.store` is plain `writable` (no persistence) — the token lives in
+  `authStorage`; `meQuery` drives user state. `clientSideLogout(queryClient)`
+  POSTs `/api/auth/logout`, clears both transports, calls
+  `queryClient.clear()`, and routes to login.
+- `svelte.config.js` drops the `csrf.checkOrigin = false` override — no
+  cross-origin form POSTs remain.
+- Login page: removed the 200+-LOC manual server switcher (dead weight).
+
+### Removed
+- `frontend/src/lib/shared/app/` (controller.ts, persistentStore.ts,
+  preferences.ts) — the legacy dual-path `isCompiledStatic` branches and the
+  fake-HTTP action proxy are gone.
+- `frontend/src/lib/server/layout-data.ts`,
+  `frontend/src/lib/server/hooks/cors.ts`.
+- `frontend/src/lib/shared/stores/{groups,balances,transactions}.store.ts`
+  and their README. TanStack Query owns cached server state now.
+- Every `+page.server.ts` / `+layout.server.ts` under `routes/` except one:
+  `(app)/+page.server.ts` keeps the `createTransaction` action because the
+  `add-transaction-dialog` component still posts via SvelteKit actions.
+  Converting that component is the last remaining Phase 3 task (its
+  pre-existing type errors are unchanged from before this branch).
+
+
 - Root `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `Justfile`,
   `docker-compose.yml`, `.editorconfig`, `.nvmrc`.
 - `.github/workflows/ci.yml`: backend (ruff + pytest), frontend (lint + check +

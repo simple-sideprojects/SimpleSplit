@@ -1,11 +1,8 @@
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { PUBLIC_FRONTEND_URL } from '$env/static/public';
 import { authStorage } from '$lib/shared/auth/storage';
-import { createPersistentStore } from '../app/persistentStore';
-import { balancesStore } from './balances.store';
-import { groupsStore } from './groups.store';
-import { transactionsStore } from './transactions.store';
+import { QueryClient } from '@tanstack/svelte-query';
+import { writable, type Writable } from 'svelte/store';
 
 export type User = {
 	username: string;
@@ -14,51 +11,46 @@ export type User = {
 
 type AuthStoreType = {
 	user: User | null;
-	frontend_url: string;
 };
 
-function createAuthStore() {
-	const initialValue: AuthStoreType = {
-		user: null,
-		frontend_url: PUBLIC_FRONTEND_URL
-	};
-
-	const store = createPersistentStore<AuthStoreType>('auth', initialValue);
+function createAuthStore(): Writable<AuthStoreType> & {
+	getUser: () => User | null;
+	setUser: (u: User | null) => void;
+} {
+	const store = writable<AuthStoreType>({ user: null });
+	let current: AuthStoreType = { user: null };
+	store.subscribe((v) => (current = v));
 
 	return {
 		subscribe: store.subscribe,
 		set: store.set,
 		update: store.update,
-		getAuthData: () => store.get(),
-		getUser: () => store.get().user,
-		setUser: (user: User | null) =>
-			store.update((state) => ({
-				...state,
-				user: user
-			}))
+		getUser: () => current.user,
+		setUser: (user) => store.update((s) => ({ ...s, user }))
 	};
 }
 
 export const authStore = createAuthStore();
 
+/**
+ * Called after a successful login. Persists the token to `authStorage` so
+ * subsequent SDK calls carry the Bearer header.
+ */
 export async function clientSideLogin(token: string, user: User): Promise<void> {
 	if (!browser) return;
 	await authStorage.setToken(token);
-	authStore.update((state) => ({
-		...state,
-		user: user
-	}));
+	authStore.setUser(user);
 }
 
-export async function clientSideLogout(): Promise<void> {
+/**
+ * Clears the token on both transports (cookie via /api/auth/logout, browser
+ * via authStorage), resets client-side caches, and navigates to login.
+ */
+export async function clientSideLogout(queryClient?: QueryClient): Promise<void> {
 	if (!browser) return;
+	await fetch('/api/auth/logout/', { method: 'POST' }).catch(() => null);
 	await authStorage.clearToken();
-	authStore.update((state) => ({
-		...state,
-		user: null
-	}));
-	groupsStore.clear();
-	transactionsStore.clear();
-	balancesStore.clear();
+	authStore.setUser(null);
+	queryClient?.clear();
 	await goto('/auth/login');
 }

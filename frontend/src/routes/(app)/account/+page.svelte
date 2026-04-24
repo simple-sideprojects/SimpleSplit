@@ -1,8 +1,14 @@
 <script lang="ts">
-	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller.js';
-	import { superForm } from '$lib/shared/form/super-form.js';
-	import { authStore, clientSideLogout, type User } from '$lib/shared/stores/auth.store.js';
-	import { onMount } from 'svelte';
+	import {
+		deleteUserAccountDeleteMutation,
+		readUsersMeAccountGetQueryKey,
+		updatePasswordAccountPasswordPutMutation,
+		updateUserInfoAccountPutMutation
+	} from '$lib/client/@tanstack/svelte-query.gen';
+	import { meQueryOptions } from '$lib/query/options';
+	import { superForm } from '$lib/shared/form/super-form';
+	import { clientSideLogout } from '$lib/shared/stores/auth.store.js';
+	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
 	import IconDeviceFloppy from '~icons/tabler/device-floppy';
 	import IconLoader from '~icons/tabler/loader';
@@ -10,59 +16,73 @@
 	import IconLogout from '~icons/tabler/logout';
 	import IconTrash from '~icons/tabler/trash';
 	import type { PageData } from './$types.js';
-	import type { ActionResult } from '@sveltejs/kit';
 
-	//Handle provided data
 	let { data } = $props<{ data: PageData }>();
-	let userData: User | null = $derived($authStore.user);
 
-	//Update auth store if it is available through server load()
-	$effect(() => {
-		if (data.userData !== undefined) {
-			$authStore.user = data.userData;
-		}
-	});
+	const queryClient = useQueryClient();
+	const meQuery = createQuery(meQueryOptions());
+	let userData = $derived($meQuery.data ?? null);
 
-	//Handle Username Form
+	const updateUsernameMutation = createMutation(updateUserInfoAccountPutMutation());
+	const updatePasswordMutation = createMutation(updatePasswordAccountPasswordPutMutation());
+	const deleteAccountMutation = createMutation(deleteUserAccountDeleteMutation());
+
+	// Username form
 	const {
 		form: usernameForm,
 		enhance: enhanceUsername,
 		errors: usernameErrors,
 		submitting: usernameSubmitting
 	} = superForm(data.usernameForm, {
-		onResult: ({ result }) => {
-			if (result.type === 'success') {
+		onUpdate: async ({ form, cancel }) => {
+			if (!form.valid) return;
+			try {
+				await $updateUsernameMutation.mutateAsync({
+					body: { username: form.data.username as string }
+				});
+				await queryClient.invalidateQueries({ queryKey: readUsersMeAccountGetQueryKey() });
 				toast.success('Username updated successfully');
+			} catch {
+				toast.error('Failed to update username');
+				cancel();
 			}
 		}
 	});
 
-	//Update Username Form
 	$effect(() => {
-		if (userData) {
-			usernameForm.update((formData) => {
-				formData.username = userData.username;
-				return formData;
-			});
+		if (userData && !$usernameForm.username) {
+			usernameForm.update((f) => ({ ...f, username: userData.username }));
 		}
 	});
 
-	//Handle Password Form
+	// Password form
 	const {
 		form: passwordForm,
 		enhance: enhancePassword,
 		errors: passwordErrors,
-		submitting: passwordSubmitting
+		submitting: passwordSubmitting,
+		reset: resetPassword
 	} = superForm(data.passwordForm, {
 		resetForm: true,
-		onResult: ({ result }) => {
-			if (result.type === 'success') {
+		onUpdate: async ({ form, cancel }) => {
+			if (!form.valid) return;
+			try {
+				await $updatePasswordMutation.mutateAsync({
+					body: {
+						old_password: form.data.old_password as string,
+						new_password: form.data.new_password as string
+					}
+				});
 				toast.success('Password updated successfully');
+				resetPassword();
+			} catch {
+				toast.error('Failed to update password');
+				cancel();
 			}
 		}
 	});
 
-	//Handle Delete Account Form
+	// Delete account
 	let showDeleteConfirm = $state(false);
 	const {
 		form: deleteAccountForm,
@@ -70,48 +90,39 @@
 		errors: deleteAccountErrors,
 		submitting: deleteAccountSubmitting
 	} = superForm(data.deleteAccountForm, {
-		onResult: ({ result }) => {
-			if (result.type === 'success') {
+		onUpdate: async ({ form, cancel }) => {
+			if (!form.valid) return;
+			if (form.data.deleteConfirmation !== userData?.username) {
+				deleteAccountErrors.update((e) => ({
+					...e,
+					deleteConfirmation: ['Username confirmation does not match']
+				}));
+				return cancel();
+			}
+			try {
+				await $deleteAccountMutation.mutateAsync({});
 				toast.success('Account deleted successfully');
+				await fetch('/api/auth/logout/', { method: 'POST' });
+				await clientSideLogout();
+			} catch {
+				toast.error('Failed to delete account');
+				cancel();
 			}
 		}
 	});
 
-	//Sign Out Form
-	const { enhance: enhanceSignOut } = superForm(
-		{},
-		{
-			onResult: async ({ result }) => {
-				if (result.type === 'success') {
-					toast.success('Signed out successfully');
-					await clientSideLogout();
-				}
-			}
-		}
-	);
-
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-		const serverResponse: ActionResult<{
-			userData: User;
-		}> = await onPageLoad(true, {
-			userData: userData
-		});
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-		$authStore.user = serverResponse.data.userData;
-	});
+	async function signOut(event: SubmitEvent) {
+		event.preventDefault();
+		await fetch('/api/auth/logout/', { method: 'POST' });
+		toast.success('Signed out successfully');
+		await clientSideLogout();
+	}
 </script>
 
 <div class="space-y-4">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">Account Settings</h1>
-		<!-- Mobile Sign Out Button -->
-		<form action="?/signOut" method="POST" class="sm:hidden" use:enhanceSignOut>
+		<form class="sm:hidden" onsubmit={signOut}>
 			<button
 				type="submit"
 				class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
@@ -130,8 +141,7 @@
 		</div>
 
 		<div class="grid gap-8 p-4">
-			<!-- Username Form -->
-			<form action="?/updateUsername" method="POST" class="grid gap-4" use:enhanceUsername>
+			<form method="POST" class="grid gap-4" use:enhanceUsername>
 				<div>
 					<div class="mb-2 flex flex-col">
 						<label for="username" class="text-sm font-medium text-gray-900">Username</label>
@@ -144,6 +154,7 @@
 							type="text"
 							name="username"
 							id="username"
+							bind:value={$usernameForm.username}
 							required
 							class="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
 						/>
@@ -164,26 +175,18 @@
 					{#if $usernameErrors.username}
 						<p class="mt-1 text-xs text-red-600">{$usernameErrors.username}</p>
 					{/if}
-					{#if $usernameErrors._errors}
-						<div class="mt-2 rounded-md bg-red-50 p-2">
-							<p class="text-xs text-red-700">{$usernameErrors._errors}</p>
-						</div>
-					{/if}
 				</div>
 			</form>
 
-			<!-- Email Form -->
 			<div class="flex flex-col">
 				<div class="mb-2 flex flex-col">
 					<label for="email" class="text-sm font-medium text-gray-900">Email Address</label>
-					<span class="mt-0.5 text-xs text-gray-500"
-						>Your email address for notifications and login</span
-					>
+					<span class="mt-0.5 text-xs text-gray-500">Your email address for notifications and login</span>
 				</div>
 				<input
 					type="email"
 					id="email"
-					value={userData?.email}
+					value={userData?.email ?? ''}
 					readonly
 					class="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-gray-600 sm:text-sm"
 				/>
@@ -195,12 +198,10 @@
 	<div class="rounded-lg border border-gray-100 bg-white shadow-sm">
 		<div class="border-b border-gray-200 px-4 py-3">
 			<h2 class="text-base font-medium text-gray-900">Security</h2>
-			<p class="mt-0.5 text-sm text-gray-500">
-				Manage your password and account security settings.
-			</p>
+			<p class="mt-0.5 text-sm text-gray-500">Manage your password and account security settings.</p>
 		</div>
 
-		<form action="?/updatePassword" method="POST" class="p-4" use:enhancePassword>
+		<form method="POST" class="p-4" use:enhancePassword>
 			<div class="grid gap-4 lg:grid-cols-2">
 				<div>
 					<div class="mb-2 flex flex-col">
@@ -215,7 +216,6 @@
 						required
 						minlength="8"
 						class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-						placeholder="Enter new password"
 					/>
 					{#if $passwordErrors.new_password}
 						<p class="mt-1 text-xs text-red-600">{$passwordErrors.new_password}</p>
@@ -227,7 +227,6 @@
 						<label for="confirmPassword" class="text-sm font-medium text-gray-900"
 							>Confirm New Password</label
 						>
-						<span class="mt-0.5 text-xs text-gray-500">Re-enter your new password</span>
 					</div>
 					<input
 						type="password"
@@ -236,7 +235,6 @@
 						bind:value={$passwordForm.confirmPassword}
 						required
 						class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-						placeholder="Confirm new password"
 					/>
 					{#if $passwordErrors.confirmPassword}
 						<p class="mt-1 text-xs text-red-600">{$passwordErrors.confirmPassword}</p>
@@ -245,10 +243,7 @@
 
 				<div>
 					<div class="mb-2 flex flex-col">
-						<label for="old_password" class="text-sm font-medium text-gray-900"
-							>Current Password</label
-						>
-						<span class="mt-0.5 text-xs text-gray-500">Enter your current password to verify</span>
+						<label for="old_password" class="text-sm font-medium text-gray-900">Current Password</label>
 					</div>
 					<input
 						type="password"
@@ -257,19 +252,12 @@
 						bind:value={$passwordForm.old_password}
 						required
 						class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-						placeholder="Enter current password"
 					/>
 					{#if $passwordErrors.old_password}
 						<p class="mt-1 text-xs text-red-600">{$passwordErrors.old_password}</p>
 					{/if}
 				</div>
 			</div>
-
-			{#if $passwordErrors._errors}
-				<div class="mt-4 rounded-md bg-red-50 p-3">
-					<p class="text-sm text-red-700">{$passwordErrors._errors}</p>
-				</div>
-			{/if}
 
 			<div class="mt-4 flex justify-end">
 				<button
@@ -288,7 +276,6 @@
 	<div class="rounded-lg border border-gray-100 bg-white shadow-sm">
 		<div class="border-b border-gray-200 px-4 py-3">
 			<h2 class="text-base font-medium text-gray-900">Sign Out</h2>
-			<p class="mt-0.5 text-sm text-gray-500">Sign out from your account on this device.</p>
 		</div>
 
 		<div class="p-4">
@@ -296,7 +283,7 @@
 				<p class="mb-4 text-sm text-gray-700 sm:mb-0">
 					This will sign you out from your current session on this device.
 				</p>
-				<form action="?/signOut" method="POST" use:enhanceSignOut>
+				<form onsubmit={signOut}>
 					<button
 						type="submit"
 						class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
@@ -331,7 +318,7 @@
 					</button>
 				</div>
 			{:else}
-				<form action="?/deleteAccount" method="POST" class="space-y-4" use:enhanceDeleteAccount>
+				<form method="POST" class="space-y-4" use:enhanceDeleteAccount>
 					<div>
 						<div class="mb-2 flex flex-col">
 							<label for="deleteConfirmation" class="text-sm font-medium text-gray-900"
@@ -348,18 +335,11 @@
 							bind:value={$deleteAccountForm.deleteConfirmation}
 							required
 							class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:text-sm"
-							placeholder="Enter your username to confirm"
 						/>
 						{#if $deleteAccountErrors.deleteConfirmation}
 							<p class="mt-1 text-xs text-red-600">{$deleteAccountErrors.deleteConfirmation}</p>
 						{/if}
 					</div>
-
-					{#if $deleteAccountErrors._errors}
-						<div class="mt-4 rounded-md bg-red-50 p-3">
-							<p class="text-sm text-red-700">{$deleteAccountErrors._errors}</p>
-						</div>
-					{/if}
 
 					<div class="flex justify-end gap-3">
 						<button
