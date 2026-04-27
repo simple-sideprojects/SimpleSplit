@@ -3,6 +3,10 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"engines": {
+		"node": ">=24",
+		"pnpm": ">=10"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"dev:mock": "concurrently \"pnpm run dev:mock\" \"pnpm run dev:api\"",

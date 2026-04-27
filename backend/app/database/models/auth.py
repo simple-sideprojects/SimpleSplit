@@ -27,5 +27,4 @@ class UserJWTData(SQLModel):
 
 
 class EmailConfirmationRequest(SQLModel):
-    frontend_url: str = Field(min_length=1, max_length=500)
     token: int

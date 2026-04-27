@@ -1,64 +1,22 @@
 <script lang="ts">
 	import { TransactionComponent } from '$lib';
-	import { isCompiledStatic, onPageLoad } from '$lib/shared/app/controller';
-	import { onMount } from 'svelte';
+	import { groupQueryOptions } from '$lib/query/options';
+	import { createQuery } from '@tanstack/svelte-query';
 	import IconArrowDown from '~icons/tabler/arrow-down';
 	import IconArrowUp from '~icons/tabler/arrow-up';
 	import IconChevronDown from '~icons/tabler/chevron-down';
 	import IconClock from '~icons/tabler/clock';
-	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
-	import { building } from '$app/environment';
-	import type { TransactionRead } from '$lib/client/types.gen.js';
-	import type { Balance } from '$lib/interfaces/balance';
-	import { balancesStore } from '$lib/shared/stores/balances.store.js';
-	import { transactionsStore } from '$lib/shared/stores/transactions.store.js';
 	import type { PageData } from './$types';
-	import type { ActionResult } from '@sveltejs/kit';
 
-	//Handle provided data
-	let { data } = $props<{ data: PageData }>();
-	let balances: Balance[] = $derived(Object.values($balancesStore));
-	let transactions: TransactionRead[] = $derived(Object.values($transactionsStore));
-	const groupId =
-		building || !page.url.searchParams.has('groupId')
-			? null
-			: (page.url.searchParams.get('groupId') as string);
+	const { data } = $props<{ data: PageData }>();
+	const groupId = $derived(data.groupId as string);
 
-	//Calculate balances
-	let totalPositive = $derived(
-		balances.reduce((acc: number, b: Balance) => (b.balance > 0 ? acc + b.balance : acc), 0)
-	);
-	let totalNegative = $derived(
-		balances.reduce((acc: number, b: Balance) => (b.balance < 0 ? acc + b.balance : acc), 0)
-	);
+	const groupQuery = createQuery(groupQueryOptions(groupId));
+	let group = $derived($groupQuery.data);
+	let balance = $derived(group?.balance ?? null);
+	let transactions = $derived(group?.transactions ?? []);
 
-	//Formatter
 	const AmountFormatter = Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
-
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-		if (!groupId) {
-			goto('/groups');
-		}
-
-		const serverResponse: ActionResult<{
-			balances: Balance[];
-			transactions: TransactionRead[];
-		}> = await onPageLoad(true, {
-			groupId: groupId
-		});
-
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-
-		balancesStore.setBalances(serverResponse.data.balances);
-		transactionsStore.setTransactions(serverResponse.data.transactions);
-	});
 </script>
 
 <div class="space-y-6">
@@ -69,7 +27,9 @@
 				<IconArrowUp class="size-5 text-green-500" />
 				<h2 class="text-base font-semibold text-gray-900">You are owed</h2>
 			</div>
-			<p class="mt-2 text-2xl font-bold text-green-500">{AmountFormatter.format(totalPositive)}</p>
+			<p class="mt-2 text-2xl font-bold text-green-500">
+				{AmountFormatter.format((balance?.total_owed_by_others ?? 0) / 100)}
+			</p>
 		</div>
 
 		<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
@@ -78,7 +38,7 @@
 				<h2 class="text-base font-semibold text-gray-900">You owe</h2>
 			</div>
 			<p class="mt-2 text-2xl font-bold text-red-500">
-				{AmountFormatter.format(Math.abs(totalNegative))}
+				{AmountFormatter.format((balance?.total_owed_to_others ?? 0) / 100)}
 			</p>
 		</div>
 	</div>
@@ -87,11 +47,11 @@
 	<div class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
 		<h2 class="mb-4 text-lg font-semibold">Individual Balances</h2>
 		<div class="space-y-3">
-			{#each balances as balance (balance.username)}
+			{#each balance?.user_balances ?? [] as entry (entry.user.id)}
 				<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3">
-					<span class="font-medium">{balance.username}</span>
-					<span class={balance.balance >= 0 ? 'text-green-500' : 'text-red-500'}>
-						{AmountFormatter.format(balance.balance)}
+					<span class="font-medium">{entry.user.username}</span>
+					<span class={entry.balance >= 0 ? 'text-green-500' : 'text-red-500'}>
+						{AmountFormatter.format(entry.balance / 100)}
 					</span>
 				</div>
 			{/each}

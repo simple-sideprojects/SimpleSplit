@@ -1,96 +1,63 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
-	import { onMount } from 'svelte';
+	import {
+		readGroupGroupsGroupIdGetQueryKey,
+		updateGroupGroupsGroupIdPutMutation
+	} from '$lib/client/@tanstack/svelte-query.gen';
+	import { groupQueryOptions } from '$lib/query/options';
+	import { superForm } from '$lib/shared/form/super-form';
+	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { toast } from 'svelte-sonner';
 	import IconCheck from '~icons/tabler/check';
 	import IconEdit from '~icons/tabler/edit';
 	import IconHistory from '~icons/tabler/history';
 	import IconSettings from '~icons/tabler/settings';
 	import IconUsers from '~icons/tabler/users';
 	import IconX from '~icons/tabler/x';
-	import { groupsStore, type Group } from '$lib/shared/stores/groups.store.js';
-	import { building } from '$app/environment';
-	import { superForm } from '$lib/shared/form/super-form.js';
-	import { toast } from 'svelte-sonner';
-	import { invalidate } from '$app/navigation';
 	import type { PageData } from './$types';
-	import type { ActionResult } from '@sveltejs/kit';
 
-	//Handle provided data
 	let { data, children } = $props<{ data: PageData }>();
-	const groupId = $derived(
-		building || !page.url.searchParams.has('groupId')
-			? null
-			: (page.url.searchParams.get('groupId') as string)
-	);
-	let group: Group | null = $derived(groupId ? $groupsStore[groupId] : null);
+	let groupId = $derived(data.groupId as string);
 
-	//Update group store if it is available through server load()
-	$effect(() => {
-		if (data.group !== undefined) {
-			$groupsStore[data.group.id] = data.group;
-		}
-	});
+	const queryClient = useQueryClient();
+	const groupQuery = createQuery(groupQueryOptions(groupId));
+	let group = $derived($groupQuery.data);
 
-	// Derived from URL parameters
-	/*$effect(() => {
-		// Invalidate page data to force a reload
-		invalidate(`app:groupDashboard:${groupId}`);
-	});*/
+	const updateGroup = createMutation(updateGroupGroupsGroupIdPutMutation());
 
-	//Update Group Name Form
+	let isEditing = $state(false);
+
 	const { form, enhance: enhanceUpdateGroupName } = superForm(data.updateGroupNameForm, {
-		onResult: ({ result }) => {
-			if (result.type === 'success' && result.data && result.data.group) {
-				if (groupId) {
-					$groupsStore[groupId] = result.data.group;
-					data.group = result.data.group;
-				}
+		onUpdate: async ({ form, cancel }) => {
+			if (!form.valid) return;
+			try {
+				await $updateGroup.mutateAsync({
+					path: { group_id: groupId },
+					body: { name: form.data.name as string }
+				});
+				await queryClient.invalidateQueries({
+					queryKey: readGroupGroupsGroupIdGetQueryKey({ path: { group_id: groupId } })
+				});
 				isEditing = false;
 				toast.success('Group name updated');
+			} catch {
+				toast.error('Failed to update group name');
+				cancel();
 			}
 		}
 	});
-	let isEditing = $state(false);
 
-	//Path handling
-	let currentPath = $derived(`${page.url.pathname}`);
-	let pathType = $derived.by(() => {
-		if (currentPath.includes('history')) {
-			return 'history';
+	$effect(() => {
+		if (group && !$form.name) {
+			form.update((f) => ({ ...f, name: group.name }));
 		}
-		if (currentPath.includes('settings')) {
-			return 'settings';
-		}
-		return 'dashboard';
 	});
 
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-
-		const serverResponse: ActionResult<{
-			group: Group;
-			updateGroupNameForm: any;
-		}> = await onLayoutLoad('/groups/dashboard/', true, {
-			groupId
-		});
-
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-
-		let group: Group = serverResponse.data.group;
-
-		//Update the group in the store
-		groupsStore.updateGroup(group);
-
-		//Update the data of the form
-		form.update(() => ({
-			name: group.name
-		}));
+	let currentPath = $derived(`${page.url.pathname}`);
+	let pathType = $derived.by(() => {
+		if (currentPath.includes('history')) return 'history';
+		if (currentPath.includes('settings')) return 'settings';
+		return 'dashboard';
 	});
 </script>
 
@@ -99,12 +66,7 @@
 		<header class="mb-8">
 			<h1 class="text-2xl font-bold">
 				{#if isEditing}
-					<form
-						action="/groups/dashboard/settings?/updateGroupName"
-						method="POST"
-						class="flex items-center gap-2"
-						use:enhanceUpdateGroupName
-					>
+					<form method="POST" class="flex items-center gap-2" use:enhanceUpdateGroupName>
 						<input
 							type="text"
 							class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"

@@ -2,68 +2,32 @@
 	import { afterNavigate, invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AddTransactionButton, MobileNavigation } from '$lib';
-	import { isCompiledStatic, onLayoutLoad } from '$lib/shared/app/controller.js';
-	import { authStore, type User } from '$lib/shared/stores/auth.store.js';
-	import { groupsStore, type Group } from '$lib/shared/stores/groups.store.js';
-	import { onMount } from 'svelte';
+	import { groupsQueryOptions, meQueryOptions } from '$lib/query/options';
+	import { createQuery } from '@tanstack/svelte-query';
 	import IconDashboard from '~icons/tabler/dashboard';
 	import IconPlus from '~icons/tabler/plus';
 	import IconSettings from '~icons/tabler/settings';
 	import IconUser from '~icons/tabler/user';
 	import IconUsers from '~icons/tabler/users';
-	import type { PageData } from './$types';
-	import type { ActionResult } from '@sveltejs/kit';
 
-	//Handle provided data
-	let { data, children } = $props<{ data: PageData }>();
-	let groups: Group[] = $derived(Object.values($groupsStore));
-	let user: User | null = $derived($authStore.user);
+	let { children } = $props();
 
-	//Update groups store if it is available through server load()
-	$effect(() => {
-		if (data.groups !== undefined) {
-			groupsStore.setGroups(data.groups);
-		}
-	});
+	const meQuery = createQuery(meQueryOptions());
+	const groupsQuery = createQuery(groupsQueryOptions());
 
-	//Update user store if it is available through server load()
-	$effect(() => {
-		if (data.user !== undefined) {
-			$authStore.user = data.user;
-		}
-	});
+	let user = $derived($meQuery.data ?? null);
+	let groups = $derived($groupsQuery.data ?? []);
 
-	//ScrollToTop
 	let mainElement: HTMLElement;
 	afterNavigate(() => {
 		mainElement?.scrollTo(0, 0);
 	});
 
-	//Check if the current page is a group page
 	function isGroupPage(groupId: string): boolean {
 		return (
 			page.url.pathname == '/groups/dashboard/' && page.url.searchParams.get('groupId') == groupId
 		);
 	}
-
-	//Mobile App functionality
-	onMount(async () => {
-		if (!isCompiledStatic()) {
-			return;
-		}
-
-		const serverResponse: ActionResult<{
-			user: User | null;
-			groups: Group[];
-		}> = await onLayoutLoad('/', true);
-
-		if (serverResponse.type !== 'success' || !serverResponse.data) {
-			return;
-		}
-
-		$authStore.user = serverResponse.data.user;
-		groupsStore.setGroups(serverResponse.data.groups);
-	});
 </script>
 
 <div class="relative flex h-screen flex-col overflow-hidden sm:min-h-screen sm:flex-row">
@@ -166,7 +130,7 @@
 		{@render children()}
 
 		{#if page.url.pathname !== '/account'}
-			<AddTransactionButton groups={data.groups} user={data.user} />
+			<AddTransactionButton {groups} {user} />
 		{/if}
 	</main>
 

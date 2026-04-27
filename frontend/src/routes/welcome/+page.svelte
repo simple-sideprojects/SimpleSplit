@@ -12,7 +12,7 @@
 			Network.getStatus().then((status) => {
 				visible = false;
 				setTimeout(() => {
-					if ($authStore.authenticated) {
+					if ($authStore.user) {
 						goto('/');
 					} else {
 						if (!status.connected) {

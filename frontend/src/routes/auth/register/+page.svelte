@@ -1,37 +1,25 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { clientSideLogin } from '$lib/shared/stores/auth.store.js';
+	import { register } from '$lib/shared/auth/flows';
 	import { superForm } from '$lib/shared/form/super-form';
-	import IconLoader from '~icons/tabler/loader';
-	import { zUserCreate } from '$lib/client/zod.gen';
-	import { zod } from 'sveltekit-superforms/adapters';
 	import type { PageData } from './$types';
+	import IconLoader from '~icons/tabler/loader';
 
-	//Get data from server
 	const { data } = $props<{ data: PageData }>();
 
-	//Register Form
-	const { form, errors, enhance, submit, message, submitting } = superForm(data.registerForm, {
-		resetForm: false,
-		onResult: async ({ result }) => {
-			if (result.type !== 'success') {
-				return;
-			}
-
-			if (browser && result.data?.token) {
-				// Login-Funktion im Store aufrufen
-				clientSideLogin(result.data.token, result.data.user);
-
-				// Zur Hauptseite weiterleiten
+	const { form, errors, enhance, message, submitting } = superForm(data.registerForm, {
+		onUpdate: async ({ form, cancel }) => {
+			if (!form.valid) return;
+			try {
+				await register(
+					form.data.email as string,
+					form.data.password as string,
+					form.data.username as string
+				);
 				await goto('/');
-			}
-		},
-		onError({ result }) {
-			if (result.type === 'error') {
-				message.set('An error occurred while registering');
-			} else if (result.type === 'exception') {
-				message.set('An unexpected error occurred while registering');
+			} catch (e) {
+				message.set(e instanceof Error ? e.message : 'Registration failed');
+				cancel();
 			}
 		}
 	});
@@ -49,7 +37,7 @@
 		</div>
 
 		<div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-			<form class="space-y-6" method="POST" use:enhance action="?/register">
+			<form class="space-y-6" method="POST" use:enhance>
 				{#if $message}
 					<div class="rounded-md bg-red-50 p-4">
 						<div class="flex">
@@ -61,9 +49,7 @@
 				{/if}
 
 				<div>
-					<label for="username" class="block text-sm/6 font-medium text-gray-900">
-						Username <span class="text-xs text-gray-500">(optional)</span>
-					</label>
+					<label for="username" class="block text-sm/6 font-medium text-gray-900">Username</label>
 					<div class="mt-2">
 						<input
 							type="text"

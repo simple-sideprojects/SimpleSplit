@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: Pytest
+        env:
+          PROD: "False"
+          FRONTEND_URL: http://localhost:3000
+          DATABASE_URL: sqlite:///./test.db
+          SECRET_KEY: test-secret
+          ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+          SMTP_SERVER: localhost
+          SMTP_PORT: "587"
+          SMTP_USER: u
+          SMTP_PASSWORD: p
+          SMTP_USE_TLS: "False"
+          SENDER_EMAIL: a@b.com
+          EMAIL_ACCOUNT_VERIFICATION: "False"
+        run: pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare env
+        run: cp .env.example .env
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm check
+
+      - name: Unit tests
+        run: pnpm test:unit --run
+
+  api-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate OpenAPI snapshot
+        working-directory: backend
+        env:
+          PROD: "False"
+          FRONTEND_URL: http://localhost:3000
+          DATABASE_URL: sqlite:///./test.db
+          SECRET_KEY: test-secret
+          ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+          SMTP_SERVER: localhost
+          SMTP_PORT: "587"
+          SMTP_USER: u
+          SMTP_PASSWORD: p
+          SMTP_USE_TLS: "False"
+          SENDER_EMAIL: a@b.com
+          EMAIL_ACCOUNT_VERIFICATION: "False"
+        run: python -m app.scripts.dump_openapi
+
+      - name: Regenerate typed client
+        working-directory: frontend
+        run: pnpm generate:api
+
+      - name: Fail if snapshot or client drifted
+        run: |
+          if ! git diff --exit-code backend/openapi.json frontend/src/lib/client/; then
+            echo "::error::OpenAPI snapshot or client drifted. Regenerate locally and commit."
+            exit 1
+          fi

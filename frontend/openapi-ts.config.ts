@@ -1,7 +1,14 @@
 import { defineConfig } from '@hey-api/openapi-ts';
 
 export default defineConfig({
-	input: 'http://localhost:8000/openapi.json',
+	input: '../backend/openapi.json',
 	output: 'src/lib/client',
-	plugins: ['@hey-api/client-fetch', '@tanstack/svelte-query', 'zod']
+	plugins: [
+		{
+			name: '@hey-api/client-fetch',
+			runtimeConfigPath: './src/lib/api-client-config.ts'
+		},
+		'@tanstack/svelte-query',
+		'zod'
+	]
 });

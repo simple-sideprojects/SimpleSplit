@@ -1,12 +1,10 @@
 <script lang="ts">
+	import { groupsQueryOptions } from '$lib/query/options';
+	import { createQuery } from '@tanstack/svelte-query';
 	import IconPlus from '~icons/tabler/plus';
-	import type { Group } from '$lib/client';
-	import { groupsStore } from '$lib/shared/stores/groups.store.js';
-	import type { PageData } from './$types';
 
-	//Handle provided data
-	let { data } = $props<{ data: PageData }>();
-	let groups: Group[] = $derived(Object.values($groupsStore));
+	const groupsQuery = createQuery(groupsQueryOptions());
+	let groups = $derived($groupsQuery.data ?? []);
 </script>
 
 <div class="mx-auto w-full max-w-4xl">
@@ -25,7 +23,7 @@
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each groups as group (group.id)}
 				<a
-					href="/groups/{group.id}"
+					href="/groups/dashboard/?groupId={group.id}"
 					class="block rounded-lg border border-gray-200 p-4 hover:border-blue-500 hover:shadow-sm"
 				>
 					<h2 class="text-lg font-semibold text-gray-900">{group.name}</h2>

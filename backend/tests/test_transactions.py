@@ -234,7 +234,53 @@ class TestTransactionEndpoints:
         session.commit()
         
         response = client.get(f"/transactions/?group_id={test_group.id}", headers=auth_headers)
-        
+
         assert response.status_code == 200
         transactions = response.json()
-        assert isinstance(transactions, list) 
+        assert isinstance(transactions, list)
+
+    def test_create_transaction_rolls_back_on_participant_failure(
+        self,
+        client: TestClient,
+        auth_headers: dict,
+        test_group: Group,
+        test_user: User,
+        test_user_2: User,
+        session: Session,
+        mocker,
+    ):
+        """If participant insertion fails mid-loop, the Transaction is rolled back (no orphan rows)."""
+        from sqlalchemy.exc import IntegrityError
+
+        test_group.users.append(test_user_2)
+        session.add(test_group)
+        session.commit()
+
+        # Force TransactionParticipant construction to raise after the parent
+        # Transaction has been flushed (simulating a mid-loop DB failure).
+        mocker.patch(
+            "app.routers.transactions.TransactionParticipant",
+            side_effect=IntegrityError("forced", None, Exception("boom")),
+        )
+
+        before = session.exec(select(Transaction)).all()
+
+        response = client.post(
+            "/transactions",
+            json={
+                "amount": 5000,
+                "title": "rollback me",
+                "transaction_type": "EVEN",
+                "group_id": str(test_group.id),
+                "payer_id": str(test_user.id),
+                "participants": [
+                    {"debtor_id": str(test_user_2.id), "amount_owed": 2500}
+                ],
+            },
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 500
+        session.expire_all()
+        after = session.exec(select(Transaction)).all()
+        assert len(after) == len(before), "orphan Transaction row was committed despite rollback" 

@@ -21,10 +21,7 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		adapter: adapter(adapterConfig),
-		csrf: {
-			checkOrigin: false // Disable built-in CSRF origin check
-		}
+		adapter: adapter(adapterConfig)
 	}
 };
 

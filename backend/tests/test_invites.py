@@ -213,9 +213,33 @@ class TestInviteEndpoints:
         # Test without auth headers
         response = client.post(f"/invites/{test_group.id}/generate")
         assert response.status_code == 401
-        
+
         response = client.get("/invites/my-invites")
         assert response.status_code == 401
-        
+
         response = client.put("/invites/accept/some-token")
-        assert response.status_code == 401 
+        assert response.status_code == 401
+
+    def test_invite_by_email_sends_email(
+        self,
+        client: TestClient,
+        auth_headers: dict,
+        test_group: Group,
+        test_user_2: User,
+        mocker,
+    ):
+        """invite_by_email schedules EmailService.send_group_invite as a BackgroundTask."""
+        send_mock = mocker.patch("app.routers.invites.EmailService.send_group_invite")
+
+        response = client.post(
+            f"/invites/{test_group.id}/email",
+            json={"email": test_user_2.email},
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 201
+        send_mock.assert_called_once()
+        called_email, called_group, called_token = send_mock.call_args.args
+        assert called_email == test_user_2.email
+        assert called_group == test_group.name
+        assert called_token == response.json()["token"] 
