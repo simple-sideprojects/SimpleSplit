@@ -23,7 +23,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `BackgroundTasks`-scheduled email for group invites.
 - `app/scripts/dump_openapi.py` writes `backend/openapi.json` without a
   running server; the frontend generator reads the snapshot.
-- Repository scaffolding: `README.md`, `CONTRIBUTING.md`, `Justfile`,
+- Repository scaffolding: `README.md`, `CONTRIBUTING.md`,
   `docker-compose.yml`, `.editorconfig`, `.nvmrc`, GitHub Actions CI
   (backend, frontend, OpenAPI drift check), and a pre-commit config.
 - Tests: backend integration tests for the email background task, the

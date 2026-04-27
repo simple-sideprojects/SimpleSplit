@@ -14,12 +14,3 @@ repos:
       - id: prettier
         files: ^frontend/
         exclude: ^frontend/(src/lib/client/|\.svelte-kit/|build|node_modules/)
-
-  - repo: local
-    hooks:
-      - id: api-drift
-        name: OpenAPI snapshot + generated client are in sync
-        language: system
-        pass_filenames: false
-        files: ^(backend/app/|frontend/openapi-ts\.config\.ts)
-        entry: scripts/check-api-drift.sh

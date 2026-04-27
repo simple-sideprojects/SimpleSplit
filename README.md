@@ -61,25 +61,37 @@ pnpm install
 pnpm dev
 ```
 
-Or, with `just` installed:
-
-```bash
-just dev          # everything
-just dev-backend  # FastAPI only
-just dev-frontend # SvelteKit only
-```
-
 ## Common tasks
+
+Backend (`cd backend`):
 
 | Task | Command |
 |---|---|
-| Regenerate typed API client | `cd frontend && pnpm generate:api` |
-| Refresh the committed OpenAPI snapshot | `cd backend && python -m app.scripts.dump_openapi` |
-| Backend tests | `cd backend && pytest` |
-| Frontend unit tests | `cd frontend && pnpm test:unit` |
-| Frontend e2e | `cd frontend && pnpm exec playwright test` |
-| Web production build | `cd frontend && pnpm build:node` |
-| Capacitor SPA build | `cd frontend && pnpm build:capacitor` |
+| Run tests | `pytest` |
+| Lint | `ruff check .` |
+| Refresh OpenAPI snapshot | `python -m app.scripts.dump_openapi` |
+
+Frontend (`cd frontend`):
+
+| Task | Command |
+|---|---|
+| Dev server | `pnpm dev` |
+| Lint + type-check | `pnpm lint && pnpm check` |
+| Unit tests | `pnpm test:unit` |
+| E2E tests | `pnpm exec playwright test` |
+| Web build | `pnpm build:node` |
+| Capacitor SPA build | `pnpm build:capacitor` |
+| Regenerate SDK from `backend/openapi.json` | `pnpm generate:api` |
+
+When you change a FastAPI router or model, regenerate both halves:
+
+```bash
+( cd backend && python -m app.scripts.dump_openapi ) && \
+  ( cd frontend && pnpm generate:api )
+```
+
+Commit both `backend/openapi.json` and `frontend/src/lib/client/`. CI's
+`api-drift` job will fail the PR if you forget.
 
 ## Repository layout
 

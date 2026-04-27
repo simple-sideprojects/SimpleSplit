@@ -112,7 +112,8 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Check OpenAPI snapshot + client are in sync
+      - name: Regenerate OpenAPI snapshot
+        working-directory: backend
         env:
           PROD: "False"
           FRONTEND_URL: http://localhost:3000
@@ -127,4 +128,15 @@ jobs:
           SMTP_USE_TLS: "False"
           SENDER_EMAIL: a@b.com
           EMAIL_ACCOUNT_VERIFICATION: "False"
-        run: scripts/check-api-drift.sh
+        run: python -m app.scripts.dump_openapi
+
+      - name: Regenerate typed client
+        working-directory: frontend
+        run: pnpm generate:api
+
+      - name: Fail if snapshot or client drifted
+        run: |
+          if ! git diff --exit-code backend/openapi.json frontend/src/lib/client/; then
+            echo "::error::OpenAPI snapshot or client drifted. Regenerate locally and commit."
+            exit 1
+          fi

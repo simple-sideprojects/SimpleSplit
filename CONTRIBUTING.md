@@ -14,13 +14,8 @@ cp frontend/.env.example frontend/.env
 docker compose up --build
 ```
 
-Or run the stack piece by piece via `just`:
-
-```bash
-just dev          # full stack (docker compose)
-just dev-backend  # postgres + FastAPI
-just dev-frontend # SvelteKit (expects backend on :8000)
-```
+See the [README](./README.md#common-tasks) for the per-side command list
+(pytest / pnpm scripts).
 
 ## The API contract
 
@@ -29,28 +24,23 @@ backend's OpenAPI schema. The schema is a committed snapshot — not a live
 fetch — so nobody has to run the backend just to regenerate the client, and
 CI can detect drift with a pure `git diff`.
 
-**If you change anything touching the FastAPI surface (routers, request/
-response models, status codes), you must:**
+If you change anything touching the FastAPI surface (routers, request/
+response models, status codes), regenerate both halves and commit them:
 
 ```bash
-just generate-api   # or, manually:
-# cd backend && python -m app.scripts.dump_openapi
-# cd frontend && pnpm generate:api
+( cd backend && python -m app.scripts.dump_openapi ) && \
+  ( cd frontend && pnpm generate:api )
 ```
 
-…and commit both `backend/openapi.json` and `frontend/src/lib/client/**`.
-
 CI's `api-drift` job runs exactly this and fails if the committed files would
-change. That's the contract enforcement.
+change.
 
 ## Tests + checks before pushing
 
 ```bash
-just test   # backend pytest + frontend vitest
-just lint   # ruff + eslint + svelte-check
+( cd backend && pytest && ruff check . )
+( cd frontend && pnpm lint && pnpm check && pnpm test:unit --run )
 ```
-
-Everything CI runs is available locally through `just`.
 
 ## Commit + PR style
 
@@ -79,5 +69,6 @@ Everything CI runs is available locally through `just`.
   `user` only (plain `writable`, no persistence). There is no other
   client-side data store.
 - **The OpenAPI snapshot is the contract.** Don't edit `frontend/src/lib/client/**`
-  by hand — regenerate via `just generate-api`. CI's `api-drift` job will
-  reject PRs where the snapshot or the generated client would change.
+  by hand — regenerate via `python -m app.scripts.dump_openapi` +
+  `pnpm generate:api`. CI's `api-drift` job rejects PRs where the snapshot
+  or the generated client would change.
