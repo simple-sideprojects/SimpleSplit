@@ -18,14 +18,8 @@ repos:
   - repo: local
     hooks:
       - id: api-drift
-        name: Check OpenAPI snapshot + generated client are in sync
+        name: OpenAPI snapshot + generated client are in sync
         language: system
         pass_filenames: false
         files: ^(backend/app/|frontend/openapi-ts\.config\.ts)
-        entry: bash -c '
-          set -e;
-          command -v python >/dev/null || { echo "skipped: python missing"; exit 0; };
-          (cd backend && python -m app.scripts.dump_openapi >/dev/null 2>&1) || { echo "skipped: backend env not ready"; exit 0; };
-          (cd frontend && pnpm generate:api >/dev/null 2>&1) || { echo "skipped: pnpm not ready"; exit 0; };
-          git diff --exit-code backend/openapi.json frontend/src/lib/client/ \
-            || { echo "OpenAPI snapshot or generated client drifted. Commit the regeneration."; exit 1; }'
+        entry: scripts/check-api-drift.sh

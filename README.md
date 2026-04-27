@@ -7,30 +7,30 @@ native iOS/Android apps from the same codebase.
 ## Architecture
 
 ```
-┌──────────────────┐        ┌──────────────────┐        ┌──────────────────┐
-│   Web (SSR)      │        │  Capacitor app   │        │  PR CI / drift   │
-│   SvelteKit +    │        │  (iOS, Android)  │        │  check           │
-│   adapter-node   │        │  SPA bundle from │        │                  │
-│                  │        │  adapter-static  │        │  OpenAPI snapshot│
-└────────┬─────────┘        └────────┬─────────┘        │  drives frontend │
-         │                           │                  │  client codegen  │
-         │   Bearer token + HTTP     │                  └──────────────────┘
-         ▼                           ▼
-┌───────────────────────────────────────────────┐
-│   FastAPI + SQLModel + Alembic                │
-│   Postgres                                    │
-└───────────────────────────────────────────────┘
+┌──────────────────┐         ┌──────────────────┐
+│   Web (SSR)      │         │  Capacitor app   │
+│   SvelteKit +    │         │  (iOS, Android)  │
+│   adapter-node   │         │  SPA from        │
+│                  │         │  adapter-static  │
+└────────┬─────────┘         └────────┬─────────┘
+         │                            │
+         │  HTTP, Bearer token        │
+         ▼                            ▼
+        ┌──────────────────────────────┐
+        │   FastAPI + SQLModel         │
+        │   Postgres                   │
+        └──────────────────────────────┘
 ```
 
 - **Frontend** (`frontend/`): SvelteKit 2, Svelte 5, Tailwind 4, Paraglide i18n,
   TanStack Query, sveltekit-superforms, Capacitor 7. The API client is
   generated from the FastAPI OpenAPI schema via `@hey-api/openapi-ts`.
 - **Backend** (`backend/`): FastAPI, SQLModel, Alembic, pydantic-settings,
-  pytest. Serves JWT-authenticated REST endpoints consumed by both deploy
-  targets.
+  pytest. JWT-authenticated REST endpoints consumed by both deploy targets.
 - **Contract**: `backend/openapi.json` is a committed snapshot of the FastAPI
-  schema. `pnpm generate:api` reads it directly (no live backend required) and
-  regenerates the typed client + TanStack Query bindings + Zod schemas.
+  schema. The frontend generator reads it directly, so the typed client can
+  be regenerated without a running backend, and CI fails any PR where the
+  snapshot and client would drift apart.
 
 ## Quick start (Docker)
 
@@ -46,7 +46,7 @@ docker compose up --build
 
 ## Local development (without Docker)
 
-Prerequisites: Node 22+, pnpm 10+, Python 3.12+.
+Prerequisites: Node 24+, pnpm 10+, Python 3.13+.
 
 ```bash
 # Backend

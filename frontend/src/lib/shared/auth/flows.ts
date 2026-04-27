@@ -7,19 +7,10 @@ import {
 import type { UserResponse } from '$lib/client/types.gen';
 import { clientSideLogin } from '$lib/shared/stores/auth.store';
 
+// adapter-static (Capacitor) has no SvelteKit server, so it must call the
+// SDK directly; adapter-node uses /api/auth/* so the SSR cookie is set.
 const isStatic = PUBLIC_ADAPTER === 'static';
 
-/**
- * Sign in on either deploy target.
- *
- *   - Web (adapter-node): POST to `/api/auth/login` so the SvelteKit server
- *     sets the httpOnly cookie used by SSR.
- *   - Capacitor (adapter-static): no SvelteKit server exists — call the SDK
- *     directly and persist the token via `authStorage`.
- *
- * In both cases the token ends up in `authStorage` so client-side SDK calls
- * pick it up through the interceptor in `hooks.client.ts`.
- */
 export async function login(
 	email: string,
 	password: string

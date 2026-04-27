@@ -9,9 +9,10 @@ from logging.config import dictConfig
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.types import ASGIApp
 
 from app.exceptions import request_id_ctx
+
+REQUEST_ID_HEADER = "x-request-id"
 
 
 class RequestIdFilter(logging.Filter):
@@ -57,19 +58,15 @@ def configure_logging() -> None:
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
-    """Accepts an incoming ``X-Request-ID`` header or mints a new uuid4, and
-    propagates it via a contextvar + echoes it on the response."""
-
-    def __init__(self, app: ASGIApp, header: str = "x-request-id") -> None:
-        super().__init__(app)
-        self.header = header
+    """Honours an incoming ``X-Request-ID`` or mints a uuid4, propagates it
+    via a contextvar, and echoes it on the response."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        rid = request.headers.get(self.header) or uuid.uuid4().hex
+        rid = request.headers.get(REQUEST_ID_HEADER) or uuid.uuid4().hex
         token = request_id_ctx.set(rid)
         try:
             response = await call_next(request)
         finally:
             request_id_ctx.reset(token)
-        response.headers[self.header] = rid
+        response.headers[REQUEST_ID_HEADER] = rid
         return response

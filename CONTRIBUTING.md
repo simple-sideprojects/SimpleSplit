@@ -5,7 +5,7 @@ what we expect from a good pull request.
 
 ## Development setup
 
-Prerequisites: Node 22+ (see `.nvmrc`), pnpm 10+, Python 3.12+. Docker optional
+Prerequisites: Node 24+ (see `.nvmrc`), pnpm 10+, Python 3.13+. Docker optional
 but recommended for running Postgres.
 
 ```bash
@@ -60,9 +60,6 @@ Everything CI runs is available locally through `just`.
 - Keep PRs reviewable. Big refactors land in phases.
 
 ## Architectural invariants
-
-Please preserve these when making changes — they're the spine of the
-architecture:
 
 - **Single data path.** Every route is a universal `+page.ts` (or `+layout.ts`)
   that calls the generated SDK and prefetches into TanStack Query. SSR
